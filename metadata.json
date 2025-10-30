@@ -1,0 +1,7 @@
+{
+  "name": "Galeria Infinita com Webcam",
+  "description": "Uma galeria de imagens infinita com rolagem por arrasto, visualização em tela cheia e a capacidade de capturar fotos da webcam.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
