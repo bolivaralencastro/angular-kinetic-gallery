@@ -13,11 +13,20 @@
           "builder": "@angular/build:application",
           "options": {
             "outputPath": {
-              "base": "./dist",
-              "browser": "."
+              "base": "./dist"
             },
-            "browser": "index.tsx",
-            "tsConfig": "tsconfig.json"
+            "index": "index.html",
+            "polyfills": ["./src/polyfills.ts"],
+            "tsConfig": "tsconfig.json",
+            "assets": [
+              "favicon.ico",
+              "src/favicon.ico"
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "scripts": [],
+            "browser": "./src/main.ts"
           },
           "configurations": {
             "production": {

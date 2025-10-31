@@ -17,7 +17,8 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "allowJs": true,
-    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "strictPropertyInitialization": false,
     "paths": {
       "@/*": [
         "./*"
@@ -25,9 +26,16 @@
     }
   },
   "files": [
-    "./index.tsx"
+    "./src/main.ts",
+    "./src/polyfills.ts"
+  ],
+  "include": [
+    "src/**/*.d.ts"
   ],
   "angularCompilerOptions": {
-    "disableTypeScriptVersionCheck": true
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
   }
 }

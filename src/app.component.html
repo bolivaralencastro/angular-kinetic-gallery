@@ -29,7 +29,7 @@
     } @else {
       <!-- Gallery List Canvas -->
       <div #canvas class="absolute will-change-transform">
-        @for (item of visibleItems(); track trackById(index, item)) {
+        @for (item of visibleItems(); track trackById($index, item)) {
           @if (item.type === 'gallery') {
             <div
               class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
@@ -87,7 +87,7 @@
       </div>
     }
     <div #canvas class="absolute will-change-transform">
-      @for (item of visibleItems(); track trackById(index, item)) {
+      @for (item of visibleItems(); track trackById($index, item)) {
         <div
           class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
           [style.width.px]="item.width"
@@ -97,11 +97,13 @@
           [class.cursor-pointer]="canDrag()"
           (click)="onImageClick($event, item)">
             <div class="item-image-container relative w-full h-full overflow-hidden">
-              <img [src]="item.url"
-                   class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
-                   (load)="$event.target.classList.add('opacity-100')"
-                   [class.group-hover:scale-1.05]="canDrag()"
-                   alt="Imagem da galeria capturada pela webcam">
+              @if (item.type === 'photo') {
+                <img [src]="item.url"
+                     class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
+                     (load)="$event.target.classList.add('opacity-100')"
+                     [class.group-hover:scale-1.05]="canDrag()"
+                     alt="Imagem da galeria capturada pela webcam">
+              }
               <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
             </div>
             <!-- Botão de Curtir (Like) -->

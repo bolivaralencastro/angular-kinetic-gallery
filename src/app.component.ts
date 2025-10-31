@@ -58,10 +58,11 @@ declare const CustomEase: any;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
-  @HostListener('document:keydown.space', ['$event'])
-  handleSpacebar(event: KeyboardEvent): void {
-    if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {
+  handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
+    if (event instanceof KeyboardEvent) {
       event.preventDefault();
+    }
+    if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {
       
       if (this.currentView() === 'galleries') {
         // Create a new gallery when in gallery view
