@@ -215,12 +215,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private startDragPos = { x: 0, y: 0 };
   private lastDragTime = 0;
   private mouseHasMoved = false;
+  
+  // Touch positions for pinch detection
+  private initialTouchDistance = 0;
+  private lastTouchDistance = 0;
+  
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundOnMouseMove: (event: MouseEvent) => void;
   private boundOnMouseUp: () => void;
+  private boundOnTouchMove: (event: TouchEvent) => void;
+  private boundOnTouchPinch: (event: TouchEvent) => void;
+  private boundOnTouchEnd: () => void;
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
   private boundOnWheel: (event: WheelEvent) => void;
@@ -228,6 +236,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor() {
     gsap.registerPlugin(CustomEase);
     CustomEase.create("hop", "0.9, 0, 0.1, 1");
+
+    // Bind touch event handlers
+    this.boundOnTouchMove = this.onTouchMove.bind(this);
+    this.boundOnTouchPinch = this.onTouchPinch.bind(this);
+    this.boundOnTouchEnd = this.onTouchEnd.bind(this);
 
     this.boundOnMouseMove = this.onMouseMove.bind(this);
     this.boundOnMouseUp = this.onMouseUp.bind(this);
@@ -509,13 +522,125 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     document.removeEventListener('mousemove', this.boundOnMouseMove);
   }
 
-  onImageClick(event: MouseEvent, item: VisibleItem): void {
+  onTouchStart(event: TouchEvent): void {
+    this.resetInactivityTimer();
+    if (!this.canDrag()) return;
+    
+    if (event.touches.length === 1) {
+      // Single touch - drag
+      this.isDragging.set(true);
+      this.mouseHasMoved = false;
+      this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      this.velocity = { x: 0, y: 0 };
+      
+      // Prevent default to avoid scroll conflicts
+      event.preventDefault();
+      
+      document.addEventListener('touchmove', this.boundOnTouchMove as EventListener, { passive: false });
+      document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+    } else if (event.touches.length === 2) {
+      // Two touches - pinch zoom
+      this.isDragging.set(false); // Disable drag during pinch
+      const touch1 = event.touches[0];
+      const touch2 = event.touches[1];
+      this.initialTouchDistance = this.getDistanceBetweenTouches(touch1, touch2);
+      this.lastTouchDistance = this.initialTouchDistance;
+      
+      // Prevent default to avoid zoom conflicts
+      event.preventDefault();
+      
+      document.addEventListener('touchmove', this.boundOnTouchPinch as EventListener, { passive: false });
+      document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+    }
+  }
+
+  private getDistanceBetweenTouches(touch1: Touch, touch2: Touch): number {
+    const deltaX = touch1.clientX - touch2.clientX;
+    const deltaY = touch1.clientY - touch2.clientY;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  }
+
+  private onTouchMove(event: TouchEvent): void {
+    this.resetInactivityTimer();
+    if (!this.isDragging()) return;
+    const dx = event.touches[0].clientX - this.startDragPos.x;
+    const dy = event.touches[0].clientY - this.startDragPos.y;
+    
+    if (!this.mouseHasMoved && Math.hypot(dx, dy) > 5) {
+      this.mouseHasMoved = true;
+    }
+
+    const now = Date.now();
+    const dt = Math.max(10, now - this.lastDragTime);
+    this.lastDragTime = now;
+    this.velocity.x = dx / dt;
+    this.velocity.y = dy / dt;
+    
+    this.target.x += dx;
+    this.target.y += dy;
+    this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    
+    // Prevent default to avoid scroll conflicts
+    event.preventDefault();
+  }
+
+  private onTouchPinch(event: TouchEvent): void {
+    if (event.touches.length < 2) return;
+    
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    const currentDistance = this.getDistanceBetweenTouches(touch1, touch2);
+    
+    // Calculate zoom factor based on distance change
+    const scale = currentDistance / this.lastTouchDistance;
+    
+    // Determine zoom direction
+    if (scale > 1.1) { // Zoom in (pinch out)
+      this.zoomIn();
+    } else if (scale < 0.9) { // Zoom out (pinch in)
+      this.zoomOut();
+    }
+    
+    this.lastTouchDistance = currentDistance;
+    
+    // Prevent default to avoid browser zoom
+    event.preventDefault();
+  }
+
+  private onTouchEnd(): void {
+    this.isDragging.set(false);
+    if (this.canDrag() && Math.hypot(this.velocity.x, this.velocity.y) > 0.1) {
+      this.target.x += this.velocity.x * this.settings.momentumFactor;
+      this.target.y += this.velocity.y * this.settings.momentumFactor;
+    }
+    document.removeEventListener('touchmove', this.boundOnTouchMove as EventListener);
+    document.removeEventListener('touchmove', this.boundOnTouchPinch as EventListener);
+  }
+
+  // Add touch event binding to constructor
+  onImageClick(event: MouseEvent | TouchEvent, item: VisibleItem): void {
     if (this.mouseHasMoved || !this.canDrag()) return;
 
     if (item.type === 'gallery') {
       this.selectGallery(item.id);
     } else {
-      this.expandItem(item, event.currentTarget as HTMLElement);
+      this.expandItem(item, event.target as HTMLElement);
+    }
+  }
+  
+  onImageTouchEnd(event: TouchEvent, item: VisibleItem): void {
+    // Prevent default to avoid conflicts
+    event.preventDefault();
+    // Prevent click event from firing after touch
+    event.stopPropagation();
+    
+    // Only process if we weren't dragging
+    if (!this.mouseHasMoved && this.canDrag()) {
+      if (item.type === 'gallery') {
+        this.selectGallery(item.id);
+      } else {
+        this.expandItem(item, event.target as HTMLElement);
+      }
     }
   }
 
@@ -572,6 +697,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery', 'info'] });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
+    }
+  }
+  
+  onGalleryTouchEnd(event: TouchEvent, galleryId: string): void {
+    // Prevent default to avoid conflicts
+    event.preventDefault();
+    // Prevent click event from firing after touch
+    event.stopPropagation();
+    
+    // Only select gallery if we weren't dragging
+    if (!this.mouseHasMoved && this.canDrag()) {
+      this.selectGallery(galleryId);
     }
   }
 
@@ -681,6 +818,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
 
+
+  openMobileAction(): void {
+    if (this.currentView() === 'galleries') {
+      // In galleries view - create a new gallery
+      this.openGalleryCreationDialog();
+    } else {
+      // In photos view - open webcam capture
+      this.openWebcamCapture();
+    }
+  }
 
   trackById(index: number, item: VisibleItem): string {
     return item.id;

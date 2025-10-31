@@ -20,13 +20,19 @@
             "tsConfig": "tsconfig.json",
             "assets": [
               "favicon.ico",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              "src/manifest.webmanifest",
+              "src/sw.js"
             ],
             "styles": [
               "src/styles.css"
             ],
             "scripts": [],
-            "browser": "./src/main.ts"
+            "browser": "./src/main.ts",
+            "baseHref": "/angular-kinetic-gallery/",
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules"]
+            }
           },
           "configurations": {
             "production": {
