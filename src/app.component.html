@@ -171,7 +171,8 @@
     (toggleFullscreen)="toggleFullscreen()"
     (createGallery)="openGalleryCreationDialog()"
     (editGallery)="editGalleryContextMenu()"
-    (deleteGallery)="deleteGalleryContextMenu()">
+    (deleteGallery)="deleteGalleryContextMenu()"
+    (showInfo)="openInfoDialog()">
   </app-context-menu>
 }
 
@@ -195,4 +196,8 @@
     (close)="isGalleryCreationDialogVisible.set(false)"
     (save)="handleGalleryCreate($event)">
   </app-gallery-creation-dialog>
+}
+
+@if (isInfoDialogVisible()) {
+  <app-info-dialog (close)="isInfoDialogVisible.set(false)"></app-info-dialog>
 }

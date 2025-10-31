@@ -67,6 +67,17 @@ import { CommonModule } from '@angular/common';
           role="menuitem"
           tabindex="0"
           class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+          (click)="onInfoClick($event)"
+          (keydown.enter)="onInfoClick($event)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+          </svg>
+          <span>Informações</span>
+        </li>
+        <li
+          role="menuitem"
+          tabindex="0"
+          class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
           (click)="onFullscreenClick($event)"
           (keydown.enter)="onFullscreenClick($event)">
           @if(isFullscreen()) {
@@ -108,6 +119,7 @@ export class ContextMenuComponent {
   createGallery = output<void>();
   editGallery = output<void>();
   deleteGallery = output<void>();
+  showInfo = output<void>();
 
   onCaptureClick(event: Event): void {
     event.stopPropagation();
@@ -127,6 +139,11 @@ export class ContextMenuComponent {
   onDeleteGalleryClick(event: Event): void {
     event.stopPropagation();
     this.deleteGallery.emit();
+  }
+  
+  onInfoClick(event: Event): void {
+    event.stopPropagation();
+    this.showInfo.emit();
   }
   
   onFullscreenClick(event: Event): void {

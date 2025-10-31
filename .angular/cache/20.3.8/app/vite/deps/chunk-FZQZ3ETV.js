@@ -42,11 +42,12 @@ import {
   ɵɵdefineInjector,
   ɵɵdefineNgModule,
   ɵɵinject
-} from "./chunk-PA3SHHOY.js";
+} from "./chunk-OX675COR.js";
 import {
+  __async,
   __objRest,
   __spreadValues
-} from "./chunk-GOMI4DH3.js";
+} from "./chunk-WDMUDEB6.js";
 
 // node_modules/@angular/common/fesm2022/module.mjs
 var HttpHandler = class {
@@ -1379,124 +1380,126 @@ var FetchBackend = class _FetchBackend {
       };
     });
   }
-  async doRequest(request, signal2, observer) {
-    const init = this.createRequestInit(request);
-    let response;
-    try {
-      const fetchPromise = this.ngZone.runOutsideAngular(() => this.fetchImpl(request.urlWithParams, __spreadValues({
-        signal: signal2
-      }, init)));
-      silenceSuperfluousUnhandledPromiseRejection(fetchPromise);
-      observer.next({
-        type: HttpEventType.Sent
-      });
-      response = await fetchPromise;
-    } catch (error) {
-      observer.error(new HttpErrorResponse({
-        error,
-        status: error.status ?? 0,
-        statusText: error.statusText,
-        url: request.urlWithParams,
-        headers: error.headers
-      }));
-      return;
-    }
-    const headers = new HttpHeaders(response.headers);
-    const statusText = response.statusText;
-    const url = getResponseUrl$1(response) ?? request.urlWithParams;
-    let status = response.status;
-    let body = null;
-    if (request.reportProgress) {
-      observer.next(new HttpHeaderResponse({
-        headers,
-        status,
-        statusText,
-        url
-      }));
-    }
-    if (response.body) {
-      const contentLength = response.headers.get("content-length");
-      const chunks = [];
-      const reader = response.body.getReader();
-      let receivedLength = 0;
-      let decoder;
-      let partialText;
-      const reqZone = typeof Zone !== "undefined" && Zone.current;
-      let canceled = false;
-      await this.ngZone.runOutsideAngular(async () => {
-        while (true) {
-          if (this.destroyed) {
-            await reader.cancel();
-            canceled = true;
-            break;
-          }
-          const {
-            done,
-            value
-          } = await reader.read();
-          if (done) {
-            break;
-          }
-          chunks.push(value);
-          receivedLength += value.length;
-          if (request.reportProgress) {
-            partialText = request.responseType === "text" ? (partialText ?? "") + (decoder ??= new TextDecoder()).decode(value, {
-              stream: true
-            }) : void 0;
-            const reportProgress = () => observer.next({
-              type: HttpEventType.DownloadProgress,
-              total: contentLength ? +contentLength : void 0,
-              loaded: receivedLength,
-              partialText
-            });
-            reqZone ? reqZone.run(reportProgress) : reportProgress();
-          }
-        }
-      });
-      if (canceled) {
-        observer.complete();
-        return;
-      }
-      const chunksAll = this.concatChunks(chunks, receivedLength);
+  doRequest(request, signal2, observer) {
+    return __async(this, null, function* () {
+      const init = this.createRequestInit(request);
+      let response;
       try {
-        const contentType = response.headers.get(CONTENT_TYPE_HEADER) ?? "";
-        body = this.parseBody(request, chunksAll, contentType, status);
+        const fetchPromise = this.ngZone.runOutsideAngular(() => this.fetchImpl(request.urlWithParams, __spreadValues({
+          signal: signal2
+        }, init)));
+        silenceSuperfluousUnhandledPromiseRejection(fetchPromise);
+        observer.next({
+          type: HttpEventType.Sent
+        });
+        response = yield fetchPromise;
       } catch (error) {
         observer.error(new HttpErrorResponse({
           error,
-          headers: new HttpHeaders(response.headers),
-          status: response.status,
-          statusText: response.statusText,
-          url: getResponseUrl$1(response) ?? request.urlWithParams
+          status: error.status ?? 0,
+          statusText: error.statusText,
+          url: request.urlWithParams,
+          headers: error.headers
         }));
         return;
       }
-    }
-    if (status === 0) {
-      status = body ? HTTP_STATUS_CODE_OK : 0;
-    }
-    const ok = status >= 200 && status < 300;
-    const redirected = response.redirected;
-    if (ok) {
-      observer.next(new HttpResponse({
-        body,
-        headers,
-        status,
-        statusText,
-        url,
-        redirected
-      }));
-      observer.complete();
-    } else {
-      observer.error(new HttpErrorResponse({
-        error: body,
-        headers,
-        status,
-        statusText,
-        url,
-        redirected
-      }));
-    }
+      const headers = new HttpHeaders(response.headers);
+      const statusText = response.statusText;
+      const url = getResponseUrl$1(response) ?? request.urlWithParams;
+      let status = response.status;
+      let body = null;
+      if (request.reportProgress) {
+        observer.next(new HttpHeaderResponse({
+          headers,
+          status,
+          statusText,
+          url
+        }));
+      }
+      if (response.body) {
+        const contentLength = response.headers.get("content-length");
+        const chunks = [];
+        const reader = response.body.getReader();
+        let receivedLength = 0;
+        let decoder;
+        let partialText;
+        const reqZone = typeof Zone !== "undefined" && Zone.current;
+        let canceled = false;
+        yield this.ngZone.runOutsideAngular(() => __async(this, null, function* () {
+          while (true) {
+            if (this.destroyed) {
+              yield reader.cancel();
+              canceled = true;
+              break;
+            }
+            const {
+              done,
+              value
+            } = yield reader.read();
+            if (done) {
+              break;
+            }
+            chunks.push(value);
+            receivedLength += value.length;
+            if (request.reportProgress) {
+              partialText = request.responseType === "text" ? (partialText ?? "") + (decoder ??= new TextDecoder()).decode(value, {
+                stream: true
+              }) : void 0;
+              const reportProgress = () => observer.next({
+                type: HttpEventType.DownloadProgress,
+                total: contentLength ? +contentLength : void 0,
+                loaded: receivedLength,
+                partialText
+              });
+              reqZone ? reqZone.run(reportProgress) : reportProgress();
+            }
+          }
+        }));
+        if (canceled) {
+          observer.complete();
+          return;
+        }
+        const chunksAll = this.concatChunks(chunks, receivedLength);
+        try {
+          const contentType = response.headers.get(CONTENT_TYPE_HEADER) ?? "";
+          body = this.parseBody(request, chunksAll, contentType, status);
+        } catch (error) {
+          observer.error(new HttpErrorResponse({
+            error,
+            headers: new HttpHeaders(response.headers),
+            status: response.status,
+            statusText: response.statusText,
+            url: getResponseUrl$1(response) ?? request.urlWithParams
+          }));
+          return;
+        }
+      }
+      if (status === 0) {
+        status = body ? HTTP_STATUS_CODE_OK : 0;
+      }
+      const ok = status >= 200 && status < 300;
+      const redirected = response.redirected;
+      if (ok) {
+        observer.next(new HttpResponse({
+          body,
+          headers,
+          status,
+          statusText,
+          url,
+          redirected
+        }));
+        observer.complete();
+      } else {
+        observer.error(new HttpErrorResponse({
+          error: body,
+          headers,
+          status,
+          statusText,
+          url,
+          redirected
+        }));
+      }
+    });
   }
   parseBody(request, binContent, contentType, status) {
     switch (request.responseType) {
@@ -2786,4 +2789,4 @@ export {
    * License: MIT
    *)
 */
-//# sourceMappingURL=chunk-B76LD4V6.js.map
+//# sourceMappingURL=chunk-FZQZ3ETV.js.map

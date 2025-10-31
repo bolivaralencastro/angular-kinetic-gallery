@@ -4,7 +4,7 @@ import { GalleryService } from './services/gallery.service';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
 import { WebcamCaptureComponent } from './components/webcam-capture/webcam-capture.component';
 import { GalleryEditorComponent } from './components/gallery-editor/gallery-editor.component';
-
+import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
 
 import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
 
@@ -52,7 +52,7 @@ declare const CustomEase: any;
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent],
+  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +60,17 @@ declare const CustomEase: any;
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
+    // Check if the focused element is an input, textarea, or contenteditable element
+    const activeElement = document.activeElement;
+    if (activeElement && 
+        (activeElement.tagName === 'INPUT' || 
+         activeElement.tagName === 'TEXTAREA' || 
+         activeElement.tagName === 'SELECT' ||
+         (activeElement as HTMLElement).isContentEditable)) {
+      // If focused on a text input element, don't prevent default behavior
+      return;
+    }
+
     if (event instanceof KeyboardEvent) {
       event.preventDefault();
     }
@@ -119,6 +130,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('document:keydown.i', ['$event'])
+  openInfoDialogKey(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.openInfoDialog();
+    }
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleZoomKeys(event: KeyboardEvent): void {
     if (!this.canDrag()) return;
@@ -171,6 +190,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isGalleryEditorVisible = signal(false);
   editingGallery = signal<Gallery | null>(null);
   isGalleryCreationDialogVisible = signal(false);
+
+  // --- Sinais para o Diálogo de Informações ---
+  isInfoDialogVisible = signal(false);
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
@@ -537,9 +559,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onRightClick(event: MouseEvent): void {
     event.preventDefault();
     if (this.currentView() === 'galleries') {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery'] });
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery', 'info'] });
     } else {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['capturePhoto'] });
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['capturePhoto', 'info'] });
     }
   }
   
@@ -547,7 +569,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     if (this.currentView() === 'galleries') {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery'] });
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery', 'info'] });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
     }
@@ -559,6 +581,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openWebcamCapture(): void {
     this.isWebcamVisible.set(true);
+  }
+
+  openInfoDialog(): void {
+    this.isInfoDialogVisible.set(true);
   }
 
   toggleFullscreen(): void {
