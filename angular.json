@@ -29,7 +29,6 @@
             ],
             "scripts": [],
             "browser": "./src/main.ts",
-            "baseHref": "/angular-kinetic-gallery/",
             "stylePreprocessorOptions": {
               "includePaths": ["node_modules"]
             }
