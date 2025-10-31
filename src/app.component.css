@@ -1,9 +1,11 @@
 :host {
   display: block;
-  width: 100vw;
-  height: 100vh;
-  user-select: none; /* Impede a seleÃ§Ã£o de texto durante o arraste */
+  width: 100%;
+  height: 100%;
+  user-select: none; /* Impede a seleção de texto durante o arraste */
   padding: 32px;
   box-sizing: border-box;
   background-color: black;
+  min-width: 100vw; /* Use min-width instead of fixed width for better mobile support */
+  min-height: 100vh; /* Use min-height instead of fixed height for better mobile support */
 }

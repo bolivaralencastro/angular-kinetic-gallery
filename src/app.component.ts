@@ -199,6 +199,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundOnMouseMove: (event: MouseEvent) => void;
   private boundOnMouseUp: () => void;
+  private boundOnTouchMove: (event: TouchEvent) => void;
+  private boundOnTouchEnd: () => void;
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
   private boundOnWheel: (event: WheelEvent) => void;
@@ -206,6 +208,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor() {
     gsap.registerPlugin(CustomEase);
     CustomEase.create("hop", "0.9, 0, 0.1, 1");
+
+    // Bind touch event handlers
+    this.boundOnTouchMove = this.onTouchMove.bind(this);
+    this.boundOnTouchEnd = this.onTouchEnd.bind(this);
 
     this.boundOnMouseMove = this.onMouseMove.bind(this);
     this.boundOnMouseUp = this.onMouseUp.bind(this);
@@ -487,6 +493,49 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     document.removeEventListener('mousemove', this.boundOnMouseMove);
   }
 
+  onTouchStart(event: TouchEvent): void {
+    this.resetInactivityTimer();
+    if (!this.canDrag()) return;
+    this.isDragging.set(true);
+    this.mouseHasMoved = false;
+    this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    this.velocity = { x: 0, y: 0 };
+    
+    document.addEventListener('touchmove', this.boundOnTouchMove as EventListener, { passive: false });
+    document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+  }
+
+  private onTouchMove(event: TouchEvent): void {
+    this.resetInactivityTimer();
+    if (!this.isDragging()) return;
+    const dx = event.touches[0].clientX - this.startDragPos.x;
+    const dy = event.touches[0].clientY - this.startDragPos.y;
+    
+    if (!this.mouseHasMoved && Math.hypot(dx, dy) > 5) {
+      this.mouseHasMoved = true;
+    }
+
+    const now = Date.now();
+    const dt = Math.max(10, now - this.lastDragTime);
+    this.lastDragTime = now;
+    this.velocity.x = dx / dt;
+    this.velocity.y = dy / dt;
+    
+    this.target.x += dx;
+    this.target.y += dy;
+    this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }
+
+  private onTouchEnd(): void {
+    this.isDragging.set(false);
+    if (this.canDrag() && Math.hypot(this.velocity.x, this.velocity.y) > 0.1) {
+      this.target.x += this.velocity.x * this.settings.momentumFactor;
+      this.target.y += this.velocity.y * this.settings.momentumFactor;
+    }
+    document.removeEventListener('touchmove', this.boundOnTouchMove as EventListener);
+  }
+
+  // Add touch event binding to constructor
   onImageClick(event: MouseEvent, item: VisibleItem): void {
     if (this.mouseHasMoved || !this.canDrag()) return;
 

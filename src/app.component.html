@@ -4,6 +4,7 @@
   [class.cursor-grab]="canDrag() && !isDragging()"
   [class.cursor-grabbing]="isDragging()"
   (mousedown)="onMouseDown($event)"
+  (touchstart)="onTouchStart($event)"
   (contextmenu)="onRightClick($event)">
 
   @if (currentView() === 'galleries') {
