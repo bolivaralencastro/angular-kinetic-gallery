@@ -58,6 +58,7 @@ declare const CustomEase: any;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+  @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
     if (event instanceof KeyboardEvent) {
       event.preventDefault();
