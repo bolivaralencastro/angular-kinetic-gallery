@@ -21,8 +21,10 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build project
-      run: npm run build
+    - name: Build project for GitHub Pages
+      run: |
+        # Create production build with correct base href for GitHub Pages
+        npx ng build --base-href="/angular-kinetic-gallery/" --configuration=production
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
