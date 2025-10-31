@@ -193,6 +193,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private startDragPos = { x: 0, y: 0 };
   private lastDragTime = 0;
   private mouseHasMoved = false;
+  
+  // Touch positions for pinch detection
+  private initialTouchDistance = 0;
+  private lastTouchDistance = 0;
+  
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
 
@@ -200,6 +205,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private boundOnMouseMove: (event: MouseEvent) => void;
   private boundOnMouseUp: () => void;
   private boundOnTouchMove: (event: TouchEvent) => void;
+  private boundOnTouchPinch: (event: TouchEvent) => void;
   private boundOnTouchEnd: () => void;
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
@@ -211,6 +217,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Bind touch event handlers
     this.boundOnTouchMove = this.onTouchMove.bind(this);
+    this.boundOnTouchPinch = this.onTouchPinch.bind(this);
     this.boundOnTouchEnd = this.onTouchEnd.bind(this);
 
     this.boundOnMouseMove = this.onMouseMove.bind(this);
@@ -496,13 +503,33 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onTouchStart(event: TouchEvent): void {
     this.resetInactivityTimer();
     if (!this.canDrag()) return;
-    this.isDragging.set(true);
-    this.mouseHasMoved = false;
-    this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-    this.velocity = { x: 0, y: 0 };
     
-    document.addEventListener('touchmove', this.boundOnTouchMove as EventListener, { passive: false });
-    document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+    if (event.touches.length === 1) {
+      // Single touch - drag
+      this.isDragging.set(true);
+      this.mouseHasMoved = false;
+      this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      this.velocity = { x: 0, y: 0 };
+      
+      document.addEventListener('touchmove', this.boundOnTouchMove as EventListener, { passive: false });
+      document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+    } else if (event.touches.length === 2) {
+      // Two touches - pinch zoom
+      this.isDragging.set(false); // Disable drag during pinch
+      const touch1 = event.touches[0];
+      const touch2 = event.touches[1];
+      this.initialTouchDistance = this.getDistanceBetweenTouches(touch1, touch2);
+      this.lastTouchDistance = this.initialTouchDistance;
+      
+      document.addEventListener('touchmove', this.boundOnTouchPinch as EventListener, { passive: false });
+      document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
+    }
+  }
+
+  private getDistanceBetweenTouches(touch1: Touch, touch2: Touch): number {
+    const deltaX = touch1.clientX - touch2.clientX;
+    const deltaY = touch1.clientY - touch2.clientY;
+    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
   }
 
   private onTouchMove(event: TouchEvent): void {
@@ -526,6 +553,26 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
   }
 
+  private onTouchPinch(event: TouchEvent): void {
+    if (event.touches.length < 2) return;
+    
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    const currentDistance = this.getDistanceBetweenTouches(touch1, touch2);
+    
+    // Calculate zoom factor based on distance change
+    const scale = currentDistance / this.lastTouchDistance;
+    
+    // Determine zoom direction
+    if (scale > 1.1) { // Zoom in (pinch out)
+      this.zoomIn();
+    } else if (scale < 0.9) { // Zoom out (pinch in)
+      this.zoomOut();
+    }
+    
+    this.lastTouchDistance = currentDistance;
+  }
+
   private onTouchEnd(): void {
     this.isDragging.set(false);
     if (this.canDrag() && Math.hypot(this.velocity.x, this.velocity.y) > 0.1) {
@@ -533,6 +580,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.target.y += this.velocity.y * this.settings.momentumFactor;
     }
     document.removeEventListener('touchmove', this.boundOnTouchMove as EventListener);
+    document.removeEventListener('touchmove', this.boundOnTouchPinch as EventListener);
   }
 
   // Add touch event binding to constructor
