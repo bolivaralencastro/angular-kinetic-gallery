@@ -511,6 +511,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
       this.velocity = { x: 0, y: 0 };
       
+      // Prevent default to avoid scroll conflicts
+      event.preventDefault();
+      
       document.addEventListener('touchmove', this.boundOnTouchMove as EventListener, { passive: false });
       document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
     } else if (event.touches.length === 2) {
@@ -520,6 +523,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const touch2 = event.touches[1];
       this.initialTouchDistance = this.getDistanceBetweenTouches(touch1, touch2);
       this.lastTouchDistance = this.initialTouchDistance;
+      
+      // Prevent default to avoid zoom conflicts
+      event.preventDefault();
       
       document.addEventListener('touchmove', this.boundOnTouchPinch as EventListener, { passive: false });
       document.addEventListener('touchend', this.boundOnTouchEnd as EventListener, { once: true });
@@ -551,6 +557,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.target.x += dx;
     this.target.y += dy;
     this.startDragPos = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    
+    // Prevent default to avoid scroll conflicts
+    event.preventDefault();
   }
 
   private onTouchPinch(event: TouchEvent): void {
@@ -571,6 +580,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     
     this.lastTouchDistance = currentDistance;
+    
+    // Prevent default to avoid browser zoom
+    event.preventDefault();
   }
 
   private onTouchEnd(): void {
@@ -584,13 +596,29 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // Add touch event binding to constructor
-  onImageClick(event: MouseEvent, item: VisibleItem): void {
+  onImageClick(event: MouseEvent | TouchEvent, item: VisibleItem): void {
     if (this.mouseHasMoved || !this.canDrag()) return;
 
     if (item.type === 'gallery') {
       this.selectGallery(item.id);
     } else {
-      this.expandItem(item, event.currentTarget as HTMLElement);
+      this.expandItem(item, event.target as HTMLElement);
+    }
+  }
+  
+  onImageTouchEnd(event: TouchEvent, item: VisibleItem): void {
+    // Prevent default to avoid conflicts
+    event.preventDefault();
+    // Prevent click event from firing after touch
+    event.stopPropagation();
+    
+    // Only process if we weren't dragging
+    if (!this.mouseHasMoved && this.canDrag()) {
+      if (item.type === 'gallery') {
+        this.selectGallery(item.id);
+      } else {
+        this.expandItem(item, event.target as HTMLElement);
+      }
     }
   }
 
@@ -647,6 +675,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery'] });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
+    }
+  }
+  
+  onGalleryTouchEnd(event: TouchEvent, galleryId: string): void {
+    // Prevent default to avoid conflicts
+    event.preventDefault();
+    // Prevent click event from firing after touch
+    event.stopPropagation();
+    
+    // Only select gallery if we weren't dragging
+    if (!this.mouseHasMoved && this.canDrag()) {
+      this.selectGallery(galleryId);
     }
   }
 

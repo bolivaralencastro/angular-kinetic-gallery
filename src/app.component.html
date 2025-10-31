@@ -41,6 +41,7 @@
               [style.top.px]="item.y"
               [class.cursor-pointer]="canDrag()"
               (click)="selectGallery(item.id)"
+              (touchend)="onGalleryTouchEnd($event, item.id)"
               (contextmenu)="onGalleryRightClick($event, item.id)">
               <div class="item-image-container relative w-full h-full overflow-hidden">
                 <img [src]="item.thumbnailUrl || 'https://via.placeholder.com/150?text=No+Image'"
@@ -97,7 +98,8 @@
           [style.left.px]="item.x"
           [style.top.px]="item.y"
           [class.cursor-pointer]="canDrag()"
-          (click)="onImageClick($event, item)">
+          (click)="onImageClick($event, item)"
+          (touchend)="onImageTouchEnd($event, item)">
             <div class="item-image-container relative w-full h-full overflow-hidden">
               @if (item.type === 'photo') {
                 <img [src]="item.url"

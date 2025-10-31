@@ -4,3 +4,4 @@ Like functionality removed on 2025-10-31
 Mobile touch functionality and responsiveness added on 2025-10-31
 Mobile floating action button added for camera/gallery functionality on 2025-10-31
 PWA support added with pinch-to-zoom functionality on 2025-10-31
+Mobile touch dragging, tap selection, and PWA standalone mode fixes on 2025-10-31
