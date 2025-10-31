@@ -29,7 +29,10 @@
             ],
             "scripts": [],
             "browser": "./src/main.ts",
-            "baseHref": "/angular-kinetic-gallery/"
+            "baseHref": "/angular-kinetic-gallery/",
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules"]
+            }
           },
           "configurations": {
             "production": {
