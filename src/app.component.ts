@@ -705,6 +705,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
 
+  openMobileAction(): void {
+    if (this.currentView() === 'galleries') {
+      // In galleries view - create a new gallery
+      this.openGalleryCreationDialog();
+    } else {
+      // In photos view - open webcam capture
+      this.openWebcamCapture();
+    }
+  }
+
   trackById(index: number, item: VisibleItem): string {
     return item.id;
   }

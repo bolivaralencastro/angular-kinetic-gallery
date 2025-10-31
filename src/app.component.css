@@ -9,3 +9,28 @@
   min-width: 100vw; /* Use min-width instead of fixed width for better mobile support */
   min-height: 100vh; /* Use min-height instead of fixed height for better mobile support */
 }
+
+/* Floating Action Button for Mobile */
+@media (max-width: 768px) {
+  .floating-action-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #1f2937; /* gray-800 */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: none;
+    cursor: pointer;
+  }
+  
+  .floating-action-button:hover {
+    background-color: #374151; /* gray-700 */
+  }
+}
