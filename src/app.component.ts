@@ -1,13 +1,19 @@
-import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService } from './services/gallery.service';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
 import { WebcamCaptureComponent } from './components/webcam-capture/webcam-capture.component';
+import { GalleryEditorComponent } from './components/gallery-editor/gallery-editor.component';
+
+
+import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
+
+
+import { Gallery } from './interfaces/gallery.interface';
 
 // Interfaces para tipagem dos dados
-interface GalleryItem {
+interface BaseItem {
   id: string;
-  url: string;
   x: number;
   y: number;
   width: number;
@@ -15,6 +21,22 @@ interface GalleryItem {
   col: number;
   row: number;
 }
+
+interface PhotoItem extends BaseItem {
+  type: 'photo';
+  url: string;
+}
+
+interface GalleryCardItem extends BaseItem {
+  type: 'gallery';
+  name: string;
+  description: string;
+  thumbnailUrl: string;
+  imageCount: number;
+  createdAt?: string;
+}
+
+type VisibleItem = PhotoItem | GalleryCardItem;
 
 interface ExpandedItem {
   id: string;
@@ -24,24 +46,96 @@ interface ExpandedItem {
   originalHeight: number;
 }
 
-// Declarações para as bibliotecas globais do GSAP
+// DeclaraÃ§Ãµes para as bibliotecas globais do GSAP
 declare const gsap: any;
 declare const CustomEase: any;
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent],
+  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+  @HostListener('document:keydown.space', ['$event'])
+  handleSpacebar(event: KeyboardEvent): void {
+    if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {
+      event.preventDefault();
+      
+      if (this.currentView() === 'galleries') {
+        // Create a new gallery when in gallery view
+        this.openGalleryCreationDialog();
+      } else {
+        // Open webcam when in photo view
+        this.openWebcamCapture();
+      }
+    }
+  }
+
+  @HostListener('document:keydown.ArrowUp', ['$event'])
+  @HostListener('document:keydown.w', ['$event'])
+  moveUp(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.target.y += 50; // Adjust step size as needed
+    }
+  }
+
+  @HostListener('document:keydown.ArrowDown', ['$event'])
+  @HostListener('document:keydown.s', ['$event'])
+  moveDown(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.target.y -= 50; // Adjust step size as needed
+    }
+  }
+
+  @HostListener('document:keydown.ArrowLeft', ['$event'])
+  @HostListener('document:keydown.a', ['$event'])
+  moveLeft(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.target.x += 50; // Adjust step size as needed
+    }
+  }
+
+  @HostListener('document:keydown.ArrowRight', ['$event'])
+  @HostListener('document:keydown.d', ['$event'])
+  moveRight(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.target.x -= 50; // Adjust step size as needed
+    }
+  }
+
+  @HostListener('document:keydown.f', ['$event'])
+  toggleFullscreenKey(event: KeyboardEvent): void {
+    if (this.canDrag()) {
+      event.preventDefault();
+      this.toggleFullscreen();
+    }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleZoomKeys(event: KeyboardEvent): void {
+    if (!this.canDrag()) return;
+
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      this.zoomIn();
+    } else if (event.key === '-') {
+      event.preventDefault();
+      this.zoomOut();
+    }
+  }
+
   galleryService = inject(GalleryService);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
 
-  // --- Configurações da Galeria ---
-  private readonly NUM_COLUMNS = 4;
+  // --- ConfiguraÃ§Ãµes da Galeria ---
+  private numColumns = signal(4);
   private readonly ITEM_GAP = 32;
   private readonly settings = {
     dragEase: 0.075,
@@ -51,22 +145,45 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   // --- Sinais para o Estado da UI ---
-  images = this.galleryService.images;
-  visibleItems = signal<GalleryItem[]>([]);
+  currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
+  images = computed(() => this.galleryService.images());
+  visibleItems = signal<VisibleItem[]>([]);
   expandedItem = signal<ExpandedItem | null>(null);
   isWebcamVisible = signal(false);
-  contextMenu = signal({ visible: false, x: 0, y: 0 });
+  contextMenu = signal<{ visible: boolean; x: number; y: number; options?: string[] }>({ visible: false, x: 0, y: 0 });
   isDragging = signal(false);
+  
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
-  
-  canDrag = computed(() => !this.expandedItem() && !this.isWebcamVisible());
 
-  // --- Referências a Elementos do Template ---
+  // --- Sinais para o RelÃ³gio e Data ---
+  currentTime = signal('');
+  currentDate = signal('');
+  private clockIntervalId: any;
+
+  // --- Sinais para Contagem de Fotos e Galerias ---
+  photoCount = computed(() => this.images().length);
+  galleryCount = computed(() => this.galleryService.galleries().length);
+
+  // --- Sinais para o Editor de Galeria ---
+  isGalleryEditorVisible = signal(false);
+  editingGallery = signal<Gallery | null>(null);
+  isGalleryCreationDialogVisible = signal(false);
+
+  // --- Sinais e Propriedades para o Modo Ocioso ---
+  isIdle = signal(false);
+  private inactivityTimeoutId: any;
+  
+  // --- Propriedades para o Context Menu ---
+  private contextMenuGalleryId: string | null = null;
+  
+  canDrag = computed(() => !this.expandedItem() && !this.isWebcamVisible() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible());
+
+  // --- ReferÃªncias a Elementos do Template ---
   private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
   private expandedItemElement = viewChild<ElementRef<HTMLDivElement>>('expandedItemElement');
 
-  // --- Estado Privado para Lógica de Arraste e Animação ---
+  // --- Estado Privado para LÃ³gica de Arraste e AnimaÃ§Ã£o ---
   private itemDimensions = { width: 0, height: 0, cellWidth: 0, cellHeight: 0 };
   private target = { x: 0, y: 0 };
   private current = { x: 0, y: 0 };
@@ -77,11 +194,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
 
-  // --- Listeners de eventos vinculados para remoção correta ---
+  // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundOnMouseMove: (event: MouseEvent) => void;
   private boundOnMouseUp: () => void;
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
+  private boundOnWheel: (event: WheelEvent) => void;
 
   constructor() {
     gsap.registerPlugin(CustomEase);
@@ -91,10 +209,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.boundOnMouseUp = this.onMouseUp.bind(this);
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
+    this.boundOnWheel = this.onWheel.bind(this);
 
     effect(() => {
       if (!this.isViewInitialized()) return;
+      // React to changes in currentView, images (selected gallery's photos), and galleries
+      this.currentView();
       this.images();
+      this.galleryService.galleries();
       this.updateVisibleItems(true);
     });
 
@@ -105,12 +227,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         this.runExpandAnimation(elementRef.nativeElement, item);
       }
     });
+
+    this.resetInactivityTimer();
   }
 
   ngOnInit(): void {
     this.startAnimationLoop();
     document.addEventListener('click', this.boundCloseContextMenu, true);
     document.addEventListener('fullscreenchange', this.boundOnFullscreenChange);
+    this.elementRef.nativeElement.addEventListener('wheel', this.boundOnWheel, { passive: false });
+
+    this.updateTime();
+    this.updateDate();
+    this.clockIntervalId = setInterval(() => this.updateTime(), 1000);
   }
 
   ngAfterViewInit(): void {
@@ -128,35 +257,61 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
     document.removeEventListener('mousemove', this.boundOnMouseMove);
     document.removeEventListener('mouseup', this.boundOnMouseUp);
+    this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
+
+    if (this.clockIntervalId) {
+      clearInterval(this.clockIntervalId);
+    }
+    clearTimeout(this.inactivityTimeoutId);
   }
   
-  // --- Lógica do Grid e Animação ---
+  // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
+
+  private resetInactivityTimer(): void {
+    if (this.isIdle()) {
+      this.isIdle.set(false);
+    }
+    clearTimeout(this.inactivityTimeoutId);
+    this.inactivityTimeoutId = setTimeout(() => {
+      this.isIdle.set(true);
+    }, 5000);
+  }
   
   private calculateGridDimensions(): void {
-    const totalGapWidth = (this.NUM_COLUMNS - 1) * this.ITEM_GAP;
+    const totalGapWidth = (this.numColumns() - 1) * this.ITEM_GAP;
     const containerWidth = this.elementRef.nativeElement.clientWidth;
-    this.itemDimensions.width = (containerWidth - totalGapWidth) / this.NUM_COLUMNS;
+    this.itemDimensions.width = (containerWidth - totalGapWidth) / this.numColumns();
     this.itemDimensions.height = this.itemDimensions.width;
     this.itemDimensions.cellWidth = this.itemDimensions.width + this.ITEM_GAP;
     this.itemDimensions.cellHeight = this.itemDimensions.height + this.ITEM_GAP;
   }
 
   private updateVisibleItems(force: boolean = false): void {
-    if (this.images().length === 0) {
-        this.visibleItems.set([]);
-        return;
+    let itemsToDisplay: (string | Gallery)[] = [];
+    let isGalleryView = false;
+
+    if (this.currentView() === 'galleries') {
+      itemsToDisplay = this.galleryService.galleries();
+      isGalleryView = true;
+    } else {
+      itemsToDisplay = this.images(); // This is already a computed signal from selected gallery
+    }
+
+    if (itemsToDisplay.length === 0) {
+      this.visibleItems.set([]);
+      return;
     }
 
     const newGridPosition = {
-        x: Math.round(this.current.x / 100),
-        y: Math.round(this.current.y / 100),
+      x: Math.round(this.current.x / 100),
+      y: Math.round(this.current.y / 100),
     };
 
     if (!force && this.lastGridPosition.x === newGridPosition.x && this.lastGridPosition.y === newGridPosition.y) {
-        return;
+      return;
     }
     this.lastGridPosition = newGridPosition;
-    
+
     const viewWidth = this.elementRef.nativeElement.clientWidth;
     const viewHeight = this.elementRef.nativeElement.clientHeight;
 
@@ -165,22 +320,43 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const startRow = Math.floor((-this.current.y) / this.itemDimensions.cellHeight - this.settings.bufferZone);
     const endRow = Math.ceil((-this.current.y + viewHeight) / this.itemDimensions.cellHeight + this.settings.bufferZone);
 
-    const newVisibleItems: GalleryItem[] = [];
+    const newVisibleItems: VisibleItem[] = [];
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        const itemNum = Math.abs((row * this.NUM_COLUMNS + col) % this.images().length);
-        const imageUrl = this.images()[itemNum];
-        
-        newVisibleItems.push({
-          id: `${col},${row}`,
-          url: imageUrl,
-          x: col * this.itemDimensions.cellWidth,
-          y: row * this.itemDimensions.cellHeight,
-          width: this.itemDimensions.width,
-          height: this.itemDimensions.height,
-          col,
-          row,
-        });
+        const itemIndex = Math.abs((row * this.numColumns() + col) % itemsToDisplay.length);
+        const currentItem = itemsToDisplay[itemIndex];
+
+        if (isGalleryView) {
+          const gallery = currentItem as Gallery;
+          newVisibleItems.push({
+            type: 'gallery',
+            id: gallery.id,
+            name: gallery.name,
+            description: gallery.description,
+            thumbnailUrl: gallery.thumbnailUrl || 'https://via.placeholder.com/150?text=No+Image',
+            imageCount: gallery.imageUrls.length,
+            createdAt: gallery.createdAt,
+            x: col * this.itemDimensions.cellWidth,
+            y: row * this.itemDimensions.cellHeight,
+            width: this.itemDimensions.width,
+            height: this.itemDimensions.height,
+            col,
+            row,
+          });
+        } else {
+          const imageUrl = currentItem as string;
+          newVisibleItems.push({
+            type: 'photo',
+            id: `${col},${row}`,
+            url: imageUrl,
+            x: col * this.itemDimensions.cellWidth,
+            y: row * this.itemDimensions.cellHeight,
+            width: this.itemDimensions.width,
+            height: this.itemDimensions.height,
+            col,
+            row,
+          });
+        }
       }
     }
     this.visibleItems.set(newVisibleItems);
@@ -189,6 +365,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private startAnimationLoop(): void {
     this.ngZone.runOutsideAngular(() => {
       const animate = () => {
+        if (this.isIdle()) {
+          const idleSpeed = 0.3;
+          this.target.x -= idleSpeed;
+          this.target.y -= idleSpeed;
+        }
+
         if (this.canDrag()) {
           this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
           this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
@@ -223,7 +405,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // --- Handlers de Eventos ---
+    editGallery(id: string): void {
+    const galleryToEdit = this.galleryService.getGallery(id);
+    if (galleryToEdit) {
+      this.editingGallery.set(galleryToEdit);
+      this.isGalleryEditorVisible.set(true);
+    }
+  }
 
   onResize(): void {
     this.calculateGridDimensions();
@@ -233,7 +421,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  onWheel(event: WheelEvent): void {
+    this.resetInactivityTimer();
+    if (!this.canDrag()) return;
+    event.preventDefault();
+    
+    if (event.deltaY < 0) {
+      this.zoomIn();
+    } else {
+      this.zoomOut();
+    }
+  }
+
+  zoomIn(): void {
+    this.numColumns.update(n => Math.max(1, n - 1));
+    this.onResize();
+  }
+
+  zoomOut(): void {
+    this.numColumns.update(n => Math.min(8, n + 1));
+    this.onResize();
+  }
+
   onMouseDown(event: MouseEvent): void {
+    this.resetInactivityTimer();
     if (!this.canDrag() || event.button !== 0) return;
     this.isDragging.set(true);
     this.mouseHasMoved = false;
@@ -245,6 +456,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private onMouseMove(event: MouseEvent): void {
+    this.resetInactivityTimer();
     if (!this.isDragging()) return;
     const dx = event.clientX - this.startDragPos.x;
     const dy = event.clientY - this.startDragPos.y;
@@ -273,17 +485,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     document.removeEventListener('mousemove', this.boundOnMouseMove);
   }
 
-  onImageClick(event: MouseEvent, item: GalleryItem): void {
+  onImageClick(event: MouseEvent, item: VisibleItem): void {
     if (this.mouseHasMoved || !this.canDrag()) return;
-    this.expandItem(item, event.currentTarget as HTMLElement);
+
+    if (item.type === 'gallery') {
+      this.selectGallery(item.id);
+    } else {
+      this.expandItem(item, event.currentTarget as HTMLElement);
+    }
   }
 
-  onLikeClicked(event: MouseEvent, item: GalleryItem): void {
+  onLikeClicked(event: MouseEvent, item: VisibleItem): void {
     event.stopImmediatePropagation();
-    console.log(`Liked item: ${item.id}`);
+    // Like functionality will be implemented later if needed for photos
   }
 
-  expandItem(item: GalleryItem, element: HTMLElement): void {
+  expandItem(item: PhotoItem, element: HTMLElement): void {
     const rect = element.getBoundingClientRect();
     this.expandedItem.set({
       id: item.id,
@@ -294,27 +511,47 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  closeExpandedItem(): void {
-    const item = this.expandedItem();
-    const element = this.expandedItemElement()?.nativeElement;
-    if (!item || !element) return;
+  handleGalleryCreate(event: { name: string; description: string }): void {
+    this.galleryService.createGallery(event.name, event.description);
+    this.isGalleryCreationDialogVisible.set(false);
+    this.updateVisibleItems(true); // Refresh the view
+  }
 
-    gsap.to(element, {
-      width: item.originalWidth,
-      height: item.originalHeight,
-      x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
-      y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
-      duration: this.settings.zoomDuration,
-      ease: "hop",
-      onComplete: () => {
-        this.expandedItem.set(null);
-      },
-    });
+  handleGallerySave(event: { id: string | null; name: string; description: string }): void {
+    if (event.id) {
+      this.galleryService.updateGallery(event.id, event.name, event.description);
+    } else {
+      this.galleryService.createGallery(event.name, event.description);
+    }
+    this.isGalleryEditorVisible.set(false);
+    this.editingGallery.set(null);
+    this.updateVisibleItems(true); // Refresh the view
+  }
+
+  handleGalleryDelete(id: string): void {
+    this.galleryService.deleteGallery(id);
+    this.isGalleryEditorVisible.set(false);
+    this.editingGallery.set(null);
+    this.updateVisibleItems(true); // Refresh the view
   }
 
   onRightClick(event: MouseEvent): void {
     event.preventDefault();
-    this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY });
+    if (this.currentView() === 'galleries') {
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery'] });
+    } else {
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['capturePhoto'] });
+    }
+  }
+  
+  onGalleryRightClick(event: MouseEvent, galleryId: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.currentView() === 'galleries') {
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery'] });
+      // Store the gallery ID for context menu actions
+      this.contextMenuGalleryId = galleryId;
+    }
   }
 
   closeContextMenu(): void {
@@ -323,23 +560,104 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openWebcamCapture(): void {
     this.isWebcamVisible.set(true);
-    this.closeContextMenu();
   }
 
   toggleFullscreen(): void {
-    this.closeContextMenu();
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
     }
   }
-  
-  private onFullscreenChange(): void {
+
+  onFullscreenChange(): void {
     this.isFullscreen.set(!!document.fullscreenElement);
   }
 
-  trackById(index: number, item: GalleryItem): string {
+  updateTime(): void {
+    const now = new Date();
+    this.currentTime.set(now.toLocaleTimeString('pt-BR'));
+  }
+
+  updateDate(): void {
+    const now = new Date();
+    this.currentDate.set(now.toLocaleDateString('pt-BR'));
+  }
+
+  selectGallery(id: string): void {
+    this.galleryService.selectGallery(id);
+    this.currentView.set('photos');
+  }
+
+  deleteGallery(id: string): void {
+    this.galleryService.deleteGallery(id);
+  }
+  
+  editGalleryContextMenu(): void {
+    if (this.contextMenuGalleryId) {
+      this.editGallery(this.contextMenuGalleryId);
+    }
+  }
+  
+  deleteGalleryContextMenu(): void {
+    if (this.contextMenuGalleryId) {
+      this.deleteGallery(this.contextMenuGalleryId);
+    }
+  }
+
+  openGalleryCreationDialog(): void {
+    this.isGalleryCreationDialogVisible.set(true);
+  }
+
+  createGalleryWithTimestamp(): void {
+    // Create a gallery with current timestamp as the name in the expected format
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    const timestamp = `${day}/${month}/${year} às ${hours}:${minutes}:${seconds}`;
+    const galleryName = `Galeria ${timestamp}`;
+    
+    this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
+    this.updateVisibleItems(true); // Refresh the view
+  }
+
+  backToGalleries(): void {
+    this.galleryService.selectGallery(null);
+    this.currentView.set('galleries');
+  }
+
+  closeExpandedItem(): void {
+    const element = this.expandedItemElement();
+    if (element && this.expandedItem()) {
+      const item = this.expandedItem()!;
+      gsap.to(element.nativeElement, {
+        width: item.originalWidth,
+        height: item.originalHeight,
+        x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
+        y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
+        duration: 0.6,
+        ease: "hop",
+        onComplete: () => {
+          this.expandedItem.set(null);
+        }
+      });
+    } else {
+      this.expandedItem.set(null);
+    }
+  }
+
+
+
+  trackById(index: number, item: VisibleItem): string {
     return item.id;
   }
 }
