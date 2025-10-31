@@ -1,2 +1,3 @@
 Deployment triggered by configuration fixes on 2025-10-31
 Spacebar functionality fix added on 2025-10-31
+Like functionality removed on 2025-10-31

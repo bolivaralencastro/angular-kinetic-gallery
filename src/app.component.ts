@@ -497,10 +497,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  onLikeClicked(event: MouseEvent, item: VisibleItem): void {
-    event.stopImmediatePropagation();
-    // Like functionality will be implemented later if needed for photos
-  }
+
 
   expandItem(item: PhotoItem, element: HTMLElement): void {
     const rect = element.getBoundingClientRect();
