@@ -20,6 +20,7 @@ interface BaseItem {
   height: number;
   col: number;
   row: number;
+  creationOrder: number;
 }
 
 interface PhotoItem extends BaseItem {
@@ -536,6 +537,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       for (let col = startCol; col <= endCol; col++) {
         const itemIndex = Math.abs((row * this.numColumns() + col) % itemsToDisplay.length);
         const currentItem = itemsToDisplay[itemIndex];
+        const creationOrder = this.calculateCreationOrder(itemsToDisplay.length, itemIndex);
 
         if (isGalleryView) {
           const gallery = currentItem as Gallery;
@@ -553,6 +555,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             height: this.itemDimensions.height,
             col,
             row,
+            creationOrder,
           });
         } else {
           const imageUrl = currentItem as string;
@@ -566,11 +569,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             height: this.itemDimensions.height,
             col,
             row,
+            creationOrder,
           });
         }
       }
     }
     this.visibleItems.set(newVisibleItems);
+  }
+
+  private calculateCreationOrder(totalItems: number, index: number): number {
+    if (totalItems <= 0) {
+      return 0;
+    }
+    return totalItems - index;
   }
 
   private startAnimationLoop(): void {

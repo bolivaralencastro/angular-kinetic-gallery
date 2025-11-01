@@ -45,6 +45,10 @@
                      alt="Capa da Galeria: {{ item.name }}">
                 <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
               </div>
+              <span
+                class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                {{ item.creationOrder }}
+              </span>
               <div
                 class="absolute top-3 right-3 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                 [class.opacity-100]="copiedGalleryId() === item.id"
@@ -135,6 +139,10 @@
               }
               <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
             </div>
+            <span
+              class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              {{ item.creationOrder }}
+            </span>
         </div>
       }
     </div>
