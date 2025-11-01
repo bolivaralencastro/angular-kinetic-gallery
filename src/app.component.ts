@@ -408,16 +408,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     clearTimeout(this.inactivityTimeoutId);
     this.inactivityTimeoutId = setTimeout(() => {
-      // Calcula o tamanho da elipse baseado no tamanho da tela (4x maior)
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
-      this.idleEllipseRadiusX = screenWidth * 4; // 4x a largura da tela
-      this.idleEllipseRadiusY = screenHeight * 4; // 4x a altura da tela
-      
-      // Define o centro da elipse baseado na posição atual quando entra em idle
-      this.idleEllipseCenter.x = this.target.x;
-      this.idleEllipseCenter.y = this.target.y;
-      // Reseta o ângulo para começar do zero
+
+      // Define raios largos para uma trajetória ampla que circunda a área atual
+      this.idleEllipseRadiusX = screenWidth * 2.5;
+      this.idleEllipseRadiusY = screenHeight * 1.5;
+
+      const currentTargetX = this.target.x;
+      const currentTargetY = this.target.y;
+
+      // Posiciona o centro da elipse à esquerda para que o ponto atual seja o início da órbita
+      this.idleEllipseCenter.x = currentTargetX - this.idleEllipseRadiusX;
+      this.idleEllipseCenter.y = currentTargetY;
+
       this.idleEllipseAngle = 0;
       this.isIdle.set(true);
     }, 5000);
