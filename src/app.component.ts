@@ -119,21 +119,48 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     // Check if user is typing in an input field, textarea, or contenteditable element
     const target = event.target as HTMLElement;
     const isTyping = target && (
-      target.tagName === 'INPUT' || 
-      target.tagName === 'TEXTAREA' || 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
       target.isContentEditable ||
       target.closest('input') ||
       target.closest('textarea')
     );
-    
+
     if (isTyping) {
       // Allow 'i' to be typed normally in input fields
       return;
     }
-    
+
     event.preventDefault();
     // Toggle info dialog - if already open, it will close; if closed, it will open
     this.toggleInfoDialog();
+  }
+
+  @HostListener('document:keydown.q', ['$event'])
+  handleQuitGalleryKey(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    const isTyping = !!target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      !!target.closest('input') ||
+      !!target.closest('textarea')
+    );
+
+    if (isTyping) {
+      return;
+    }
+
+    if (
+      this.currentView() === 'photos' &&
+      !this.expandedItem() &&
+      !this.isGalleryEditorVisible() &&
+      !this.isGalleryCreationDialogVisible() &&
+      !this.isWebcamVisible()
+    ) {
+      event.preventDefault();
+      this.backToGalleries();
+    }
   }
 
   @HostListener('document:keydown', ['$event'])
