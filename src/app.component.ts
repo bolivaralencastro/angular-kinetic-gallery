@@ -36,6 +36,7 @@ interface GalleryCardItem extends BaseItem {
   imageUrls: string[];
   imageCount: number;
   createdAt?: string;
+  previewKey: string;
 }
 
 type VisibleItem = PhotoItem | GalleryCardItem;
@@ -552,6 +553,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
         if (isGalleryView) {
           const gallery = currentItem as Gallery;
+          const previewKey = `${gallery.id}-${col}-${row}`;
           newVisibleItems.push({
             type: 'gallery',
             id: gallery.id,
@@ -568,6 +570,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             col,
             row,
             creationOrder,
+            previewKey,
           });
         } else {
           const imageUrl = currentItem as string;
@@ -596,25 +599,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return totalItems - index;
   }
 
-  onGalleryHoverStart(galleryId: string): void {
+  onGalleryHoverStart(galleryId: string, previewKey: string): void {
     const gallery = this.galleryService.getGallery(galleryId);
     if (!gallery || gallery.imageUrls.length === 0) {
       return;
     }
 
-    this.clearGalleryPreviewTimers(galleryId);
+    this.clearGalleryPreviewTimers(previewKey);
 
     const startTimeoutId = setTimeout(() => {
       const activeGallery = this.galleryService.getGallery(galleryId);
       const imageUrls = activeGallery?.imageUrls ?? [];
       if (imageUrls.length === 0) {
-        this.onGalleryHoverEnd(galleryId);
+        this.onGalleryHoverEnd(previewKey);
         return;
       }
 
       if (imageUrls.length === 1) {
-        this.setGalleryPreviewImage(galleryId, imageUrls[0]);
-        this.galleryPreviewTimers.delete(galleryId);
+        this.setGalleryPreviewImage(previewKey, imageUrls[0]);
+        this.galleryPreviewTimers.delete(previewKey);
         return;
       }
 
@@ -623,13 +626,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         const refreshedGallery = this.galleryService.getGallery(galleryId);
         const urls = refreshedGallery?.imageUrls ?? imageUrls;
         if (urls.length === 0) {
-          this.onGalleryHoverEnd(galleryId);
+          this.onGalleryHoverEnd(previewKey);
           return;
         }
         if (currentIndex >= urls.length) {
           currentIndex = 0;
         }
-        this.setGalleryPreviewImage(galleryId, urls[currentIndex]);
+        this.setGalleryPreviewImage(previewKey, urls[currentIndex]);
         currentIndex = (currentIndex + 1) % urls.length;
       };
 
@@ -638,31 +641,31 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         updateImage();
       }, this.GALLERY_PREVIEW_INTERVAL);
 
-      this.galleryPreviewTimers.set(galleryId, { startTimeoutId: null, intervalId });
+      this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId });
     }, this.GALLERY_PREVIEW_DELAY);
 
-    this.galleryPreviewTimers.set(galleryId, { startTimeoutId, intervalId: null });
+    this.galleryPreviewTimers.set(previewKey, { startTimeoutId, intervalId: null });
   }
 
-  onGalleryHoverEnd(galleryId: string): void {
-    this.clearGalleryPreviewTimers(galleryId);
-    this.setGalleryPreviewImage(galleryId, null);
+  onGalleryHoverEnd(previewKey: string): void {
+    this.clearGalleryPreviewTimers(previewKey);
+    this.setGalleryPreviewImage(previewKey, null);
   }
 
-  private setGalleryPreviewImage(galleryId: string, imageUrl: string | null): void {
+  private setGalleryPreviewImage(previewKey: string, imageUrl: string | null): void {
     this.galleryPreviewImages.update(current => {
       const next = { ...current };
       if (imageUrl) {
-        next[galleryId] = imageUrl;
+        next[previewKey] = imageUrl;
       } else {
-        delete next[galleryId];
+        delete next[previewKey];
       }
       return next;
     });
   }
 
-  private clearGalleryPreviewTimers(galleryId: string): void {
-    const timers = this.galleryPreviewTimers.get(galleryId);
+  private clearGalleryPreviewTimers(previewKey: string): void {
+    const timers = this.galleryPreviewTimers.get(previewKey);
     if (!timers) {
       return;
     }
@@ -674,13 +677,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       clearInterval(timers.intervalId);
     }
 
-    this.galleryPreviewTimers.delete(galleryId);
+    this.galleryPreviewTimers.delete(previewKey);
   }
 
   private stopAllGalleryPreviews(): void {
-    const galleryIds = Array.from(this.galleryPreviewTimers.keys());
-    for (const galleryId of galleryIds) {
-      this.clearGalleryPreviewTimers(galleryId);
+    const previewKeys = Array.from(this.galleryPreviewTimers.keys());
+    for (const key of previewKeys) {
+      this.clearGalleryPreviewTimers(key);
     }
     this.galleryPreviewImages.set({});
   }
@@ -953,6 +956,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
   trackById(index: number, item: VisibleItem): string {
+    if (item.type === 'gallery') {
+      return item.previewKey;
+    }
     return item.id;
   }
 }
