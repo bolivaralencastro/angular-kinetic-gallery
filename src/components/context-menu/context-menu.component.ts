@@ -7,7 +7,8 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div 
-      class="fixed bg-black/80 backdrop-blur-sm border border-gray-800 text-gray-300 rounded-md shadow-lg p-1 z-50 animate-fade-in text-sm tracking-wider"
+      class="fixed backdrop-blur-sm text-gray-300 rounded-md shadow-lg p-1 z-50 animate-fade-in text-sm tracking-wider"
+      style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
       [style.left.px]="x()"
       [style.top.px]="y()">
       <ul class="space-y-1" role="menu">
@@ -16,7 +17,8 @@ import { CommonModule } from '@angular/common';
             <li 
               role="menuitem"
               tabindex="0"
-              class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+              class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+              style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onCreateGalleryClick($event)"
               (keydown.enter)="onCreateGalleryClick($event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -28,7 +30,8 @@ import { CommonModule } from '@angular/common';
             <li 
               role="menuitem"
               tabindex="0"
-              class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+              class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+              style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onCaptureClick($event)"
               (keydown.enter)="onCaptureClick($event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -41,7 +44,8 @@ import { CommonModule } from '@angular/common';
             <li 
               role="menuitem"
               tabindex="0"
-              class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+              class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+              style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onEditGalleryClick($event)"
               (keydown.enter)="onEditGalleryClick($event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -53,7 +57,8 @@ import { CommonModule } from '@angular/common';
             <li 
               role="menuitem"
               tabindex="0"
-              class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+              class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+              style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onDeleteGalleryClick($event)"
               (keydown.enter)="onDeleteGalleryClick($event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -66,7 +71,8 @@ import { CommonModule } from '@angular/common';
         <li
           role="menuitem"
           tabindex="0"
-          class="px-3 py-1.5 hover:bg-gray-800 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none focus:bg-gray-800 focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+          class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+          style="transition: background-color 0.2s; background-color: transparent;"
           (click)="onFullscreenClick($event)"
           (keydown.enter)="onFullscreenClick($event)">
           @if(isFullscreen()) {
@@ -81,6 +87,20 @@ import { CommonModule } from '@angular/common';
             <span>Tela Cheia</span>
           }
         </li>
+        
+        <!-- Info button - always visible -->
+        <li
+          role="menuitem"
+          tabindex="0"
+          class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
+          style="transition: background-color 0.2s; background-color: transparent;"
+          (click)="onInfoClick($event)"
+          (keydown.enter)="onInfoClick($event)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+          </svg>
+          <span>Informações</span>
+        </li>
       </ul>
     </div>
   `,
@@ -92,6 +112,15 @@ import { CommonModule } from '@angular/common';
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.95); }
       to { opacity: 1; transform: scale(1); }
+    }
+
+    li[role="menuitem"]:hover {
+      background-color: rgb(60, 60, 60) !important;
+    }
+
+    li[role="menuitem"]:focus {
+      background-color: rgb(60, 60, 60) !important;
+      outline: none;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,6 +137,7 @@ export class ContextMenuComponent {
   createGallery = output<void>();
   editGallery = output<void>();
   deleteGallery = output<void>();
+  info = output<void>();
 
   onCaptureClick(event: Event): void {
     event.stopPropagation();
@@ -132,5 +162,10 @@ export class ContextMenuComponent {
   onFullscreenClick(event: Event): void {
     event.stopPropagation();
     this.toggleFullscreen.emit();
+  }
+
+  onInfoClick(event: Event): void {
+    event.stopPropagation();
+    this.info.emit();
   }
 }

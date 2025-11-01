@@ -218,22 +218,43 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     const video = this.videoElement().nativeElement;
     const canvas = this.canvasElement().nativeElement;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Get video dimensions
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    // Calculate the size for 1:1 aspect ratio (use the smaller dimension)
+    const size = Math.min(videoWidth, videoHeight);
+
+    // Set canvas to 1:1 aspect ratio
+    canvas.width = size;
+    canvas.height = size;
+
+    // Calculate source crop position (center the crop)
+    const sourceX = (videoWidth - size) / 2;
+    const sourceY = (videoHeight - size) / 2;
     
     const context = canvas.getContext('2d');
     if (context) {
-      // 1. Desenha a imagem original no canvas (que jÃ¡ estarÃ¡ em P&B por causa do filtro no vÃ­deo)
-      // Para garantir a conversÃ£o correta, aplicamos o filtro aqui tambÃ©m.
+      // Draw only the central square portion of the video to the canvas
+      // This ensures a perfect 1:1 aspect ratio without distortion
       context.filter = 'grayscale(100%)';
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      context.drawImage(
+        video,
+        sourceX,      // source x (crop from center)
+        sourceY,      // source y (crop from center)
+        size,         // source width (square)
+        size,         // source height (square)
+        0,            // destination x
+        0,            // destination y
+        size,         // destination width
+        size          // destination height
+      );
       context.filter = 'none'; // Reseta o filtro do contexto do canvas
 
-      // 2. O filtro fotogrÃ¡fico via manipulaÃ§Ã£o de pixels nÃ£o Ã© mais estritamente necessÃ¡rio
-      // se o filtro CSS for suficiente, mas mantÃª-lo garante a conversÃ£o no dado da imagem.
-      this.applyPhotographicBWFilter(context, canvas.width, canvas.height);
+      // Apply photographic BW filter
+      this.applyPhotographicBWFilter(context, size, size);
 
-      // 3. ObtÃ©m a URL da imagem processada
+      // Get the processed image URL
       const dataUrl = canvas.toDataURL('image/png');
       this.galleryService.addImage(dataUrl);
       this.close.emit();

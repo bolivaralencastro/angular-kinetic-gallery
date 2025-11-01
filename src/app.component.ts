@@ -7,7 +7,7 @@ import { GalleryEditorComponent } from './components/gallery-editor/gallery-edit
 
 
 import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
-
+import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
 
 import { Gallery } from './interfaces/gallery.interface';
 
@@ -52,7 +52,7 @@ declare const CustomEase: any;
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent],
+  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -128,10 +128,48 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown.f', ['$event'])
   toggleFullscreenKey(event: KeyboardEvent): void {
-    if (this.canDrag()) {
+    // Check if user is typing in an input field, textarea, or contenteditable element
+    const target = event.target as HTMLElement;
+    const isTyping = target && (
+      target.tagName === 'INPUT' || 
+      target.tagName === 'TEXTAREA' || 
+      target.isContentEditable ||
+      target.closest('input') ||
+      target.closest('textarea')
+    );
+    
+    if (isTyping) {
+      // Allow 'f' to be typed normally in input fields
+      return;
+    }
+    
+    // Allow fullscreen toggle when info dialog is visible or when can drag
+    if (this.canDrag() || this.isInfoDialogVisible()) {
       event.preventDefault();
       this.toggleFullscreen();
     }
+  }
+
+  @HostListener('document:keydown.i', ['$event'])
+  handleIKey(event: KeyboardEvent): void {
+    // Check if user is typing in an input field, textarea, or contenteditable element
+    const target = event.target as HTMLElement;
+    const isTyping = target && (
+      target.tagName === 'INPUT' || 
+      target.tagName === 'TEXTAREA' || 
+      target.isContentEditable ||
+      target.closest('input') ||
+      target.closest('textarea')
+    );
+    
+    if (isTyping) {
+      // Allow 'i' to be typed normally in input fields
+      return;
+    }
+    
+    event.preventDefault();
+    // Toggle info dialog - if already open, it will close; if closed, it will open
+    this.toggleInfoDialog();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -186,15 +224,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isGalleryEditorVisible = signal(false);
   editingGallery = signal<Gallery | null>(null);
   isGalleryCreationDialogVisible = signal(false);
+  isInfoDialogVisible = signal(false);
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
   private inactivityTimeoutId: any;
+  private idleEllipseAngle = 0;
+  private idleEllipseCenter = { x: 0, y: 0 };
+  private idleEllipseRadiusX = 0; // Semi-eixo maior (horizontal) - será calculado baseado na tela
+  private idleEllipseRadiusY = 0; // Semi-eixo menor (vertical) - será calculado baseado na tela
+  private readonly idleSpeed = 0.001; // Velocidade angular (reduzida para movimento mais lento)
   
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
   
-  canDrag = computed(() => !this.expandedItem() && !this.isWebcamVisible() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible());
+  canDrag = computed(() => !this.expandedItem() && !this.isWebcamVisible() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible() && !this.isInfoDialogVisible());
 
   // --- ReferÃªncias a Elementos do Template ---
   private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
@@ -287,9 +331,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private resetInactivityTimer(): void {
     if (this.isIdle()) {
       this.isIdle.set(false);
+      // Reseta o ângulo quando sai do modo idle
+      this.idleEllipseAngle = 0;
     }
     clearTimeout(this.inactivityTimeoutId);
     this.inactivityTimeoutId = setTimeout(() => {
+      // Calcula o tamanho da elipse baseado no tamanho da tela (4x maior)
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      this.idleEllipseRadiusX = screenWidth * 4; // 4x a largura da tela
+      this.idleEllipseRadiusY = screenHeight * 4; // 4x a altura da tela
+      
+      // Define o centro da elipse baseado na posição atual quando entra em idle
+      this.idleEllipseCenter.x = this.target.x;
+      this.idleEllipseCenter.y = this.target.y;
+      // Reseta o ângulo para começar do zero
+      this.idleEllipseAngle = 0;
       this.isIdle.set(true);
     }, 5000);
   }
@@ -383,9 +440,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       const animate = () => {
         if (this.isIdle()) {
-          const idleSpeed = 0.3;
-          this.target.x -= idleSpeed;
-          this.target.y -= idleSpeed;
+          // Atualiza o ângulo para percorrer a elipse
+          this.idleEllipseAngle += this.idleSpeed;
+          
+          // Calcula a posição na elipse usando funções trigonométricas
+          // x = centerX + radiusX * cos(angle)
+          // y = centerY + radiusY * sin(angle)
+          this.target.x = this.idleEllipseCenter.x + this.idleEllipseRadiusX * Math.cos(this.idleEllipseAngle);
+          this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
         }
 
         if (this.canDrag()) {
@@ -625,6 +687,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openGalleryCreationDialog(): void {
     this.isGalleryCreationDialogVisible.set(true);
+  }
+
+  toggleInfoDialog(): void {
+    this.isInfoDialogVisible.update(visible => !visible);
   }
 
   createGalleryWithTimestamp(): void {
