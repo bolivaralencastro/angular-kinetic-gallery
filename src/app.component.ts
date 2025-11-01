@@ -257,7 +257,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   expandedItem = signal<ExpandedItem | null>(null);
   isWebcamVisible = signal(false);
   contextMenu = signal<{ visible: boolean; x: number; y: number; options?: string[] }>({ visible: false, x: 0, y: 0 });
-  copiedGalleryId = signal<string | null>(null);
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
 
@@ -289,7 +288,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
-  private copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   
   isInteractionEnabled = computed(
     () =>
@@ -727,51 +725,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateVisibleItems(true); // Refresh the view
   }
 
-  copyCampaignLink(event: MouseEvent, gallery: GalleryCardItem): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const campaignLink = this.buildCampaignUtmLink(gallery);
-
-    if (!campaignLink) {
-      console.warn('Unable to build the campaign link.');
-      return;
-    }
-
-    if (!navigator?.clipboard) {
-      console.warn('Clipboard API is not available in this environment.');
-      this.copiedGalleryId.set(gallery.id);
-      this.scheduleCopyFeedbackReset();
-      return;
-    }
-
-    navigator.clipboard.writeText(campaignLink)
-      .then(() => {
-        this.copiedGalleryId.set(gallery.id);
-        this.scheduleCopyFeedbackReset();
-      })
-      .catch(error => {
-        console.error('Failed to copy campaign link', error);
-      });
-  }
-
-  openGalleryMenuFromButton(event: MouseEvent, galleryId: string): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const target = event.currentTarget as HTMLElement | null;
-    const rect = target?.getBoundingClientRect();
-
-    this.contextMenu.set({
-      visible: true,
-      x: rect ? rect.left : event.clientX,
-      y: rect ? rect.bottom + 4 : event.clientY,
-      options: ['editGallery', 'deleteGallery']
-    });
-
-    this.contextMenuGalleryId = galleryId;
-  }
-
   onRightClick(event: MouseEvent): void {
     event.preventDefault();
     if (this.currentView() === 'galleries') {
@@ -781,44 +734,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private scheduleCopyFeedbackReset(): void {
-    if (this.copyFeedbackTimeout) {
-      clearTimeout(this.copyFeedbackTimeout);
-    }
-
-    this.copyFeedbackTimeout = setTimeout(() => {
-      this.copiedGalleryId.set(null);
-      this.copyFeedbackTimeout = null;
-    }, 2000);
-  }
-
-  private buildCampaignUtmLink(gallery: GalleryCardItem): string {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-
-    const url = new URL(window.location.href);
-    url.hash = '';
-    url.search = '';
-    const campaignSlug = this.slugify(gallery.name) || gallery.id;
-
-    url.searchParams.set('utm_source', 'gallery_app');
-    url.searchParams.set('utm_medium', 'card_menu');
-    url.searchParams.set('utm_campaign', campaignSlug);
-    url.searchParams.set('campaignId', gallery.id);
-
-    return url.toString();
-  }
-
-  private slugify(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .toLowerCase();
-  }
-  
   onGalleryRightClick(event: MouseEvent, galleryId: string): void {
     event.preventDefault();
     event.stopPropagation();
