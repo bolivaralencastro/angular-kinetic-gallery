@@ -1,6 +1,7 @@
 <!-- Container principal da galeria com listeners para interaÃ§Ã£o -->
-<div 
+<div
   class="relative w-full h-full overflow-hidden select-none grayscale"
+  [class.cursor-none]="isIdle()"
   (contextmenu)="onRightClick($event)">
 
   @if (currentView() === 'galleries') {
@@ -153,7 +154,7 @@
     }
   </div>
 
-  @if (currentView() === 'photos') {
+  @if (currentView() === 'photos' && !isIdle()) {
     <!-- BotÃ£o Voltar para Galerias -->
     <button (click)="backToGalleries()"
             class="absolute top-4 left-4 z-20 p-2 bg-black/40 rounded-full text-white hover:text-gray-300 hover:bg-black/60 focus:outline-none">
