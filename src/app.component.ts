@@ -808,7 +808,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     if (this.currentView() === 'galleries') {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['editGallery', 'deleteGallery'] });
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery', 'editGallery', 'deleteGallery'] });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
     }
