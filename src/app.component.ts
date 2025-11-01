@@ -218,6 +218,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private itemDimensions = { width: 0, height: 0, cellWidth: 0, cellHeight: 0 };
   private target = { x: 0, y: 0 };
   private current = { x: 0, y: 0 };
+  private viewport = { width: 0, height: 0 };
+  private readonly EDGE_THRESHOLD = 150;
+  private readonly MAX_SCROLL_SPEED = 25;
+  private readonly interactionState: { isMouseOver: boolean; mouseX: number; mouseY: number } = {
+    isMouseOver: false,
+    mouseX: 0,
+    mouseY: 0,
+  };
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
 
@@ -225,6 +233,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
   private boundOnWheel: (event: WheelEvent) => void;
+  private boundOnMouseEnter: () => void;
+  private boundOnMouseLeave: () => void;
+  private boundOnMouseMove: (event: MouseEvent) => void;
 
   constructor() {
     gsap.registerPlugin(CustomEase);
@@ -233,6 +244,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
+    this.boundOnMouseEnter = this.onMouseEnter.bind(this);
+    this.boundOnMouseLeave = this.onMouseLeave.bind(this);
+    this.boundOnMouseMove = this.onMouseMove.bind(this);
 
     effect(() => {
       if (!this.isViewInitialized()) return;
@@ -270,6 +284,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isViewInitialized.set(true);
     const resizeObserver = new ResizeObserver(() => this.onResize());
     resizeObserver.observe(this.elementRef.nativeElement);
+
+    const hostElement = this.elementRef.nativeElement;
+    hostElement.addEventListener('mouseenter', this.boundOnMouseEnter);
+    hostElement.addEventListener('mouseleave', this.boundOnMouseLeave);
+    window.addEventListener('mousemove', this.boundOnMouseMove);
   }
 
   ngOnDestroy(): void {
@@ -279,6 +298,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     document.removeEventListener('click', this.boundCloseContextMenu, true);
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
     this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
+    const hostElement = this.elementRef.nativeElement;
+    hostElement.removeEventListener('mouseenter', this.boundOnMouseEnter);
+    hostElement.removeEventListener('mouseleave', this.boundOnMouseLeave);
+    window.removeEventListener('mousemove', this.boundOnMouseMove);
 
     if (this.clockIntervalId) {
       clearInterval(this.clockIntervalId);
@@ -318,6 +341,71 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.itemDimensions.height = this.itemDimensions.width;
     this.itemDimensions.cellWidth = this.itemDimensions.width + this.ITEM_GAP;
     this.itemDimensions.cellHeight = this.itemDimensions.height + this.ITEM_GAP;
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    this.viewport.width = rect.width;
+    this.viewport.height = rect.height;
+  }
+
+  private onMouseEnter(): void {
+    this.interactionState.isMouseOver = true;
+    this.resetInactivityTimer();
+  }
+
+  private onMouseLeave(): void {
+    this.interactionState.isMouseOver = false;
+  }
+
+  private onMouseMove(event: MouseEvent): void {
+    if (!this.interactionState.isMouseOver) {
+      return;
+    }
+
+    const rect = this.elementRef.nativeElement.getBoundingClientRect();
+    const relativeX = event.clientX - rect.left;
+    const relativeY = event.clientY - rect.top;
+    const clampedX = Math.min(Math.max(relativeX, 0), rect.width);
+    const clampedY = Math.min(Math.max(relativeY, 0), rect.height);
+
+    this.interactionState.mouseX = clampedX;
+    this.interactionState.mouseY = clampedY;
+    this.resetInactivityTimer();
+  }
+
+  private calculateEdgeScroll(): { deltaX: number; deltaY: number } {
+    if (!this.interactionState.isMouseOver) {
+      return { deltaX: 0, deltaY: 0 };
+    }
+
+    const width = this.viewport.width;
+    const height = this.viewport.height;
+
+    if (width <= 0 || height <= 0) {
+      return { deltaX: 0, deltaY: 0 };
+    }
+
+    const { mouseX, mouseY } = this.interactionState;
+    let deltaX = 0;
+    let deltaY = 0;
+
+    if (mouseX < this.EDGE_THRESHOLD) {
+      const intensity = Math.min(1, Math.max(0, 1 - mouseX / this.EDGE_THRESHOLD));
+      deltaX = intensity * this.MAX_SCROLL_SPEED;
+    } else if (mouseX > width - this.EDGE_THRESHOLD) {
+      const distance = mouseX - (width - this.EDGE_THRESHOLD);
+      const intensity = Math.min(1, Math.max(0, distance / this.EDGE_THRESHOLD));
+      deltaX = -intensity * this.MAX_SCROLL_SPEED;
+    }
+
+    if (mouseY < this.EDGE_THRESHOLD) {
+      const intensity = Math.min(1, Math.max(0, 1 - mouseY / this.EDGE_THRESHOLD));
+      deltaY = intensity * this.MAX_SCROLL_SPEED;
+    } else if (mouseY > height - this.EDGE_THRESHOLD) {
+      const distance = mouseY - (height - this.EDGE_THRESHOLD);
+      const intensity = Math.min(1, Math.max(0, distance / this.EDGE_THRESHOLD));
+      deltaY = -intensity * this.MAX_SCROLL_SPEED;
+    }
+
+    return { deltaX, deltaY };
   }
 
   private updateVisibleItems(force: boolean = false): void {
@@ -402,12 +490,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.isIdle()) {
           // Atualiza o ângulo para percorrer a elipse
           this.idleEllipseAngle += this.idleSpeed;
-          
+
           // Calcula a posição na elipse usando funções trigonométricas
           // x = centerX + radiusX * cos(angle)
           // y = centerY + radiusY * sin(angle)
           this.target.x = this.idleEllipseCenter.x + this.idleEllipseRadiusX * Math.cos(this.idleEllipseAngle);
           this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
+        } else if (this.isInteractionEnabled()) {
+          const { deltaX, deltaY } = this.calculateEdgeScroll();
+          if (deltaX !== 0 || deltaY !== 0) {
+            this.target.x += deltaX;
+            this.target.y += deltaY;
+          }
         }
 
         if (this.isInteractionEnabled()) {
