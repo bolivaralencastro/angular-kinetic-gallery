@@ -51,38 +51,6 @@
                 class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                 {{ item.creationOrder }}
               </span>
-              <div
-                class="absolute top-3 right-3 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                [class.opacity-100]="copiedGalleryId() === item.id"
-                (click)="$event.stopPropagation()">
-                <div class="relative flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="copyCampaignLink($event, item)"
-                    class="p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    title="Copiar link UTM da campanha"
-                    aria-label="Copiar link UTM da campanha">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25h-2.4A1.35 1.35 0 0 0 4.5 9.6v9.9a1.35 1.35 0 0 0 1.35 1.35h9.9a1.35 1.35 0 0 0 1.35-1.35v-2.4m-6.75-3h7.8a1.35 1.35 0 0 0 1.35-1.35V3.9A1.35 1.35 0 0 0 17.85 2.55h-7.8A1.35 1.35 0 0 0 8.7 3.9v7.8Z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    (click)="openGalleryMenuFromButton($event, item.id)"
-                    class="p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    title="Abrir ações da campanha"
-                    aria-label="Abrir ações da campanha">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" />
-                    </svg>
-                  </button>
-                  @if (copiedGalleryId() === item.id) {
-                    <span class="absolute -bottom-8 right-0 z-30 px-2 py-1 text-xs font-medium text-white bg-black/80 rounded-md shadow-lg">
-                      Link copiado!
-                    </span>
-                  }
-                </div>
-              </div>
               <div class="absolute bottom-0 left-0 pl-8 pb-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div class="text-xs text-gray-300 mb-0.5">{{ item.createdAt }}</div>
                 <div class="text-sm font-medium">{{ item.name }}</div>
