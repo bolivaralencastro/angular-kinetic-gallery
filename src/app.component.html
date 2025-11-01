@@ -1,9 +1,6 @@
 <!-- Container principal da galeria com listeners para interaÃ§Ã£o -->
 <div 
   class="relative w-full h-full overflow-hidden select-none grayscale"
-  [class.cursor-grab]="canDrag() && !isDragging()"
-  [class.cursor-grabbing]="isDragging()"
-  (mousedown)="onMouseDown($event)"
   (contextmenu)="onRightClick($event)">
 
   @if (currentView() === 'galleries') {
@@ -37,14 +34,14 @@
               [style.height.px]="item.height"
               [style.left.px]="item.x"
               [style.top.px]="item.y"
-              [class.cursor-pointer]="canDrag()"
+              [class.cursor-pointer]="isInteractionEnabled()"
               (click)="selectGallery(item.id)"
               (contextmenu)="onGalleryRightClick($event, item.id)">
               <div class="item-image-container relative w-full h-full overflow-hidden">
                 <img [src]="item.thumbnailUrl || 'https://via.placeholder.com/150?text=No+Image'"
                      class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
                      (load)="$event.target.classList.add('opacity-100')"
-                     [class.group-hover:scale-105]="canDrag()"
+                     [class.group-hover:scale-105]="isInteractionEnabled()"
                      alt="Capa da Galeria: {{ item.name }}">
                 <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
               </div>
@@ -126,14 +123,14 @@
           [style.height.px]="item.height"
           [style.left.px]="item.x"
           [style.top.px]="item.y"
-          [class.cursor-pointer]="canDrag()"
+          [class.cursor-pointer]="isInteractionEnabled()"
           (click)="onImageClick($event, item)">
             <div class="item-image-container relative w-full h-full overflow-hidden">
               @if (item.type === 'photo') {
                 <img [src]="item.url"
                      class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
                      (load)="$event.target.classList.add('opacity-100')"
-                     [class.group-hover:scale-1.05]="canDrag()"
+                     [class.group-hover:scale-1.05]="isInteractionEnabled()"
                      alt="Imagem da galeria capturada pela webcam">
               }
               <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>

@@ -90,42 +90,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  @HostListener('document:keydown.ArrowUp', ['$event'])
-  @HostListener('document:keydown.w', ['$event'])
-  moveUp(event: KeyboardEvent): void {
-    if (this.canDrag()) {
-      event.preventDefault();
-      this.target.y += 50; // Adjust step size as needed
-    }
-  }
-
-  @HostListener('document:keydown.ArrowDown', ['$event'])
-  @HostListener('document:keydown.s', ['$event'])
-  moveDown(event: KeyboardEvent): void {
-    if (this.canDrag()) {
-      event.preventDefault();
-      this.target.y -= 50; // Adjust step size as needed
-    }
-  }
-
-  @HostListener('document:keydown.ArrowLeft', ['$event'])
-  @HostListener('document:keydown.a', ['$event'])
-  moveLeft(event: KeyboardEvent): void {
-    if (this.canDrag()) {
-      event.preventDefault();
-      this.target.x += 50; // Adjust step size as needed
-    }
-  }
-
-  @HostListener('document:keydown.ArrowRight', ['$event'])
-  @HostListener('document:keydown.d', ['$event'])
-  moveRight(event: KeyboardEvent): void {
-    if (this.canDrag()) {
-      event.preventDefault();
-      this.target.x -= 50; // Adjust step size as needed
-    }
-  }
-
   @HostListener('document:keydown.f', ['$event'])
   toggleFullscreenKey(event: KeyboardEvent): void {
     // Check if user is typing in an input field, textarea, or contenteditable element
@@ -144,7 +108,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     
     // Allow fullscreen toggle when info dialog is visible or when can drag
-    if (this.canDrag() || this.isInfoDialogVisible()) {
+    if (this.isInteractionEnabled() || this.isInfoDialogVisible()) {
       event.preventDefault();
       this.toggleFullscreen();
     }
@@ -174,7 +138,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   handleZoomKeys(event: KeyboardEvent): void {
-    if (!this.canDrag()) return;
+    if (!this.isInteractionEnabled()) return;
 
     if (event.key === '+' || event.key === '=') {
       event.preventDefault();
@@ -194,7 +158,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly ITEM_GAP = 32;
   private readonly settings = {
     dragEase: 0.075,
-    momentumFactor: 200,
     bufferZone: 1.5,
     zoomDuration: 0.6,
   };
@@ -207,8 +170,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isWebcamVisible = signal(false);
   contextMenu = signal<{ visible: boolean; x: number; y: number; options?: string[] }>({ visible: false, x: 0, y: 0 });
   copiedGalleryId = signal<string | null>(null);
-  isDragging = signal(false);
-  
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
 
@@ -240,26 +201,27 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private contextMenuGalleryId: string | null = null;
   private copyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   
-  canDrag = computed(() => !this.expandedItem() && !this.isWebcamVisible() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible() && !this.isInfoDialogVisible());
+  isInteractionEnabled = computed(
+    () =>
+      !this.expandedItem() &&
+      !this.isWebcamVisible() &&
+      !this.isGalleryEditorVisible() &&
+      !this.isGalleryCreationDialogVisible() &&
+      !this.isInfoDialogVisible()
+  );
 
   // --- ReferÃªncias a Elementos do Template ---
   private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
   private expandedItemElement = viewChild<ElementRef<HTMLDivElement>>('expandedItemElement');
 
-  // --- Estado Privado para LÃ³gica de Arraste e AnimaÃ§Ã£o ---
+  // --- Estado Privado para LÃ³gica de AnimaÃ§Ã£o ---
   private itemDimensions = { width: 0, height: 0, cellWidth: 0, cellHeight: 0 };
   private target = { x: 0, y: 0 };
   private current = { x: 0, y: 0 };
-  private velocity = { x: 0, y: 0 };
-  private startDragPos = { x: 0, y: 0 };
-  private lastDragTime = 0;
-  private mouseHasMoved = false;
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
-  private boundOnMouseMove: (event: MouseEvent) => void;
-  private boundOnMouseUp: () => void;
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
   private boundOnWheel: (event: WheelEvent) => void;
@@ -268,8 +230,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     gsap.registerPlugin(CustomEase);
     CustomEase.create("hop", "0.9, 0, 0.1, 1");
 
-    this.boundOnMouseMove = this.onMouseMove.bind(this);
-    this.boundOnMouseUp = this.onMouseUp.bind(this);
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
@@ -318,8 +278,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     document.removeEventListener('click', this.boundCloseContextMenu, true);
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
-    document.removeEventListener('mousemove', this.boundOnMouseMove);
-    document.removeEventListener('mouseup', this.boundOnMouseUp);
     this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
 
     if (this.clockIntervalId) {
@@ -452,7 +410,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
         }
 
-        if (this.canDrag()) {
+        if (this.isInteractionEnabled()) {
           this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
           this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
           
@@ -504,7 +462,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onWheel(event: WheelEvent): void {
     this.resetInactivityTimer();
-    if (!this.canDrag()) return;
+    if (!this.isInteractionEnabled()) return;
     event.preventDefault();
     
     if (event.deltaY < 0) {
@@ -524,50 +482,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.onResize();
   }
 
-  onMouseDown(event: MouseEvent): void {
-    this.resetInactivityTimer();
-    if (!this.canDrag() || event.button !== 0) return;
-    this.isDragging.set(true);
-    this.mouseHasMoved = false;
-    this.startDragPos = { x: event.clientX, y: event.clientY };
-    this.velocity = { x: 0, y: 0 };
-    
-    document.addEventListener('mousemove', this.boundOnMouseMove);
-    document.addEventListener('mouseup', this.boundOnMouseUp, { once: true });
-  }
-
-  private onMouseMove(event: MouseEvent): void {
-    this.resetInactivityTimer();
-    if (!this.isDragging()) return;
-    const dx = event.clientX - this.startDragPos.x;
-    const dy = event.clientY - this.startDragPos.y;
-    
-    if (!this.mouseHasMoved && Math.hypot(dx, dy) > 5) {
-      this.mouseHasMoved = true;
-    }
-
-    const now = Date.now();
-    const dt = Math.max(10, now - this.lastDragTime);
-    this.lastDragTime = now;
-    this.velocity.x = dx / dt;
-    this.velocity.y = dy / dt;
-    
-    this.target.x += dx;
-    this.target.y += dy;
-    this.startDragPos = { x: event.clientX, y: event.clientY };
-  }
-
-  private onMouseUp(): void {
-    this.isDragging.set(false);
-    if (this.canDrag() && Math.hypot(this.velocity.x, this.velocity.y) > 0.1) {
-      this.target.x += this.velocity.x * this.settings.momentumFactor;
-      this.target.y += this.velocity.y * this.settings.momentumFactor;
-    }
-    document.removeEventListener('mousemove', this.boundOnMouseMove);
-  }
-
   onImageClick(event: MouseEvent, item: VisibleItem): void {
-    if (this.mouseHasMoved || !this.canDrag()) return;
+    if (!this.isInteractionEnabled()) return;
 
     if (item.type === 'gallery') {
       this.selectGallery(item.id);
