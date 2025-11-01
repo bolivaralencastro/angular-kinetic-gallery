@@ -176,6 +176,66 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('document:keydown', ['$event'])
+  handleArrowNavigation(event: KeyboardEvent): void {
+    if (!this.isInteractionEnabled()) {
+      return;
+    }
+
+    const targetElement = event.target as HTMLElement | null;
+    const isTyping = !!targetElement && (
+      targetElement.tagName === 'INPUT' ||
+      targetElement.tagName === 'TEXTAREA' ||
+      targetElement.isContentEditable ||
+      !!targetElement.closest('input') ||
+      !!targetElement.closest('textarea')
+    );
+
+    if (isTyping) {
+      return;
+    }
+
+    const { cellWidth, cellHeight } = this.itemDimensions;
+    if (!cellWidth || !cellHeight) {
+      return;
+    }
+
+    let deltaX = 0;
+    let deltaY = 0;
+
+    switch (event.key) {
+      case 'ArrowUp':
+        deltaY = cellHeight;
+        break;
+      case 'ArrowDown':
+        deltaY = -cellHeight;
+        break;
+      case 'ArrowLeft':
+        deltaX = cellWidth;
+        break;
+      case 'ArrowRight':
+        deltaX = -cellWidth;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    this.resetInactivityTimer();
+
+    this.target.x += deltaX;
+    this.target.y += deltaY;
+    this.current.x += deltaX;
+    this.current.y += deltaY;
+
+    const canvasElement = this.canvas();
+    if (canvasElement) {
+      canvasElement.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
+    }
+
+    this.updateVisibleItems(true);
+  }
+
   galleryService = inject(GalleryService);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
