@@ -273,8 +273,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   // --- Sinais para Contagem de Fotos e Galerias ---
   photoCount = computed(() => this.images().length);
   galleryCount = computed(() => this.galleryService.galleries().length);
-  photoCounterLabel = computed(() => (this.photoCount() <= 1 ? "f.0" : "f's.00"));
-  galleryCounterLabel = computed(() => (this.galleryCount() <= 1 ? "g.0" : "g's.00"));
+  photoCounterLabel = computed(() => (this.photoCount() <= 1 ? "f." : "f's."));
+  galleryCounterLabel = computed(() => (this.galleryCount() <= 1 ? "g." : "g's."));
 
   // --- Sinais para o Editor de Galeria ---
   isGalleryEditorVisible = signal(false);
