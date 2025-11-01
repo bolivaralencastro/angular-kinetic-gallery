@@ -251,8 +251,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     bufferZone: 1.5,
     zoomDuration: 0.6,
   };
-  private readonly GALLERY_PREVIEW_DELAY = 700;
-  private readonly GALLERY_PREVIEW_INTERVAL = 1200;
+  private readonly GALLERY_PREVIEW_DELAY = 300;
+  private readonly GALLERY_PREVIEW_INTERVAL = 500;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
