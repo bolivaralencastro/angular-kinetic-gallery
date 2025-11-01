@@ -61,6 +61,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
     if (event instanceof KeyboardEvent) {
+      // Check if user is typing in an input field, textarea, or contenteditable element
+      const target = event.target as HTMLElement;
+      const isTyping = target && (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable ||
+        target.closest('input') ||
+        target.closest('textarea')
+      );
+      
+      if (isTyping) {
+        // Allow space to be typed normally in input fields
+        return;
+      }
+      
       event.preventDefault();
     }
     if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {

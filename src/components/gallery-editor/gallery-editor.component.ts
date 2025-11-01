@@ -10,7 +10,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
   template: `
     <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="close.emit()">
       <div 
-        class="bg-black/80 backdrop-blur-sm border border-gray-800 rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+        class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+        style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
         (click)="$event.stopPropagation()">
         
         <div class="flex justify-between items-center mb-4">
@@ -19,7 +20,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
           </h2>
           <button 
             (click)="close.emit()" 
-            class="text-gray-400 hover:text-white text-2xl leading-none rounded-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500">
+            class="text-2xl leading-none rounded-sm focus:outline-none"
+            style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
             &times;
           </button>
         </div>
@@ -32,7 +34,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
               type="text"
               [(ngModel)]="name"
               name="name"
-              class="w-full bg-gray-800 text-gray-200 border border-gray-700 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
+              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
               placeholder="Digite o nome da galeria"
               required>
           </div>
@@ -44,7 +47,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
               [(ngModel)]="description"
               name="description"
               rows="3"
-              class="w-full bg-gray-800 text-gray-200 border border-gray-700 rounded-md py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
+              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
               placeholder="Digite a descrição da galeria"
               required>
             </textarea>
@@ -55,7 +59,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
             <button 
               type="button"
               (click)="onDelete()"
-              class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded-md transition-all duration-300 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-red-500">
+              class="px-4 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+              style="background-color: rgb(150, 40, 40); border: none;">
               Excluir
             </button>
             }
@@ -64,13 +69,15 @@ import { Gallery } from '../../interfaces/gallery.interface';
               <button 
                 type="button"
                 (click)="close.emit()"
-                class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500">
+                class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+                style="background-color: rgb(60, 60, 60); border: none;">
                 Cancelar
               </button>
               
               <button 
                 type="submit"
-                class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-md transition-all duration-300 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500">
+                class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+                style="background-color: rgb(60, 60, 60); border: none;">
                 {{ gallery() ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
@@ -87,6 +94,24 @@ import { Gallery } from '../../interfaces/gallery.interface';
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    button:not(:disabled):hover {
+      background-color: rgb(80, 80, 80) !important;
+    }
+
+    button[style*="rgb(150, 40, 40)"]:hover {
+      background-color: rgb(170, 50, 50) !important;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgb(100, 100, 100) !important;
+      box-shadow: 0 0 0 2px rgba(100, 100, 100, 0.3) !important;
+    }
+
+    button[style*="color: rgb(180, 180, 180)"]:hover {
+      color: white !important;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,

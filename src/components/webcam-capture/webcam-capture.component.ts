@@ -6,23 +6,25 @@ import { GalleryService } from '../../services/gallery.service';
   selector: 'app-webcam-capture',
   imports: [CommonModule],
   template: `
-    <div 
-      class="bg-black/80 backdrop-blur-sm border border-gray-800 rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+      <div 
+      class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+      style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
       (click)="$event.stopPropagation()">
       
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-medium text-gray-200 tracking-wider">Capturar Foto</h2>
         <button 
           (click)="close.emit()" 
-          class="text-gray-400 hover:text-white text-2xl leading-none rounded-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500">
+          class="text-2xl leading-none rounded-sm focus:outline-none"
+          style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
           &times;
         </button>
       </div>
       
       @if (error()) {
-        <div class="bg-gray-800 border border-gray-600 text-gray-300 px-3 py-2 rounded-lg text-sm mb-4">
+        <div class="text-gray-300 px-3 py-2 rounded-lg text-sm mb-4" style="background-color: rgb(38, 38, 38); border: 1px solid rgb(70, 70, 70);">
           <p class="font-semibold">Erro ao acessar a câmera:</p>
-          <p class="tracking-wider text-gray-400">{{ error() }}</p>
+          <p class="tracking-wider" style="color: rgb(180, 180, 180);">{{ error() }}</p>
         </div>
       }
 
@@ -60,15 +62,20 @@ import { GalleryService } from '../../services/gallery.service';
         <button 
           (click)="captureImage()"
           [disabled]="!isStreaming() || (countdown() !== null)"
-          class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-md transition-all duration-300 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500">
+          class="w-full text-white font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
+          [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? 'rgb(38, 38, 38)' : 'rgb(60, 60, 60)'"
+          [style.color]="(!isStreaming() || countdown() !== null) ? 'rgb(150, 150, 150)' : 'white'"
+          [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
+          style="border: none;">
           <span>{{ isTimerEnabled() ? 'Iniciar Timer' : 'Tirar Foto' }}</span>
         </button>
 
         <button
           (click)="toggleTimer()"
-          [class.bg-gray-600]="isTimerEnabled()"
-          [class.text-white]="isTimerEnabled()"
-          class="p-3 rounded-md bg-gray-800 text-gray-400 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-gray-500"
+          class="p-3 rounded-md text-gray-400 focus:outline-none"
+          [style.backgroundColor]="isTimerEnabled() ? 'rgb(80, 80, 80)' : 'rgb(38, 38, 38)'"
+          [style.color]="isTimerEnabled() ? 'white' : 'rgb(180, 180, 180)'"
+          style="border: none;"
           title="Ativar/Desativar timer">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -96,6 +103,18 @@ import { GalleryService } from '../../services/gallery.service';
       pointer-events: none;
       box-shadow: inset 0 0 40px 20px rgba(0, 0, 0, 0.8);
       z-index: 10;
+    }
+
+    button:not(:disabled):hover {
+      background-color: rgb(80, 80, 80) !important;
+    }
+
+    button[style*="rgb(38, 38, 38)"]:not(:disabled):hover {
+      background-color: rgb(80, 80, 80) !important;
+    }
+
+    button[style*="color: rgb(180, 180, 180)"]:hover {
+      color: white !important;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
