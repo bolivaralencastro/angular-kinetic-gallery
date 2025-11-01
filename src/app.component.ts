@@ -33,6 +33,7 @@ interface GalleryCardItem extends BaseItem {
   name: string;
   description: string;
   thumbnailUrl: string;
+  imageUrls: string[];
   imageCount: number;
   createdAt?: string;
 }
@@ -249,6 +250,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     bufferZone: 1.5,
     zoomDuration: 0.6,
   };
+  private readonly GALLERY_PREVIEW_DELAY = 700;
+  private readonly GALLERY_PREVIEW_INTERVAL = 1200;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
@@ -260,6 +263,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   copiedGalleryId = signal<string | null>(null);
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
+  galleryPreviewImages = signal<Record<string, string>>({});
 
   // --- Sinais para o RelÃ³gio e Data ---
   currentTime = signal('');
@@ -318,6 +322,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   private animationFrameId: number | null = null;
   private lastGridPosition = { x: -1, y: -1 };
+  private readonly galleryPreviewTimers = new Map<string, {
+    startTimeoutId: ReturnType<typeof setTimeout> | null;
+    intervalId: ReturnType<typeof setInterval> | null;
+  }>();
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
@@ -382,6 +390,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopAllGalleryPreviews();
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
@@ -551,6 +560,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             name: gallery.name,
             description: gallery.description,
             thumbnailUrl: gallery.thumbnailUrl || 'https://via.placeholder.com/150?text=No+Image',
+            imageUrls: gallery.imageUrls,
             imageCount: gallery.imageUrls.length,
             createdAt: gallery.createdAt,
             x: col * this.itemDimensions.cellWidth,
@@ -586,6 +596,95 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return 0;
     }
     return totalItems - index;
+  }
+
+  onGalleryHoverStart(galleryId: string): void {
+    const gallery = this.galleryService.getGallery(galleryId);
+    if (!gallery || gallery.imageUrls.length === 0) {
+      return;
+    }
+
+    this.clearGalleryPreviewTimers(galleryId);
+
+    const startTimeoutId = setTimeout(() => {
+      const activeGallery = this.galleryService.getGallery(galleryId);
+      const imageUrls = activeGallery?.imageUrls ?? [];
+      if (imageUrls.length === 0) {
+        this.onGalleryHoverEnd(galleryId);
+        return;
+      }
+
+      if (imageUrls.length === 1) {
+        this.setGalleryPreviewImage(galleryId, imageUrls[0]);
+        this.galleryPreviewTimers.delete(galleryId);
+        return;
+      }
+
+      let currentIndex = 0;
+      const updateImage = () => {
+        const refreshedGallery = this.galleryService.getGallery(galleryId);
+        const urls = refreshedGallery?.imageUrls ?? imageUrls;
+        if (urls.length === 0) {
+          this.onGalleryHoverEnd(galleryId);
+          return;
+        }
+        if (currentIndex >= urls.length) {
+          currentIndex = 0;
+        }
+        this.setGalleryPreviewImage(galleryId, urls[currentIndex]);
+        currentIndex = (currentIndex + 1) % urls.length;
+      };
+
+      updateImage();
+      const intervalId = setInterval(() => {
+        updateImage();
+      }, this.GALLERY_PREVIEW_INTERVAL);
+
+      this.galleryPreviewTimers.set(galleryId, { startTimeoutId: null, intervalId });
+    }, this.GALLERY_PREVIEW_DELAY);
+
+    this.galleryPreviewTimers.set(galleryId, { startTimeoutId, intervalId: null });
+  }
+
+  onGalleryHoverEnd(galleryId: string): void {
+    this.clearGalleryPreviewTimers(galleryId);
+    this.setGalleryPreviewImage(galleryId, null);
+  }
+
+  private setGalleryPreviewImage(galleryId: string, imageUrl: string | null): void {
+    this.galleryPreviewImages.update(current => {
+      const next = { ...current };
+      if (imageUrl) {
+        next[galleryId] = imageUrl;
+      } else {
+        delete next[galleryId];
+      }
+      return next;
+    });
+  }
+
+  private clearGalleryPreviewTimers(galleryId: string): void {
+    const timers = this.galleryPreviewTimers.get(galleryId);
+    if (!timers) {
+      return;
+    }
+
+    if (timers.startTimeoutId) {
+      clearTimeout(timers.startTimeoutId);
+    }
+    if (timers.intervalId) {
+      clearInterval(timers.intervalId);
+    }
+
+    this.galleryPreviewTimers.delete(galleryId);
+  }
+
+  private stopAllGalleryPreviews(): void {
+    const galleryIds = Array.from(this.galleryPreviewTimers.keys());
+    for (const galleryId of galleryIds) {
+      this.clearGalleryPreviewTimers(galleryId);
+    }
+    this.galleryPreviewImages.set({});
   }
 
   private startAnimationLoop(): void {
@@ -864,6 +963,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectGallery(id: string): void {
+    this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(id);
     this.currentView.set('photos');
   }
@@ -910,6 +1010,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   backToGalleries(): void {
+    this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(null);
     this.currentView.set('galleries');
   }
