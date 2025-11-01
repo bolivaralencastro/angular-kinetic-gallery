@@ -36,11 +36,11 @@
               [style.top.px]="item.y"
               [class.cursor-pointer]="isInteractionEnabled()"
               (click)="selectGallery(item.id)"
-              (mouseenter)="onGalleryHoverStart(item.id)"
-              (mouseleave)="onGalleryHoverEnd(item.id)"
+              (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
+              (mouseleave)="onGalleryHoverEnd(item.previewKey)"
               (contextmenu)="onGalleryRightClick($event, item.id)">
               <div class="item-image-container relative w-full h-full overflow-hidden">
-                <img [src]="galleryPreviewImages()[item.id] ?? item.thumbnailUrl"
+                <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
                      class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
                      (load)="$event.target.classList.add('opacity-100')"
                      [class.group-hover:scale-105]="isInteractionEnabled()"
