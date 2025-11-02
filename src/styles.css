@@ -24,3 +24,35 @@ app-gallery-editor textarea:focus {
   outline: none !important;
   outline-color: transparent !important;
 }
+
+body,
+[data-cursor-pointer] {
+  cursor: none;
+}
+
+.custom-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100000;
+  pointer-events: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  mix-blend-mode: difference;
+  transition: width 0.4s, height 0.4s, border-radius 0.4s, opacity 0.3s;
+  transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+  opacity: 1;
+  will-change: transform, width, height;
+}
+
+.custom-cursor.pointer-hover {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+body.custom-cursor-hidden .custom-cursor {
+  opacity: 0;
+}

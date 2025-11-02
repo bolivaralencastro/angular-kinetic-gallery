@@ -14,9 +14,10 @@ import { CommonModule } from '@angular/common';
       <ul class="space-y-1" role="menu">
         @for (option of options(); track option) {
           @if (option === 'createGallery') {
-            <li 
+            <li
               role="menuitem"
               tabindex="0"
+              data-cursor-pointer
               class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
               style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onCreateGalleryClick($event)"
@@ -27,9 +28,10 @@ import { CommonModule } from '@angular/common';
               <span>Criar galeria</span>
             </li>
           } @else if (option === 'capturePhoto') {
-            <li 
+            <li
               role="menuitem"
               tabindex="0"
+              data-cursor-pointer
               class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
               style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onCaptureClick($event)"
@@ -41,9 +43,10 @@ import { CommonModule } from '@angular/common';
               <span>Tirar Foto</span>
             </li>
           } @else if (option === 'editGallery') {
-            <li 
+            <li
               role="menuitem"
               tabindex="0"
+              data-cursor-pointer
               class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
               style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onEditGalleryClick($event)"
@@ -54,9 +57,10 @@ import { CommonModule } from '@angular/common';
               <span>Editar Galeria</span>
             </li>
           } @else if (option === 'deleteGallery') {
-            <li 
+            <li
               role="menuitem"
               tabindex="0"
+              data-cursor-pointer
               class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
               style="transition: background-color 0.2s; background-color: transparent;"
               (click)="onDeleteGalleryClick($event)"
@@ -71,6 +75,7 @@ import { CommonModule } from '@angular/common';
         <li
           role="menuitem"
           tabindex="0"
+          data-cursor-pointer
           class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
           style="transition: background-color 0.2s; background-color: transparent;"
           (click)="onFullscreenClick($event)"
@@ -92,6 +97,7 @@ import { CommonModule } from '@angular/common';
         <li
           role="menuitem"
           tabindex="0"
+          data-cursor-pointer
           class="px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-2.5 focus:outline-none"
           style="transition: background-color 0.2s; background-color: transparent;"
           (click)="onInfoClick($event)"
