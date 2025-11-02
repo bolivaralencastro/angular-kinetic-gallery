@@ -48,23 +48,12 @@ function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
 }
 
-interface GsapInstance {
-  fromTo(
-    target: Element | HTMLElement,
-    fromVars: Record<string, unknown>,
-    toVars: Record<string, unknown>,
-  ): unknown;
-  to(target: Element | HTMLElement, vars: Record<string, unknown>): unknown;
-  registerPlugin(plugin: unknown): void;
-}
-
-interface CustomEasePlugin {
-  create(name: string, definition: string): void;
-}
+type GsapModule = typeof import('./utils/gsap-lite');
+type GsapInstance = GsapModule['gsap'];
 
 interface ExpandedItem {
   id: string;
-  url:string;
+  url: string;
   originalRect: DOMRect;
   originalWidth: number;
   originalHeight: number;
@@ -755,10 +744,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return this.gsapLoader;
     }
 
-    this.gsapLoader = import(/* webpackIgnore: true */ 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js').then(async module => {
-      const { gsap } = module as { gsap: GsapInstance };
-      const pluginModule = await import(/* webpackIgnore: true */ 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/CustomEase.js');
-      const { CustomEase } = pluginModule as { CustomEase: CustomEasePlugin };
+    this.gsapLoader = import('./utils/gsap-lite').then(module => {
+      const { gsap, CustomEase } = module;
       gsap.registerPlugin(CustomEase);
       CustomEase.create(this.gsapEaseName, '0.9, 0, 0.1, 1');
       return gsap;
