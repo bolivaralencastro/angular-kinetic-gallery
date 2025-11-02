@@ -5,9 +5,6 @@
   <title>Galeria Infinita com Webcam</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/CustomEase.min.js"></script>
   <script type="text/javascript">
     (function () {
       var clarityOptOut = false;
@@ -47,87 +44,6 @@
       })(window, document, "clarity", "script", "tzisvdqjwu");
     })();
   </script>
-  <style>
-    body {
-      background-color: #000000;
-      color: #ffffff;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Animated noise effect */
-    body::before {
-      content: "";
-      position: fixed;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: transparent
-        url("http://assets.iceable.com/img/noise-transparent.png") repeat 0 0;
-      background-size: 300px 300px;
-      animation: noise-animation 0.3s steps(5) infinite;
-      opacity: 0.9;
-      will-change: transform;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    @keyframes noise-animation {
-      0% {
-        transform: translate(0, 0);
-      }
-      10% {
-        transform: translate(-2%, -3%);
-      }
-      20% {
-        transform: translate(-4%, 2%);
-      }
-      30% {
-        transform: translate(2%, -4%);
-      }
-      40% {
-        transform: translate(-2%, 5%);
-      }
-      50% {
-        transform: translate(-4%, 2%);
-      }
-      60% {
-        transform: translate(3%, 0);
-      }
-      70% {
-        transform: translate(0, 3%);
-      }
-      80% {
-        transform: translate(-3%, 0);
-      }
-      90% {
-        transform: translate(2%, 2%);
-      }
-      100% {
-        transform: translate(1%, 0);
-      }
-    }
-  </style>
-<script type="importmap">
-{
-  "imports": {
-    "rxjs": "https://aistudiocdn.com/rxjs@^7.8.2?conditions=es2015",
-    "rxjs/operators": "https://aistudiocdn.com/rxjs@^7.8.2/operators?conditions=es2015",
-    "rxjs/ajax": "https://aistudiocdn.com/rxjs@^7.8.2/ajax?conditions=es2015",
-    "rxjs/webSocket": "https://aistudiocdn.com/rxjs@^7.8.2/webSocket?conditions=es2015",
-    "rxjs/testing": "https://aistudiocdn.com/rxjs@^7.8.2/testing?conditions=es2015",
-    "rxjs/fetch": "https://aistudiocdn.com/rxjs@^7.8.2/fetch?conditions=es2015",
-    "@angular/platform-browser": "https://next.esm.sh/@angular/platform-browser@^20.3.9?external=rxjs",
-    "@angular/forms": "https://next.esm.sh/@angular/forms@^20.3.9?external=rxjs",
-    "@google/genai": "https://next.esm.sh/@google/genai@^1.28.0?external=rxjs",
-    "@angular/core": "https://next.esm.sh/@angular/core@^20.3.9?external=rxjs",
-    "@angular/common": "https://next.esm.sh/@angular/common@^20.3.9?external=rxjs",
-    "@angular/common/http": "https://next.esm.sh/@angular/common@^20.3.9/http?conditions=es2015",
-    "@angular/compiler": "https://next.esm.sh/@angular/compiler@^20.3.9?external=rxjs"
-  }
-}
-</script>
 </head>
 <body class="antialiased font-sans bg-black text-gray-300">
   <app-root></app-root>
