@@ -41,6 +41,13 @@ interface GalleryCardItem extends BaseItem {
 
 type VisibleItem = PhotoItem | GalleryCardItem;
 
+const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
+type ArrowKey = (typeof ARROW_KEYS)[number];
+
+function isArrowKey(key: string): key is ArrowKey {
+  return (ARROW_KEYS as readonly string[]).includes(key);
+}
+
 interface ExpandedItem {
   id: string;
   url:string;
@@ -181,7 +188,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   handleArrowNavigation(event: KeyboardEvent): void {
-    if (!this.isInteractionEnabled()) {
+    if (!isArrowKey(event.key)) {
       return;
     }
 
@@ -194,49 +201,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !!targetElement.closest('textarea')
     );
 
-    if (isTyping) {
+    if (isTyping || !this.isInteractionEnabled()) {
       return;
-    }
-
-    const { cellWidth, cellHeight } = this.itemDimensions;
-    if (!cellWidth || !cellHeight) {
-      return;
-    }
-
-    let deltaX = 0;
-    let deltaY = 0;
-
-    switch (event.key) {
-      case 'ArrowUp':
-        deltaY = cellHeight;
-        break;
-      case 'ArrowDown':
-        deltaY = -cellHeight;
-        break;
-      case 'ArrowLeft':
-        deltaX = cellWidth;
-        break;
-      case 'ArrowRight':
-        deltaX = -cellWidth;
-        break;
-      default:
-        return;
     }
 
     event.preventDefault();
     this.resetInactivityTimer();
 
-    this.target.x += deltaX;
-    this.target.y += deltaY;
-    this.current.x += deltaX;
-    this.current.y += deltaY;
+    this.activeArrowKeys.add(event.key);
+    this.updateKeyboardScrollDirection();
+  }
 
-    const canvasElement = this.canvas();
-    if (canvasElement) {
-      canvasElement.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
+  @HostListener('document:keyup', ['$event'])
+  handleArrowNavigationRelease(event: KeyboardEvent): void {
+    if (!isArrowKey(event.key)) {
+      return;
     }
 
-    this.updateVisibleItems(true);
+    if (!this.activeArrowKeys.size) {
+      return;
+    }
+
+    event.preventDefault();
+    this.activeArrowKeys.delete(event.key);
+    this.updateKeyboardScrollDirection();
   }
 
   galleryService = inject(GalleryService);
@@ -314,6 +302,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private viewport = { width: 0, height: 0 };
   private readonly EDGE_THRESHOLD = 150;
   private readonly MAX_SCROLL_SPEED = 25;
+  private readonly activeArrowKeys = new Set<ArrowKey>();
+  private keyboardScrollDirection = { x: 0, y: 0 };
   private readonly interactionState: { isMouseOver: boolean; mouseX: number; mouseY: number } = {
     isMouseOver: false,
     mouseX: 0,
@@ -510,6 +500,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return { deltaX, deltaY };
   }
 
+  private calculateKeyboardScroll(): { deltaX: number; deltaY: number } {
+    if (this.keyboardScrollDirection.x === 0 && this.keyboardScrollDirection.y === 0) {
+      return { deltaX: 0, deltaY: 0 };
+    }
+
+    return {
+      deltaX: this.keyboardScrollDirection.x * this.MAX_SCROLL_SPEED,
+      deltaY: this.keyboardScrollDirection.y * this.MAX_SCROLL_SPEED,
+    };
+  }
+
   private updateVisibleItems(force: boolean = false): void {
     let itemsToDisplay: (string | Gallery)[] = [];
     let isGalleryView = false;
@@ -701,10 +702,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           this.target.x = this.idleEllipseCenter.x + this.idleEllipseRadiusX * Math.cos(this.idleEllipseAngle);
           this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
         } else if (this.isInteractionEnabled()) {
-          const { deltaX, deltaY } = this.calculateEdgeScroll();
-          if (deltaX !== 0 || deltaY !== 0) {
-            this.target.x += deltaX;
-            this.target.y += deltaY;
+          const { deltaX: edgeDeltaX, deltaY: edgeDeltaY } = this.calculateEdgeScroll();
+          const { deltaX: keyboardDeltaX, deltaY: keyboardDeltaY } = this.calculateKeyboardScroll();
+          const combinedDeltaX = edgeDeltaX + keyboardDeltaX;
+          const combinedDeltaY = edgeDeltaY + keyboardDeltaY;
+          if (combinedDeltaX !== 0 || combinedDeltaY !== 0) {
+            this.target.x += combinedDeltaX;
+            this.target.y += combinedDeltaY;
           }
         }
 
@@ -778,6 +782,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   zoomOut(): void {
     this.numColumns.update(n => Math.min(8, n + 1));
     this.onResize();
+  }
+
+  private updateKeyboardScrollDirection(): void {
+    const horizontal = (this.activeArrowKeys.has('ArrowLeft') ? 1 : 0) + (this.activeArrowKeys.has('ArrowRight') ? -1 : 0);
+    const vertical = (this.activeArrowKeys.has('ArrowUp') ? 1 : 0) + (this.activeArrowKeys.has('ArrowDown') ? -1 : 0);
+
+    this.keyboardScrollDirection.x = horizontal;
+    this.keyboardScrollDirection.y = vertical;
   }
 
   onImageClick(event: MouseEvent, item: VisibleItem): void {
