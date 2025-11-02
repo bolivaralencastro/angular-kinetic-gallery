@@ -31,7 +31,6 @@
           @if (item.type === 'gallery') {
             <div
               class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
-              data-hover-target
               [style.width.px]="item.width"
               [style.height.px]="item.height"
               [style.left.px]="item.x"
@@ -41,7 +40,6 @@
               (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
               (mouseleave)="onGalleryHoverEnd(item.previewKey)"
               (contextmenu)="onGalleryRightClick($event, item.id)">
-              <div data-hover-trigger class="absolute inset-0 z-40"></div>
               <div class="item-image-container relative w-full h-full overflow-hidden">
                 <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
                      class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
@@ -96,14 +94,12 @@
       @for (item of visibleItems(); track trackById($index, item)) {
         <div
           class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
-          data-hover-target
           [style.width.px]="item.width"
           [style.height.px]="item.height"
           [style.left.px]="item.x"
           [style.top.px]="item.y"
           [class.cursor-pointer]="isInteractionEnabled()"
           (click)="onImageClick($event, item)">
-            <div data-hover-trigger class="absolute inset-0 z-40"></div>
             <div class="item-image-container relative w-full h-full overflow-hidden">
               @if (item.type === 'photo') {
                 <img [src]="item.url"
