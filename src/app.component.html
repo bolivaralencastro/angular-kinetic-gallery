@@ -16,7 +16,8 @@
         <div class="mt-4 flex flex-col items-center pointer-events-auto">
           <p class="text-sm text-gray-500 mb-3">Como tirar uma foto:</p>
           <div class="flex gap-2">
-            <button 
+            <button
+              data-cursor-pointer
               (click)="openGalleryCreationDialog(); $event.stopPropagation();"
               class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
               Nova Galeria
@@ -36,6 +37,7 @@
               [style.left.px]="item.x"
               [style.top.px]="item.y"
               [class.cursor-pointer]="isInteractionEnabled()"
+              data-cursor-pointer
               (click)="selectGallery(item.id)"
               (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
               (mouseleave)="onGalleryHoverEnd(item.previewKey)"
@@ -76,12 +78,14 @@
         <div class="mt-4 flex flex-col items-center">
           <p class="text-sm text-gray-500 mb-3">Como tirar uma foto:</p>
           <div class="flex gap-2">
-            <button 
+            <button
+              data-cursor-pointer
               (click)="openWebcamCapture(); $event.stopPropagation();"
               class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
               Usar Câmera
             </button>
-            <button 
+            <button
+              data-cursor-pointer
               (click)="handleSpacebar($event)"
               class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
               Atalho: Espaço
@@ -99,6 +103,7 @@
           [style.left.px]="item.x"
           [style.top.px]="item.y"
           [class.cursor-pointer]="isInteractionEnabled()"
+          data-cursor-pointer
           (click)="onImageClick($event, item)">
             <div class="item-image-container relative w-full h-full overflow-hidden">
               @if (item.type === 'photo') {
@@ -124,6 +129,7 @@
       [class.opacity-100]="!!expandedItem()"
       [class.opacity-0]="!expandedItem()"
       [class.pointer-events-auto]="!!expandedItem()"
+      data-cursor-pointer
       (click)="closeExpandedItem()">
     </div>
 
@@ -157,6 +163,7 @@
   @if (currentView() === 'photos' && !isIdle()) {
     <!-- BotÃ£o Voltar para Galerias -->
     <button (click)="backToGalleries()"
+            data-cursor-pointer
             class="absolute top-4 left-4 z-20 p-2 bg-black/40 rounded-full text-white hover:text-gray-300 hover:bg-black/60 focus:outline-none">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -185,7 +192,7 @@
 }
 
 @if (isWebcamVisible()) {
-  <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" (click)="isWebcamVisible.set(false)">
+  <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture (close)="isWebcamVisible.set(false)"></app-webcam-capture>
   </div>
 }

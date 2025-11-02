@@ -10,6 +10,7 @@ import { GalleryCreationDialogComponent } from './components/gallery-creation-di
 import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
 
 import { Gallery } from './interfaces/gallery.interface';
+import { InteractiveCursor } from './services/interactive-cursor';
 
 // Interfaces para tipagem dos dados
 interface BaseItem {
@@ -55,10 +56,6 @@ interface ExpandedItem {
   originalWidth: number;
   originalHeight: number;
 }
-
-// DeclaraÃ§Ãµes para as bibliotecas globais do GSAP
-declare const gsap: any;
-declare const CustomEase: any;
 
 @Component({
   selector: 'app-root',
@@ -323,6 +320,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private boundOnMouseEnter: () => void;
   private boundOnMouseLeave: () => void;
   private boundOnMouseMove: (event: MouseEvent) => void;
+  private interactiveCursor: InteractiveCursor | null = null;
 
   constructor() {
     gsap.registerPlugin(CustomEase);
@@ -334,6 +332,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.boundOnMouseEnter = this.onMouseEnter.bind(this);
     this.boundOnMouseLeave = this.onMouseLeave.bind(this);
     this.boundOnMouseMove = this.onMouseMove.bind(this);
+
+    effect(() => {
+      document.body.classList.toggle('custom-cursor-hidden', this.isIdle());
+    });
 
     effect(() => {
       if (!this.isViewInitialized()) return;
@@ -376,6 +378,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     hostElement.addEventListener('mouseenter', this.boundOnMouseEnter);
     hostElement.addEventListener('mouseleave', this.boundOnMouseLeave);
     window.addEventListener('mousemove', this.boundOnMouseMove);
+
+    this.interactiveCursor = new InteractiveCursor('.custom-cursor');
   }
 
   ngOnDestroy(): void {
@@ -395,6 +399,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       clearInterval(this.clockIntervalId);
     }
     clearTimeout(this.inactivityTimeoutId);
+    this.interactiveCursor?.destroy();
+    this.interactiveCursor = null;
+    document.body.classList.remove('custom-cursor-hidden');
   }
   
   // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---

@@ -13,8 +13,9 @@ import { GalleryService } from '../../services/gallery.service';
       
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-medium text-gray-200 tracking-wider">Capturar Foto</h2>
-        <button 
-          (click)="close.emit()" 
+        <button
+          (click)="close.emit()"
+          data-cursor-pointer
           class="text-2xl leading-none rounded-sm focus:outline-none"
           style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
           &times;
@@ -59,9 +60,10 @@ import { GalleryService } from '../../services/gallery.service';
       </div>
 
       <div class="flex items-center gap-4">
-        <button 
+        <button
           (click)="captureImage()"
           [disabled]="!isStreaming() || (countdown() !== null)"
+          data-cursor-pointer
           class="w-full text-white font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
           [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? 'rgb(38, 38, 38)' : 'rgb(60, 60, 60)'"
           [style.color]="(!isStreaming() || countdown() !== null) ? 'rgb(150, 150, 150)' : 'white'"
@@ -72,6 +74,7 @@ import { GalleryService } from '../../services/gallery.service';
 
         <button
           (click)="toggleTimer()"
+          data-cursor-pointer
           class="p-3 rounded-md text-gray-400 focus:outline-none"
           [style.backgroundColor]="isTimerEnabled() ? 'rgb(80, 80, 80)' : 'rgb(38, 38, 38)'"
           [style.color]="isTimerEnabled() ? 'white' : 'rgb(180, 180, 180)'"

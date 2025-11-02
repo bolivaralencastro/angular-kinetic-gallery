@@ -8,7 +8,7 @@ import { Gallery } from '../../interfaces/gallery.interface';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="close.emit()">
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="close.emit()" data-cursor-pointer>
       <div 
         class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
         style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
@@ -18,8 +18,9 @@ import { Gallery } from '../../interfaces/gallery.interface';
           <h2 class="text-xl font-medium text-gray-200 tracking-wider">
             {{ gallery() ? 'Editar Galeria' : 'Criar Galeria' }}
           </h2>
-          <button 
-            (click)="close.emit()" 
+          <button
+            (click)="close.emit()"
+            data-cursor-pointer
             class="text-2xl leading-none rounded-sm focus:outline-none"
             style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
             &times;
@@ -56,9 +57,10 @@ import { Gallery } from '../../interfaces/gallery.interface';
 
           <div class="flex justify-between">
             @if (gallery()) {
-            <button 
+            <button
               type="button"
               (click)="onDelete()"
+              data-cursor-pointer
               class="px-4 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
               style="background-color: rgb(150, 40, 40); border: none;">
               Excluir
@@ -66,16 +68,18 @@ import { Gallery } from '../../interfaces/gallery.interface';
             }
             
             <div class="flex gap-3 ml-auto">
-              <button 
+              <button
                 type="button"
                 (click)="close.emit()"
+                data-cursor-pointer
                 class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
                 style="background-color: rgb(60, 60, 60); border: none;">
                 Cancelar
               </button>
-              
-              <button 
+
+              <button
                 type="submit"
+                data-cursor-pointer
                 class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
                 style="background-color: rgb(60, 60, 60); border: none;">
                 {{ gallery() ? 'Atualizar' : 'Criar' }}

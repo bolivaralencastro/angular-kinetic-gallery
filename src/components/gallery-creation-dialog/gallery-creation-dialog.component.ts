@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="onClose()">
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="onClose()" data-cursor-pointer>
       <div 
         class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
         style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
@@ -17,8 +17,9 @@ import { CommonModule } from '@angular/common';
           <h2 class="text-xl font-medium text-gray-200 tracking-wider">
             Criar Galeria
           </h2>
-          <button 
-            (click)="onClose()" 
+          <button
+            (click)="onClose()"
+            data-cursor-pointer
             class="text-2xl leading-none rounded-sm focus:outline-none"
             style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
             &times;
@@ -52,17 +53,19 @@ import { CommonModule } from '@angular/common';
           </div>
 
           <div class="flex justify-end gap-3">
-            <button 
+            <button
               type="button"
               (click)="onClose()"
+              data-cursor-pointer
               class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
               style="background-color: rgb(60, 60, 60); border: none;">
               Cancelar
             </button>
-            
-            <button 
+
+            <button
               type="submit"
               [disabled]="galleryForm.invalid"
+              data-cursor-pointer
               class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
               [style.backgroundColor]="galleryForm.invalid ? 'rgb(38, 38, 38)' : 'rgb(60, 60, 60)'"
               [style.color]="galleryForm.invalid ? 'rgb(150, 150, 150)' : 'white'"
