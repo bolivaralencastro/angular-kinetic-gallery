@@ -48,16 +48,17 @@ function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
 }
 
-type GsapModule = typeof import('./utils/gsap-lite');
-type GsapInstance = GsapModule['gsap'];
-
 interface ExpandedItem {
   id: string;
-  url: string;
+  url:string;
   originalRect: DOMRect;
   originalWidth: number;
   originalHeight: number;
 }
+
+// DeclaraÃ§Ãµes para as bibliotecas globais do GSAP
+declare const gsap: any;
+declare const CustomEase: any;
 
 @Component({
   selector: 'app-root',
@@ -322,11 +323,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private boundOnMouseEnter: () => void;
   private boundOnMouseLeave: () => void;
   private boundOnMouseMove: (event: MouseEvent) => void;
-  private resizeObserver: ResizeObserver | null = null;
-  private gsapLoader: Promise<GsapInstance> | null = null;
-  private readonly gsapEaseName = 'hop';
 
   constructor() {
+    gsap.registerPlugin(CustomEase);
+    CustomEase.create("hop", "0.9, 0, 0.1, 1");
+
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
@@ -347,7 +348,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const elementRef = this.expandedItemElement();
       const item = this.expandedItem();
       if (elementRef && item) {
-        this.animateExpansion(elementRef.nativeElement, item);
+        this.runExpandAnimation(elementRef.nativeElement, item);
       }
     });
 
@@ -368,8 +369,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.onResize();
     this.isViewInitialized.set(true);
-    this.resizeObserver = new ResizeObserver(() => this.onResize());
-    this.resizeObserver.observe(this.elementRef.nativeElement);
+    const resizeObserver = new ResizeObserver(() => this.onResize());
+    resizeObserver.observe(this.elementRef.nativeElement);
 
     const hostElement = this.elementRef.nativeElement;
     hostElement.addEventListener('mouseenter', this.boundOnMouseEnter);
@@ -389,10 +390,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     hostElement.removeEventListener('mouseenter', this.boundOnMouseEnter);
     hostElement.removeEventListener('mouseleave', this.boundOnMouseLeave);
     window.removeEventListener('mousemove', this.boundOnMouseMove);
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
 
     if (this.clockIntervalId) {
       clearInterval(this.clockIntervalId);
@@ -551,7 +548,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const newVisibleItems: VisibleItem[] = [];
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        const itemIndex = this.wrapIndex(row * this.numColumns() + col, itemsToDisplay.length);
+        const itemIndex = Math.abs((row * this.numColumns() + col) % itemsToDisplay.length);
         const currentItem = itemsToDisplay[itemIndex];
         const creationOrder = this.calculateCreationOrder(itemsToDisplay.length, itemIndex);
 
@@ -594,14 +591,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
     this.visibleItems.set(newVisibleItems);
-  }
-
-  private wrapIndex(index: number, length: number): number {
-    if (length <= 0) {
-      return 0;
-    }
-    const normalized = index % length;
-    return normalized < 0 ? normalized + length : normalized;
   }
 
   private calculateCreationOrder(totalItems: number, index: number): number {
@@ -739,44 +728,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private ensureGsap(): Promise<GsapInstance> {
-    if (this.gsapLoader) {
-      return this.gsapLoader;
-    }
-
-    this.gsapLoader = import('./utils/gsap-lite').then(module => {
-      const { gsap, CustomEase } = module;
-      gsap.registerPlugin(CustomEase);
-      CustomEase.create(this.gsapEaseName, '0.9, 0, 0.1, 1');
-      return gsap;
-    });
-
-    return this.gsapLoader;
-  }
-
-  private animateExpansion(element: HTMLElement, item: ExpandedItem): void {
+  private runExpandAnimation(element: HTMLElement, item: ExpandedItem): void {
     const side = Math.min(window.innerWidth, window.innerHeight) * 0.9;
-
-    void this.ensureGsap().then(gsapInstance => {
-      this.ngZone.runOutsideAngular(() => {
-        gsapInstance.fromTo(element, {
-          width: item.originalWidth,
-          height: item.originalHeight,
-          x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
-          y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
-        }, {
-          width: side,
-          height: side,
-          x: 0,
-          y: 0,
-          duration: this.settings.zoomDuration,
-          ease: this.gsapEaseName,
-        });
-      });
+    
+    gsap.fromTo(element, {
+      width: item.originalWidth,
+      height: item.originalHeight,
+      x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
+      y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
+    }, {
+      width: side,
+      height: side,
+      x: 0,
+      y: 0,
+      duration: this.settings.zoomDuration,
+      ease: "hop",
     });
   }
 
-  editGallery(id: string): void {
+    editGallery(id: string): void {
     const galleryToEdit = this.galleryService.getGallery(id);
     if (galleryToEdit) {
       this.editingGallery.set(galleryToEdit);
@@ -787,8 +757,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onResize(): void {
     this.calculateGridDimensions();
     this.updateVisibleItems(true);
-    if (this.expandedItem()) {
-      this.closeExpandedItem();
+    if(this.expandedItem()){
+        this.closeExpandedItem();
     }
   }
 
@@ -977,23 +947,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeExpandedItem(): void {
     const element = this.expandedItemElement();
-    const item = this.expandedItem();
-    if (element && item) {
-      const nativeElement = element.nativeElement;
-      void this.ensureGsap().then(gsapInstance => {
-        this.ngZone.runOutsideAngular(() => {
-          gsapInstance.to(nativeElement, {
-            width: item.originalWidth,
-            height: item.originalHeight,
-            x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
-            y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
-            duration: this.settings.zoomDuration,
-            ease: this.gsapEaseName,
-            onComplete: () => {
-              this.ngZone.run(() => this.expandedItem.set(null));
-            },
-          });
-        });
+    if (element && this.expandedItem()) {
+      const item = this.expandedItem()!;
+      gsap.to(element.nativeElement, {
+        width: item.originalWidth,
+        height: item.originalHeight,
+        x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
+        y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
+        duration: 0.6,
+        ease: "hop",
+        onComplete: () => {
+          this.expandedItem.set(null);
+        }
       });
     } else {
       this.expandedItem.set(null);
