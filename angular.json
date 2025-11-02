@@ -18,6 +18,7 @@
             "index": "index.html",
             "polyfills": ["./src/polyfills.ts"],
             "tsConfig": "tsconfig.json",
+            "tailwindConfig": "tailwind.config.js",
             "assets": [
               "favicon.ico",
               "src/favicon.ico"

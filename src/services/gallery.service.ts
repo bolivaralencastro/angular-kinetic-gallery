@@ -11,6 +11,7 @@ export class GalleryService {
 
   galleries = signal<Gallery[]>(this.initialGalleries);
   selectedGalleryId = signal<string | null>(null);
+  private pendingSave: { handle: number; type: 'idle' | 'timeout' } | null = null;
 
   // Computed signal for the images of the currently selected gallery
   images = computed(() => {
@@ -24,7 +25,7 @@ export class GalleryService {
 
   constructor() {
     effect(() => {
-      this.saveGalleriesToLocalStorage(this.galleries());
+      this.scheduleSave(this.galleries());
     });
   }
 
@@ -117,6 +118,58 @@ export class GalleryService {
   }
 
   // --- Local Storage Handling ---
+
+  private scheduleSave(galleries: Gallery[]): void {
+    if (typeof window === 'undefined') {
+      this.saveGalleriesToLocalStorage(galleries);
+      return;
+    }
+
+    this.cancelScheduledSave();
+
+    const targetWindow = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+
+    if (typeof targetWindow.requestIdleCallback === 'function') {
+      const handle = targetWindow.requestIdleCallback(() => {
+        this.pendingSave = null;
+        this.saveGalleriesToLocalStorage(galleries);
+      }, { timeout: 2000 });
+      this.pendingSave = { handle, type: 'idle' };
+      return;
+    }
+
+    const handle = window.setTimeout(() => {
+      this.pendingSave = null;
+      this.saveGalleriesToLocalStorage(galleries);
+    }, 0);
+    this.pendingSave = { handle, type: 'timeout' };
+  }
+
+  private cancelScheduledSave(): void {
+    if (!this.pendingSave) {
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      this.pendingSave = null;
+      return;
+    }
+
+    const targetWindow = window as Window &
+      typeof globalThis & { cancelIdleCallback?: (handle: number) => void };
+
+    if (this.pendingSave.type === 'idle' && typeof targetWindow.cancelIdleCallback === 'function') {
+      targetWindow.cancelIdleCallback(this.pendingSave.handle);
+    } else if (this.pendingSave.type === 'timeout') {
+      window.clearTimeout(this.pendingSave.handle);
+    }
+
+    this.pendingSave = null;
+  }
 
   private saveGalleriesToLocalStorage(galleries: Gallery[]): void {
     try {
