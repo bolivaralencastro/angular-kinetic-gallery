@@ -44,8 +44,6 @@ type VisibleItem = PhotoItem | GalleryCardItem;
 const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
 type ArrowKey = (typeof ARROW_KEYS)[number];
 
-type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-
 function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
 }
@@ -243,8 +241,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   private readonly GALLERY_PREVIEW_DELAY = 300;
   private readonly GALLERY_PREVIEW_INTERVAL = 500;
-  private readonly CORNER_THRESHOLD = 48;
-  private readonly CORNER_ACTIVATION_DELAY = 1500;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
@@ -276,28 +272,23 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
-  private idleMode = signal<'inactivity' | 'corner' | null>(null);
-  private inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private inactivityTimeoutId: any;
   private idleEllipseAngle = 0;
   private idleEllipseCenter = { x: 0, y: 0 };
   private idleEllipseRadiusX = 0; // Semi-eixo maior (horizontal) - será calculado baseado na tela
   private idleEllipseRadiusY = 0; // Semi-eixo menor (vertical) - será calculado baseado na tela
   private readonly idleSpeed = 0.001; // Velocidade angular (reduzida para movimento mais lento)
-  private cornerActivationTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  private pendingCorner: Corner | null = null;
-  private activeCorner: Corner | null = null;
-
+  
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
-
+  
   isInteractionEnabled = computed(
     () =>
       !this.expandedItem() &&
       !this.isWebcamVisible() &&
       !this.isGalleryEditorVisible() &&
       !this.isGalleryCreationDialogVisible() &&
-      !this.isInfoDialogVisible() &&
-      this.idleMode() !== 'corner'
+      !this.isInfoDialogVisible()
   );
 
   // --- ReferÃªncias a Elementos do Template ---
@@ -403,158 +394,36 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.clockIntervalId) {
       clearInterval(this.clockIntervalId);
     }
-    if (this.inactivityTimeoutId !== null) {
-      clearTimeout(this.inactivityTimeoutId);
-      this.inactivityTimeoutId = null;
-    }
-    if (this.cornerActivationTimeoutId !== null) {
-      clearTimeout(this.cornerActivationTimeoutId);
-      this.cornerActivationTimeoutId = null;
-    }
+    clearTimeout(this.inactivityTimeoutId);
   }
   
   // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
 
   private resetInactivityTimer(): void {
-    if (this.idleMode() === 'corner') {
-      return;
-    }
-
     if (this.isIdle()) {
-      this.exitIdleMode();
+      this.isIdle.set(false);
+      // Reseta o ângulo quando sai do modo idle
+      this.idleEllipseAngle = 0;
     }
-
-    if (this.inactivityTimeoutId !== null) {
-      clearTimeout(this.inactivityTimeoutId);
-    }
-
+    clearTimeout(this.inactivityTimeoutId);
     this.inactivityTimeoutId = setTimeout(() => {
-      this.enterIdleMode('inactivity');
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      // Define raios largos para uma trajetória ampla que circunda a área atual
+      this.idleEllipseRadiusX = screenWidth * 2.5;
+      this.idleEllipseRadiusY = screenHeight * 1.5;
+
+      const currentTargetX = this.target.x;
+      const currentTargetY = this.target.y;
+
+      // Posiciona o centro da elipse à esquerda para que o ponto atual seja o início da órbita
+      this.idleEllipseCenter.x = currentTargetX - this.idleEllipseRadiusX;
+      this.idleEllipseCenter.y = currentTargetY;
+
+      this.idleEllipseAngle = 0;
+      this.isIdle.set(true);
     }, 5000);
-  }
-
-  private enterIdleMode(mode: 'inactivity' | 'corner', corner?: Corner): void {
-    if (this.isIdle() && this.idleMode() === mode) {
-      if (mode === 'corner' && corner) {
-        this.activeCorner = corner;
-      }
-      return;
-    }
-
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    // Define raios largos para uma trajetória ampla que circunda a área atual
-    this.idleEllipseRadiusX = screenWidth * 2.5;
-    this.idleEllipseRadiusY = screenHeight * 1.5;
-
-    const currentTargetX = this.target.x;
-    const currentTargetY = this.target.y;
-
-    // Posiciona o centro da elipse à esquerda para que o ponto atual seja o início da órbita
-    this.idleEllipseCenter.x = currentTargetX - this.idleEllipseRadiusX;
-    this.idleEllipseCenter.y = currentTargetY;
-
-    this.idleEllipseAngle = 0;
-    this.idleMode.set(mode);
-    this.isIdle.set(true);
-
-    if (mode === 'corner') {
-      if (this.inactivityTimeoutId !== null) {
-        clearTimeout(this.inactivityTimeoutId);
-        this.inactivityTimeoutId = null;
-      }
-      this.activeCorner = corner ?? null;
-    }
-  }
-
-  private exitIdleMode(): void {
-    if (!this.isIdle()) {
-      return;
-    }
-
-    const currentMode = this.idleMode();
-    this.isIdle.set(false);
-    this.idleMode.set(null);
-    this.idleEllipseAngle = 0;
-
-    if (currentMode === 'corner') {
-      this.activeCorner = null;
-    }
-  }
-
-  private getCornerAtPosition(x: number, y: number): Corner | null {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    if (width <= 0 || height <= 0) {
-      return null;
-    }
-
-    const nearLeft = x <= this.CORNER_THRESHOLD;
-    const nearRight = x >= width - this.CORNER_THRESHOLD;
-    const nearTop = y <= this.CORNER_THRESHOLD;
-    const nearBottom = y >= height - this.CORNER_THRESHOLD;
-
-    if (nearTop && nearLeft) return 'top-left';
-    if (nearTop && nearRight) return 'top-right';
-    if (nearBottom && nearLeft) return 'bottom-left';
-    if (nearBottom && nearRight) return 'bottom-right';
-
-    return null;
-  }
-
-  private cancelCornerActivation(): void {
-    if (this.cornerActivationTimeoutId !== null) {
-      clearTimeout(this.cornerActivationTimeoutId);
-      this.cornerActivationTimeoutId = null;
-    }
-    this.pendingCorner = null;
-  }
-
-  private handleCornerHover(corner: Corner): void {
-    if (!this.isFullscreen()) {
-      return;
-    }
-
-    if (this.idleMode() === 'corner') {
-      if (this.activeCorner === corner) {
-        return;
-      }
-      this.exitIdleMode();
-      this.resetInactivityTimer();
-    }
-
-    if (this.pendingCorner === corner) {
-      return;
-    }
-
-    this.cancelCornerActivation();
-    this.pendingCorner = corner;
-    this.cornerActivationTimeoutId = setTimeout(() => {
-      if (this.pendingCorner !== corner) {
-        return;
-      }
-
-      if (!this.isFullscreen()) {
-        return;
-      }
-
-      this.enterIdleMode('corner', corner);
-      this.pendingCorner = null;
-      this.cornerActivationTimeoutId = null;
-    }, this.CORNER_ACTIVATION_DELAY);
-  }
-
-  private handleCornerExit(): void {
-    const wasCornerMode = this.idleMode() === 'corner';
-    this.cancelCornerActivation();
-
-    if (wasCornerMode) {
-      this.exitIdleMode();
-    }
-
-    this.resetInactivityTimer();
   }
   
   private calculateGridDimensions(): void {
@@ -576,11 +445,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private onMouseLeave(): void {
     this.interactionState.isMouseOver = false;
-    this.cancelCornerActivation();
-    if (this.idleMode() === 'corner') {
-      this.exitIdleMode();
-      this.resetInactivityTimer();
-    }
   }
 
   private onMouseMove(event: MouseEvent): void {
@@ -596,17 +460,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.interactionState.mouseX = clampedX;
     this.interactionState.mouseY = clampedY;
-
-    const corner = this.isFullscreen() ? this.getCornerAtPosition(event.clientX, event.clientY) : null;
-
-    if (corner) {
-      this.handleCornerHover(corner);
-      if (this.idleMode() !== 'corner') {
-        this.resetInactivityTimer();
-      }
-    } else {
-      this.handleCornerExit();
-    }
+    this.resetInactivityTimer();
   }
 
   private calculateEdgeScroll(): { deltaX: number; deltaY: number } {
@@ -1026,13 +880,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onFullscreenChange(): void {
     this.isFullscreen.set(!!document.fullscreenElement);
-    if (!document.fullscreenElement) {
-      this.cancelCornerActivation();
-      if (this.idleMode() === 'corner') {
-        this.exitIdleMode();
-        this.resetInactivityTimer();
-      }
-    }
   }
 
   updateTime(): void {
