@@ -46,7 +46,7 @@
                      (load)="$event.target.classList.add('opacity-100')"
                      [class.group-hover:scale-105]="isInteractionEnabled()"
                      alt="Capa da Galeria: {{ item.name }}">
-                <div class="absolute inset-0 pointer-events-none gallery-shadow z-10"></div>
+                <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
               </div>
               <span
                 class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
@@ -108,7 +108,7 @@
                      [class.group-hover:scale-1.05]="isInteractionEnabled()"
                      alt="Imagem da galeria capturada pela webcam">
               }
-              <div class="absolute inset-0 pointer-events-none gallery-shadow z-10"></div>
+              <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
             </div>
             <span
               class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">

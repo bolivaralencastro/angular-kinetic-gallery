@@ -23,7 +23,6 @@
               "src/favicon.ico"
             ],
             "styles": [
-              "src/tailwind-generated.css",
               "src/styles.css"
             ],
             "scripts": [],
