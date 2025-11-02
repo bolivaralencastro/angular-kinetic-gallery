@@ -24,3 +24,43 @@ app-gallery-editor textarea:focus {
   outline: none !important;
   outline-color: transparent !important;
 }
+
+/* --- CSS Essencial para o Cursor Interativo --- */
+body {
+  cursor: none;
+}
+
+.custom-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  opacity: 0.8;
+  mix-blend-mode: difference;
+  transition: opacity 0.2s ease;
+}
+
+[data-hover-target] {
+  position: relative;
+}
+
+[data-hover-trigger] {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+@media (pointer: coarse) {
+  body {
+    cursor: auto;
+  }
+
+  .custom-cursor {
+    display: none;
+  }
+}
