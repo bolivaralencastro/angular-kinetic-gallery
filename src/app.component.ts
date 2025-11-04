@@ -249,6 +249,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
   galleryPreviewImages = signal<Record<string, string>>({});
+  isTouchDevice = signal(false);
+  shouldShowOnboarding = signal(false);
 
   // --- Sinais para o RelÃ³gio e Data ---
   currentTime = signal('');
@@ -266,6 +268,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   editingGallery = signal<Gallery | null>(null);
   isGalleryCreationDialogVisible = signal(false);
   isInfoDialogVisible = signal(false);
+  selectedGallery = computed(() => {
+    const id = this.galleryService.selectedGalleryId();
+    if (!id) {
+      return null;
+    }
+    return this.galleryService.getGallery(id) ?? null;
+  });
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
@@ -285,7 +294,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !this.isWebcamVisible() &&
       !this.isGalleryEditorVisible() &&
       !this.isGalleryCreationDialogVisible() &&
-      !this.isInfoDialogVisible()
+      !this.isInfoDialogVisible() &&
+      !this.shouldShowOnboarding()
   );
 
   // --- ReferÃªncias a Elementos do Template ---
@@ -312,6 +322,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     startTimeoutId: ReturnType<typeof setTimeout> | null;
     intervalId: ReturnType<typeof setInterval> | null;
   }>();
+  private pointerMediaQuery: MediaQueryList | null = null;
+  private boundPointerMediaQueryListener: ((event: MediaQueryListEvent) => void) | null = null;
+  private readonly ONBOARDING_STORAGE_KEY = 'akg:onboarding-dismissed-v1';
+  private wheelListenerAttached = false;
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
@@ -358,10 +372,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.startAnimationLoop();
+    this.initializeDeviceCapabilities();
+
+    if (!this.isTouchDevice()) {
+      this.startAnimationLoop();
+      this.elementRef.nativeElement.addEventListener('wheel', this.boundOnWheel, { passive: false });
+      this.wheelListenerAttached = true;
+    }
+
     document.addEventListener('click', this.boundCloseContextMenu, true);
     document.addEventListener('fullscreenchange', this.boundOnFullscreenChange);
-    this.elementRef.nativeElement.addEventListener('wheel', this.boundOnWheel, { passive: false });
 
     this.updateTime();
     this.updateDate();
@@ -373,6 +393,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isViewInitialized.set(true);
     const resizeObserver = new ResizeObserver(() => this.onResize());
     resizeObserver.observe(this.elementRef.nativeElement);
+
+    if (this.isTouchDevice()) {
+      return;
+    }
 
     const hostElement = this.elementRef.nativeElement;
     hostElement.addEventListener('mouseenter', this.boundOnMouseEnter);
@@ -389,7 +413,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     document.removeEventListener('click', this.boundCloseContextMenu, true);
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
-    this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
+    if (this.wheelListenerAttached) {
+      this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
+      this.wheelListenerAttached = false;
+    }
     const hostElement = this.elementRef.nativeElement;
     hostElement.removeEventListener('mouseenter', this.boundOnMouseEnter);
     hostElement.removeEventListener('mouseleave', this.boundOnMouseLeave);
@@ -402,9 +429,40 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.interactiveCursor?.destroy();
     this.interactiveCursor = null;
     document.body.classList.remove('custom-cursor-hidden');
+
+    if (this.pointerMediaQuery && this.boundPointerMediaQueryListener) {
+      this.pointerMediaQuery.removeEventListener('change', this.boundPointerMediaQueryListener);
+      this.pointerMediaQuery = null;
+      this.boundPointerMediaQueryListener = null;
+    }
   }
   
   // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
+
+  private initializeDeviceCapabilities(): void {
+    if (typeof window === 'undefined') {
+      this.shouldShowOnboarding.set(true);
+      return;
+    }
+
+    const pointerQuery = window.matchMedia('(pointer: coarse)');
+    const isTouch = pointerQuery.matches || navigator.maxTouchPoints > 0;
+    this.isTouchDevice.set(isTouch);
+    this.pointerMediaQuery = pointerQuery;
+
+    this.boundPointerMediaQueryListener = event => {
+      this.isTouchDevice.set(event.matches);
+    };
+    pointerQuery.addEventListener('change', this.boundPointerMediaQueryListener);
+
+    try {
+      const stored = localStorage.getItem(this.ONBOARDING_STORAGE_KEY);
+      this.shouldShowOnboarding.set(!stored);
+    } catch (error) {
+      console.warn('Não foi possível ler o estado do onboarding.', error);
+      this.shouldShowOnboarding.set(true);
+    }
+  }
 
   private resetInactivityTimer(): void {
     if (this.isIdle()) {
@@ -822,6 +880,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  expandPhotoFromMobile(element: HTMLElement, url: string): void {
+    const rect = element.getBoundingClientRect();
+    this.expandedItem.set({
+      id: url,
+      url,
+      originalRect: rect,
+      originalWidth: rect.width,
+      originalHeight: rect.height,
+    });
+  }
+
   handleGalleryCreate(event: { name: string; description: string }): void {
     this.galleryService.createGallery(event.name, event.description);
     this.isGalleryCreationDialogVisible.set(false);
@@ -927,6 +996,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleInfoDialog(): void {
     this.isInfoDialogVisible.update(visible => !visible);
+  }
+
+  openOnboarding(): void {
+    this.shouldShowOnboarding.set(true);
+  }
+
+  closeOnboarding(): void {
+    this.shouldShowOnboarding.set(false);
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.setItem(this.ONBOARDING_STORAGE_KEY, 'seen');
+    } catch (error) {
+      console.warn('Não foi possível salvar o estado do onboarding.', error);
+    }
+  }
+
+  confirmDeleteGallery(id: string): void {
+    if (typeof window !== 'undefined') {
+      const shouldDelete = window.confirm('Deseja realmente excluir esta galeria?');
+      if (!shouldDelete) {
+        return;
+      }
+    }
+    this.deleteGallery(id);
   }
 
   createGalleryWithTimestamp(): void {

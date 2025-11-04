@@ -1,181 +1,353 @@
-<!-- Container principal da galeria com listeners para interaÃ§Ã£o -->
-<div
-  class="relative w-full h-full overflow-hidden select-none grayscale"
-  [class.cursor-none]="isIdle()"
-  (contextmenu)="onRightClick($event)">
+<!-- Layout principal -->
+@if (!isTouchDevice()) {
+  <!-- Desktop / Laptop -->
+  <div
+    class="relative h-full w-full select-none overflow-hidden grayscale"
+    [class.cursor-none]="isIdle()"
+    (contextmenu)="onRightClick($event)">
 
-  @if (currentView() === 'galleries') {
-    @if (galleryService.galleries().length === 0) {
-      <!-- Empty state for galleries -->
-      <div class="fixed inset-0 flex flex-col items-center justify-center text-center p-4 z-10 pointer-events-none">
-        <svg class="w-10 h-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-        </svg>
-        <h2 class="mt-4 text-xl font-medium text-gray-400 tracking-wider">Nenhuma galeria criada</h2>
-        <p class="mt-1 text-sm text-gray-500 tracking-wider">Clique com o botão direito para criar uma nova galeria.</p>
-        <div class="mt-4 flex flex-col items-center pointer-events-auto">
-          <p class="text-sm text-gray-500 mb-3">Como tirar uma foto:</p>
-          <div class="flex gap-2">
-            <button
-              data-cursor-pointer
-              (click)="openGalleryCreationDialog(); $event.stopPropagation();"
-              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
-              Nova Galeria
-            </button>
+    @if (currentView() === 'galleries') {
+      @if (galleryService.galleries().length === 0) {
+        <!-- Empty state para galerias -->
+        <div class="pointer-events-none fixed inset-0 z-10 flex flex-col items-center justify-center p-4 text-center">
+          <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+          </svg>
+          <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Nenhuma galeria criada</h2>
+          <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para criar uma nova galeria.</p>
+          <div class="pointer-events-auto mt-4 flex flex-col items-center">
+            <p class="mb-3 text-sm text-gray-500">Como começar:</p>
+            <div class="flex gap-2">
+              <button
+                data-cursor-pointer
+                (click)="openGalleryCreationDialog(); $event.stopPropagation();"
+                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                Nova Galeria
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      } @else {
+        <!-- Canvas com lista de galerias -->
+        <div #canvas class="absolute will-change-transform">
+          @for (item of visibleItems(); track trackById($index, item)) {
+            @if (item.type === 'gallery') {
+              <div
+                class="item group absolute overflow-hidden rounded-lg bg-[#1a1a1a]"
+                [style.width.px]="item.width"
+                [style.height.px]="item.height"
+                [style.left.px]="item.x"
+                [style.top.px]="item.y"
+                [class.cursor-pointer]="isInteractionEnabled()"
+                data-cursor-pointer
+                (click)="selectGallery(item.id)"
+                (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
+                (mouseleave)="onGalleryHoverEnd(item.previewKey)"
+                (contextmenu)="onGalleryRightClick($event, item.id)">
+                <div class="item-image-container relative h-full w-full overflow-hidden">
+                  <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
+                       class="pointer-events-none h-full w-full object-cover opacity-0 transition-opacity duration-400"
+                       (load)="$event.target.classList.add('opacity-100')"
+                       [class.group-hover:scale-105]="isInteractionEnabled()"
+                       alt="Capa da Galeria: {{ item.name }}">
+                  <div class="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)]"></div>
+                </div>
+                <span
+                  class="pointer-events-none absolute right-2 top-2 z-30 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  {{ item.creationOrder }}
+                </span>
+                <div class="absolute bottom-0 left-0 pl-8 pb-8 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <div class="mb-0.5 text-xs text-gray-300">{{ item.createdAt }}</div>
+                  <div class="text-sm font-medium">{{ item.name }}</div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
     } @else {
-      <!-- Gallery List Canvas -->
+      <!-- Photo Grid Canvas -->
+      @if (images().length === 0) {
+        <!-- Empty state para fotos -->
+        <div class="fixed inset-0 z-10 flex flex-col items-center justify-center p-4 text-center">
+          <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+          </svg>
+          <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Esta galeria está vazia</h2>
+          <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para adicionar fotos.</p>
+
+          <div class="mt-4 flex flex-col items-center">
+            <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
+            <div class="flex gap-2">
+              <button
+                data-cursor-pointer
+                (click)="openWebcamCapture(); $event.stopPropagation();"
+                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                Usar Câmera
+              </button>
+              <button
+                data-cursor-pointer
+                (click)="handleSpacebar($event)"
+                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                Atalho: Espaço
+              </button>
+            </div>
+          </div>
+        </div>
+      }
       <div #canvas class="absolute will-change-transform">
         @for (item of visibleItems(); track trackById($index, item)) {
-          @if (item.type === 'gallery') {
-            <div
-              class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
-              [style.width.px]="item.width"
-              [style.height.px]="item.height"
-              [style.left.px]="item.x"
-              [style.top.px]="item.y"
-              [class.cursor-pointer]="isInteractionEnabled()"
-              data-cursor-pointer
-              (click)="selectGallery(item.id)"
-              (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
-              (mouseleave)="onGalleryHoverEnd(item.previewKey)"
-              (contextmenu)="onGalleryRightClick($event, item.id)">
-              <div class="item-image-container relative w-full h-full overflow-hidden">
-                <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
-                     class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
-                     (load)="$event.target.classList.add('opacity-100')"
-                     [class.group-hover:scale-105]="isInteractionEnabled()"
-                     alt="Capa da Galeria: {{ item.name }}">
-                <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
-              </div>
-              <span
-                class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                {{ item.creationOrder }}
-              </span>
-              <div class="absolute bottom-0 left-0 pl-8 pb-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div class="text-xs text-gray-300 mb-0.5">{{ item.createdAt }}</div>
-                <div class="text-sm font-medium">{{ item.name }}</div>
-              </div>
-
-            </div>
-          }
-        }
-      </div>
-    }
-  } @else {
-    <!-- Photo Grid Canvas -->
-    @if (images().length === 0) {
-      <!-- Empty state for photos in a gallery -->
-      <div class="fixed inset-0 flex flex-col items-center justify-center text-center p-4 z-10">
-        <svg class="w-10 h-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-        </svg>
-        <h2 class="mt-4 text-xl font-medium text-gray-400 tracking-wider">Esta galeria está vazia</h2>
-        <p class="mt-1 text-sm text-gray-500 tracking-wider">Clique com o botão direito para adicionar fotos.</p>
-        
-        <div class="mt-4 flex flex-col items-center">
-          <p class="text-sm text-gray-500 mb-3">Como tirar uma foto:</p>
-          <div class="flex gap-2">
-            <button
-              data-cursor-pointer
-              (click)="openWebcamCapture(); $event.stopPropagation();"
-              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
-              Usar Câmera
-            </button>
-            <button
-              data-cursor-pointer
-              (click)="handleSpacebar($event)"
-              class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md text-sm transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
-              Atalho: Espaço
-            </button>
-          </div>
-        </div>
-      </div>
-    }
-    <div #canvas class="absolute will-change-transform">
-      @for (item of visibleItems(); track trackById($index, item)) {
-        <div
-          class="item group absolute overflow-hidden bg-[#1a1a1a] rounded-lg"
-          [style.width.px]="item.width"
-          [style.height.px]="item.height"
-          [style.left.px]="item.x"
-          [style.top.px]="item.y"
-          [class.cursor-pointer]="isInteractionEnabled()"
-          data-cursor-pointer
-          (click)="onImageClick($event, item)">
-            <div class="item-image-container relative w-full h-full overflow-hidden">
+          <div
+            class="item group absolute overflow-hidden rounded-lg bg-[#1a1a1a]"
+            [style.width.px]="item.width"
+            [style.height.px]="item.height"
+            [style.left.px]="item.x"
+            [style.top.px]="item.y"
+            [class.cursor-pointer]="isInteractionEnabled()"
+            data-cursor-pointer
+            (click)="onImageClick($event, item)">
+            <div class="item-image-container relative h-full w-full overflow-hidden">
               @if (item.type === 'photo') {
                 <img [src]="item.url"
-                     class="w-full h-full object-cover pointer-events-none transition-opacity duration-400 opacity-0"
+                     class="pointer-events-none h-full w-full object-cover opacity-0 transition-opacity duration-400"
                      (load)="$event.target.classList.add('opacity-100')"
                      [class.group-hover:scale-1.05]="isInteractionEnabled()"
                      alt="Imagem da galeria capturada pela webcam">
               }
-              <div class="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)] z-10"></div>
+              <div class="pointer-events-none absolute inset-0 z-10 shadow-[inset_0_0_40px_20px_rgba(0,0,0,0.8)]"></div>
             </div>
             <span
-              class="absolute top-2 right-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              class="pointer-events-none absolute right-2 top-2 z-30 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
               {{ item.creationOrder }}
             </span>
+          </div>
+        }
+      </div>
+
+      <!-- Overlay para imagem expandida -->
+      <div
+        class="overlay pointer-events-none fixed inset-0 z-[9999] bg-black/90 transition-opacity duration-500"
+        [class.opacity-100]="!!expandedItem()"
+        [class.opacity-0]="!expandedItem()"
+        [class.pointer-events-auto]="!!expandedItem()"
+        data-cursor-pointer
+        (click)="closeExpandedItem()">
+      </div>
+
+      @if (expandedItem(); as item) {
+        <div #expandedItemElement
+          class="fixed top-1/2 left-1/2 z-[10000] flex items-center justify-center overflow-hidden rounded-lg bg-black shadow-2xl"
+          style="transform: translate(-50%, -50%); will-change: width, height, transform;">
+          <img [src]="item.url" class="h-full w-full object-contain pointer-events-none" alt="Imagem expandida">
+        </div>
+      }
+    }
+
+    <!-- Relógio e data -->
+    <div class="pointer-events-none absolute bottom-4 left-4 z-20 font-mono text-sm tracking-widest text-gray-700">
+      {{ currentTime() }}
+    </div>
+    <div class="pointer-events-none absolute bottom-4 right-4 z-20 font-mono text-sm tracking-widest text-gray-700">
+      {{ currentDate() }}
+    </div>
+
+    <!-- Contadores -->
+    <div class="pointer-events-none absolute right-4 top-4 z-20 font-mono text-sm tracking-widest text-gray-700">
+      @if (currentView() === 'galleries') {
+        {{ galleryCounterLabel() }} {{ galleryCount() }}
+      } @else {
+        {{ photoCounterLabel() }} {{ photoCount() }}
+      }
+    </div>
+
+    <!-- Área de ações no canto superior esquerdo -->
+    <div class="pointer-events-auto absolute left-4 top-4 z-20 flex items-center gap-2">
+      @if (currentView() === 'photos' && !isIdle()) {
+        <button (click)="backToGalleries()"
+                data-cursor-pointer
+                class="flex items-center justify-center rounded-full bg-black/40 p-2 text-white transition hover:bg-black/60 hover:text-gray-300 focus:outline-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
+      }
+      <button
+        type="button"
+        data-cursor-pointer
+        (click)="openOnboarding()"
+        class="rounded-full bg-black/40 px-3 py-1 text-sm font-medium uppercase tracking-[0.25em] text-gray-200 transition hover:bg-black/60 hover:text-white focus:outline-none">
+        Ajuda
+      </button>
+    </div>
+  </div>
+} @else {
+  <!-- Mobile / Touch -->
+  <div class="flex h-full flex-col bg-black text-gray-200">
+    <header class="flex items-center justify-between border-b border-white/10 px-4 py-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.4em] text-amber-400">Angular Kinetic Gallery</p>
+        <h1 class="mt-1 text-lg font-medium text-white">Galeria Cinética</h1>
+      </div>
+      <button
+        type="button"
+        (click)="openOnboarding()"
+        class="rounded-full border border-white/20 px-3 py-1 text-sm font-medium text-white/80">
+        Ajuda
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto">
+      @if (currentView() === 'galleries') {
+        <div class="space-y-6 p-4 pb-28">
+          <section class="rounded-2xl border border-white/5 bg-white/5 p-4 text-sm leading-relaxed text-gray-300">
+            <h2 class="mb-2 text-base font-semibold text-white">Primeiros passos</h2>
+            <ul class="space-y-2">
+              <li>Toque em uma galeria para abrir as fotos.</li>
+              <li>Use os botões inferiores para criar novas coleções ou capturar pela câmera.</li>
+              <li>Arraste horizontalmente para navegar pela imagem de capa quando estiver explorando.</li>
+            </ul>
+          </section>
+
+          @if (galleryService.galleries().length === 0) {
+            <div class="rounded-2xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-sm text-gray-400">
+              <p>Você ainda não criou nenhuma galeria.</p>
+              <p class="mt-2">Toque em <span class="font-medium text-white">Nova galeria</span> para começar.</p>
+              <button
+                type="button"
+                (click)="openGalleryCreationDialog()"
+                class="mt-4 w-full rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white">
+                Criar primeira galeria
+              </button>
+            </div>
+          } @else {
+            <div class="grid gap-4 sm:grid-cols-2">
+              @for (gallery of galleryService.galleries(); track gallery.id) {
+                <article class="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  <button
+                    type="button"
+                    (click)="selectGallery(gallery.id)"
+                    class="block w-full overflow-hidden"
+                    aria-label="Abrir {{ gallery.name }}">
+                    <div class="relative aspect-square w-full">
+                      @if (gallery.thumbnailUrl) {
+                        <img [src]="gallery.thumbnailUrl"
+                             class="h-full w-full object-cover"
+                             alt="Capa da galeria {{ gallery.name }}">
+                      } @else {
+                        <div class="flex h-full w-full items-center justify-center bg-white/10 text-xs uppercase tracking-[0.3em] text-gray-400">
+                          Sem capa
+                        </div>
+                      }
+                      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10"></div>
+                    </div>
+                  </button>
+                  <div class="space-y-3 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="space-y-1">
+                        <h3 class="text-base font-medium text-white">{{ gallery.name }}</h3>
+                        <p class="text-xs text-gray-400">{{ gallery.createdAt }}</p>
+                        @if (gallery.description) {
+                          <p class="text-xs text-gray-500">{{ gallery.description }}</p>
+                        }
+                      </div>
+                      <span class="rounded-full bg-black/40 px-2 py-0.5 text-xs text-gray-300">
+                        {{ gallery.imageUrls.length }} {{ gallery.imageUrls.length === 1 ? 'foto' : 'fotos' }}
+                      </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-xs font-medium">
+                      <button
+                        type="button"
+                        (click)="selectGallery(gallery.id)"
+                        class="rounded-lg bg-white/10 py-2 text-white">
+                        Abrir
+                      </button>
+                      <button
+                        type="button"
+                        (click)="editGallery(gallery.id)"
+                        class="rounded-lg bg-white/5 py-2 text-gray-200">
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        (click)="confirmDeleteGallery(gallery.id)"
+                        class="rounded-lg bg-red-500/20 py-2 text-red-200">
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between border-b border-white/5 px-4 py-3">
+            <button
+              type="button"
+              (click)="backToGalleries()"
+              class="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-sm text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Galerias
+            </button>
+            <div class="text-right">
+              <p class="text-xs uppercase tracking-[0.3em] text-gray-500">Explorando</p>
+              <p class="mt-1 max-w-[160px] truncate text-sm font-medium text-white">{{ selectedGallery()?.name ?? 'Galeria' }}</p>
+              <p class="text-xs text-gray-400">{{ photoCount() }} {{ photoCount() === 1 ? 'foto' : 'fotos' }}</p>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4 pb-28">
+            @if (images().length === 0) {
+              <div class="rounded-2xl border border-dashed border-white/20 bg-white/5 p-6 text-center text-sm text-gray-300">
+                <p>Nenhuma foto por aqui ainda.</p>
+                <p class="mt-2">Use o botão <span class="font-medium text-white">Câmera</span> para registrar novas imagens.</p>
+              </div>
+            } @else {
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                @for (image of images(); track $index) {
+                  <button
+                    type="button"
+                    class="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/5"
+                    (click)="expandPhotoFromMobile($event.currentTarget as HTMLElement, image)">
+                    <img [src]="image" alt="Foto da galeria" class="h-full w-full object-cover" />
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
       }
     </div>
 
-    <!-- Overlay para o modo de visualizaÃ§Ã£o expandida -->
-    <div
-      class="overlay fixed inset-0 bg-black/90 pointer-events-none transition-opacity duration-500 z-[9999]"
-      [class.opacity-100]="!!expandedItem()"
-      [class.opacity-0]="!expandedItem()"
-      [class.pointer-events-auto]="!!expandedItem()"
-      data-cursor-pointer
-      (click)="closeExpandedItem()">
-    </div>
-
-    <!-- Elemento para a imagem expandida, renderizado condicionalmente -->
-    @if (expandedItem(); as item) {
-      <div #expandedItemElement
-        class="fixed z-[10000] top-1/2 left-1/2 bg-black overflow-hidden rounded-lg flex items-center justify-center shadow-2xl"
-        style="transform: translate(-50%, -50%); will-change: width, height, transform;">
-        <img [src]="item.url" class="w-full h-full object-contain pointer-events-none" alt="Imagem expandida">
+    <nav class="sticky bottom-0 border-t border-white/10 bg-black/90 px-4 py-3 backdrop-blur">
+      <div class="grid grid-cols-3 gap-3 text-sm font-medium">
+        <button
+          type="button"
+          (click)="openGalleryCreationDialog()"
+          class="rounded-xl bg-white/10 px-3 py-3 text-white">
+          Nova galeria
+        </button>
+        <button
+          type="button"
+          (click)="openWebcamCapture()"
+          class="rounded-xl bg-white/10 px-3 py-3 text-white">
+          Câmera
+        </button>
+        <button
+          type="button"
+          (click)="toggleInfoDialog()"
+          class="rounded-xl bg-white/10 px-3 py-3 text-white">
+          Sobre
+        </button>
       </div>
-    }
-  }
-
-  <!-- RelÃ³gio e Data -->
-  <div class="absolute bottom-4 left-4 text-sm font-mono tracking-widest text-gray-700 z-20 pointer-events-none">
-    {{ currentTime() }}
+    </nav>
   </div>
-  <div class="absolute bottom-4 right-4 text-sm font-mono tracking-widest text-gray-700 z-20 pointer-events-none">
-    {{ currentDate() }}
-  </div>
+}
 
-  <!-- Contador de Galerias ou Fotos -->
-  <div class="absolute top-4 right-4 text-sm font-mono tracking-widest text-gray-700 z-20 pointer-events-none">
-    @if (currentView() === 'galleries') {
-      {{ galleryCounterLabel() }} {{ galleryCount() }}
-    } @else {
-      {{ photoCounterLabel() }} {{ photoCount() }}
-    }
-  </div>
-
-  @if (currentView() === 'photos' && !isIdle()) {
-    <!-- BotÃ£o Voltar para Galerias -->
-    <button (click)="backToGalleries()"
-            data-cursor-pointer
-            class="absolute top-4 left-4 z-20 p-2 bg-black/40 rounded-full text-white hover:text-gray-300 hover:bg-black/60 focus:outline-none">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-    </button>
-  }
-
-  <!-- Duplicate button removed - keeping only one -->
-</div>
-
-<!-- Componentes de UI flutuantes -->
-@if (contextMenu().visible) {
+<!-- Componentes auxiliares -->
+@if (!isTouchDevice() && contextMenu().visible) {
   <app-context-menu
     [x]="contextMenu().x"
     [y]="contextMenu().y"
@@ -192,7 +364,7 @@
 }
 
 @if (isWebcamVisible()) {
-  <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture (close)="isWebcamVisible.set(false)"></app-webcam-capture>
   </div>
 }
@@ -217,4 +389,90 @@
   <app-info-dialog
     (close)="isInfoDialogVisible.set(false)">
   </app-info-dialog>
+}
+
+@if (shouldShowOnboarding()) {
+  <div class="fixed inset-0 z-[10002] flex items-center justify-center bg-black/80 backdrop-blur-lg p-4">
+    <div class="w-full max-w-4xl overflow-hidden rounded-3xl border border-white/10 bg-neutral-900/90 shadow-2xl">
+      <div class="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
+        <div>
+          <p class="text-xs uppercase tracking-[0.5em] text-amber-400">Boas-vindas</p>
+          <h2 class="mt-3 text-2xl font-semibold text-white">Como aproveitar a galeria</h2>
+          <p class="mt-2 max-w-xl text-sm text-gray-300">Uma visão rápida dos gestos e atalhos essenciais para criar, navegar e expandir fotos sem se perder.</p>
+        </div>
+        <button
+          type="button"
+          class="rounded-full border border-white/20 px-3 py-1 text-sm font-medium text-white/70 transition hover:text-white"
+          (click)="closeOnboarding()">
+          Fechar
+        </button>
+      </div>
+      <div class="grid gap-6 px-6 py-6 md:grid-cols-2">
+        @if (isTouchDevice()) {
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-300">Gestos principais</h3>
+            <ul class="space-y-2 text-sm text-gray-300">
+              <li><span class="font-medium text-white">Toque</span> nas capas para abrir galerias ou fotos.</li>
+              <li><span class="font-medium text-white">Arraste</span> pela tela para percorrer a lista de itens.</li>
+              <li><span class="font-medium text-white">Botões inferiores</span> criam novas galerias, abrem a câmera e mostram mais informações.</li>
+            </ul>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-gray-200">
+              <p class="font-medium text-white">Dica rápida</p>
+              <p class="mt-2">Capture fotos em preto e branco diretamente do celular e organize tudo em coleções independentes.</p>
+            </div>
+          </section>
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-300">Explorar fotos</h3>
+            <ul class="space-y-2 text-sm text-gray-300">
+              <li>Use o botão <span class="font-medium text-white">Galerias</span> para voltar quando estiver dentro de uma coleção.</li>
+              <li>Toque em qualquer imagem para vê-la ampliada em tela cheia.</li>
+              <li>O relógio e o contador no topo ajudam a acompanhar o tempo e o tamanho da coleção.</li>
+            </ul>
+          </section>
+        } @else {
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-300">Teclado & mouse</h3>
+            <ul class="space-y-2 text-sm text-gray-300">
+              <li><span class="font-medium text-white">Arraste</span> com o mouse para navegar pelo plano infinito.</li>
+              <li><span class="font-medium text-white">Clique</span> em uma capa para abrir a galeria e em uma foto para expandi-la.</li>
+              <li><span class="font-medium text-white">Clique direito</span> para abrir o menu de ações (nova galeria, câmera, fullscreen).</li>
+            </ul>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-gray-200">
+              <p class="font-medium text-white">Atalhos úteis</p>
+              <ul class="mt-2 space-y-1">
+                <li><span class="font-mono text-white">Espaço</span> — cria galeria ou abre a câmera</li>
+                <li><span class="font-mono text-white">F</span> — alterna fullscreen</li>
+                <li><span class="font-mono text-white">I</span> — abre esta central de ajuda</li>
+              </ul>
+            </div>
+          </section>
+          <section class="space-y-4">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.3em] text-gray-300">Explorar fotos</h3>
+            <ul class="space-y-2 text-sm text-gray-300">
+              <li>Use as setas ou as teclas <span class="font-medium text-white">W, A, S, D</span> para deslizar pelo grid.</li>
+              <li>O contador no canto mostra quantas galerias ou fotos estão ativas.</li>
+              <li>O modo idle ativa um passeio automático quando você fica inativo por alguns segundos.</li>
+            </ul>
+          </section>
+        }
+      </div>
+      <div class="flex flex-col gap-3 border-t border-white/10 bg-white/5 px-6 py-4 text-sm text-gray-200 md:flex-row md:items-center md:justify-between">
+        <span>Quer saber mais detalhes? Abra a janela “Sobre o Projeto”.</span>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            (click)="closeOnboarding(); toggleInfoDialog()"
+            class="rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white">
+            Ver Sobre o Projeto
+          </button>
+          <button
+            type="button"
+            (click)="closeOnboarding()"
+            class="rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
+            Começar agora
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 }
