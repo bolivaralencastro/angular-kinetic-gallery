@@ -250,6 +250,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private isViewInitialized = signal(false);
   galleryPreviewImages = signal<Record<string, string>>({});
 
+  // --- Layout Responsivo ---
+  private readonly MOBILE_BREAKPOINT = 768;
+  isMobileLayout = signal(false);
+  mobileCommandPanelVisible = signal(false);
+  private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // --- Sinais para o RelÃ³gio e Data ---
   currentTime = signal('');
   currentDate = signal('');
@@ -291,6 +298,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   // --- ReferÃªncias a Elementos do Template ---
   private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
   private expandedItemElement = viewChild<ElementRef<HTMLDivElement>>('expandedItemElement');
+  private mobileScrollContainer = viewChild<ElementRef<HTMLDivElement>>('mobileScrollContainer');
 
   // --- Estado Privado para LÃ³gica de AnimaÃ§Ã£o ---
   private itemDimensions = { width: 0, height: 0, cellWidth: 0, cellHeight: 0 };
@@ -380,6 +388,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     window.addEventListener('mousemove', this.boundOnMouseMove);
 
     this.interactiveCursor = new InteractiveCursor('.custom-cursor');
+
+    if (this.isMobileLayout()) {
+      this.scheduleMobilePanelReveal();
+    }
   }
 
   ngOnDestroy(): void {
@@ -402,6 +414,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.interactiveCursor?.destroy();
     this.interactiveCursor = null;
     document.body.classList.remove('custom-cursor-hidden');
+    this.clearMobileScrollTimeout();
+    if (this.mobileScrollResetTimeout) {
+      clearTimeout(this.mobileScrollResetTimeout);
+      this.mobileScrollResetTimeout = null;
+    }
   }
   
   // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
@@ -516,6 +533,125 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       deltaX: this.keyboardScrollDirection.x * this.MAX_SCROLL_SPEED,
       deltaY: this.keyboardScrollDirection.y * this.MAX_SCROLL_SPEED,
     };
+  }
+
+  // --- Layout Responsivo Mobile ---
+  private updateResponsiveLayout(): void {
+    const isMobile = window.innerWidth <= this.MOBILE_BREAKPOINT;
+    const previousState = this.isMobileLayout();
+    this.isMobileLayout.set(isMobile);
+
+    if (isMobile) {
+      if (!previousState) {
+        this.mobileCommandPanelVisible.set(false);
+      }
+      this.scheduleMobilePanelReveal(previousState ? 600 : 400);
+    } else if (previousState) {
+      this.mobileCommandPanelVisible.set(false);
+      this.clearMobileScrollTimeout();
+    }
+  }
+
+  private clearMobileScrollTimeout(): void {
+    if (this.mobileScrollTimeoutId) {
+      clearTimeout(this.mobileScrollTimeoutId);
+      this.mobileScrollTimeoutId = null;
+    }
+  }
+
+  private scheduleMobilePanelReveal(delay: number = 600): void {
+    if (!this.isMobileLayout()) {
+      return;
+    }
+
+    this.clearMobileScrollTimeout();
+    this.mobileScrollTimeoutId = setTimeout(() => {
+      this.mobileCommandPanelVisible.set(true);
+      this.mobileScrollTimeoutId = null;
+    }, delay);
+  }
+
+  private resetMobileScrollPosition(): void {
+    if (!this.isMobileLayout()) {
+      return;
+    }
+
+    if (this.mobileScrollResetTimeout) {
+      clearTimeout(this.mobileScrollResetTimeout);
+    }
+
+    this.mobileScrollResetTimeout = setTimeout(() => {
+      const container = this.mobileScrollContainer();
+      if (container) {
+        container.nativeElement.scrollTo({ top: 0, behavior: 'auto' });
+      }
+    }, 0);
+  }
+
+  onMobileScroll(): void {
+    if (!this.isMobileLayout()) {
+      return;
+    }
+
+    this.mobileCommandPanelVisible.set(false);
+    this.scheduleMobilePanelReveal(700);
+  }
+
+  onMobilePhotoClick(event: MouseEvent, imageUrl: string, index: number): void {
+    if (!this.isInteractionEnabled()) {
+      return;
+    }
+
+    const placeholderItem: PhotoItem = {
+      type: 'photo',
+      id: `mobile-${index}`,
+      url: imageUrl,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      col: 0,
+      row: 0,
+      creationOrder: index + 1,
+    };
+
+    this.expandItem(placeholderItem, event.currentTarget as HTMLElement);
+  }
+
+  mobileAddAction(): void {
+    if (this.currentView() === 'galleries') {
+      this.openGalleryCreationDialog();
+    } else {
+      this.openWebcamCapture();
+    }
+  }
+
+  getGalleryCover(gallery: Gallery): string {
+    if (gallery.thumbnailUrl) {
+      return gallery.thumbnailUrl;
+    }
+    if (gallery.imageUrls && gallery.imageUrls.length > 0) {
+      return gallery.imageUrls[0];
+    }
+    return 'https://via.placeholder.com/800x800?text=Galeria';
+  }
+
+  private handleMobileNavigationTransition(): void {
+    if (!this.isMobileLayout()) {
+      return;
+    }
+
+    this.mobileCommandPanelVisible.set(false);
+    this.scheduleMobilePanelReveal(500);
+    this.resetMobileScrollPosition();
+  }
+
+  trackMobileGallery(_index: number, gallery: Gallery): string {
+    return gallery.id;
+  }
+
+  trackMobileImage(index: number, imageUrl: string): string {
+    return `${index}-${imageUrl}`;
   }
 
   private updateVisibleItems(force: boolean = false): void {
@@ -764,8 +900,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onResize(): void {
     this.calculateGridDimensions();
     this.updateVisibleItems(true);
-    if(this.expandedItem()){
-        this.closeExpandedItem();
+    this.updateResponsiveLayout();
+    if (this.expandedItem()) {
+      this.closeExpandedItem();
     }
   }
 
@@ -903,6 +1040,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(id);
     this.currentView.set('photos');
+    this.handleMobileNavigationTransition();
   }
 
   deleteGallery(id: string): void {
@@ -950,6 +1088,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(null);
     this.currentView.set('galleries');
+    this.handleMobileNavigationTransition();
   }
 
   closeExpandedItem(): void {
