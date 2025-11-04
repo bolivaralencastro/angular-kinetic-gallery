@@ -27,32 +27,44 @@ app-gallery-editor textarea:focus {
 
 body,
 [data-cursor-pointer] {
-  cursor: none;
+  cursor: auto;
 }
 
 .custom-cursor {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 100000;
-  pointer-events: none;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  background-color: #ffffff;
-  mix-blend-mode: difference;
-  transition: width 0.4s, height 0.4s, border-radius 0.4s, opacity 0.3s;
-  transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
-  opacity: 1;
-  will-change: transform, width, height;
+  display: none;
 }
 
-.custom-cursor.pointer-hover {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-}
+@media (pointer: fine) {
+  body,
+  [data-cursor-pointer] {
+    cursor: none;
+  }
 
-body.custom-cursor-hidden .custom-cursor {
-  opacity: 0;
+  .custom-cursor {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100000;
+    pointer-events: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    mix-blend-mode: difference;
+    transition: width 0.4s, height 0.4s, border-radius 0.4s, opacity 0.3s;
+    transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+    opacity: 1;
+    will-change: transform, width, height;
+  }
+
+  .custom-cursor.pointer-hover {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  body.custom-cursor-hidden .custom-cursor {
+    opacity: 0;
+  }
 }

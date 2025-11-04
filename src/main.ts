@@ -9,4 +9,22 @@ bootstrapApplication(AppComponent, {
     provideZonelessChangeDetection(),
     provideHttpClient(),
   ],
-});
+})
+  .then(() => {
+    if ('serviceWorker' in navigator) {
+      const registerServiceWorker = () => {
+        navigator.serviceWorker.register('service-worker.js').catch(error => {
+          console.error('Falha ao registrar o service worker:', error);
+        });
+      };
+
+      if (document.readyState === 'complete') {
+        registerServiceWorker();
+      } else {
+        window.addEventListener('load', registerServiceWorker, { once: true });
+      }
+    }
+  })
+  .catch(error => {
+    console.error('Falha ao inicializar a aplicação:', error);
+  });

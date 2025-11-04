@@ -2,8 +2,6 @@
   display: block;
   width: 100vw;
   height: 100vh;
-  user-select: none; /* Impede a seleÃ§Ã£o de texto durante o arraste */
-  padding: 32px;
-  box-sizing: border-box;
+  user-select: none;
   background-color: black;
 }
