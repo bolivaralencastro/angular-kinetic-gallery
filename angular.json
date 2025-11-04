@@ -20,7 +20,14 @@
             "tsConfig": "tsconfig.json",
             "assets": [
               "favicon.ico",
-              "src/favicon.ico"
+              "src/favicon.ico",
+              "manifest.webmanifest",
+              "service-worker.js",
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
+              }
             ],
             "styles": [
               "src/styles.css"

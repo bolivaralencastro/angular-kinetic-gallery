@@ -252,8 +252,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
+  private readonly MOBILE_GALLERY_LOOP_MULTIPLIER = 3;
   isMobileLayout = signal(false);
   mobileCommandPanelVisible = signal(false);
+  mobileInfiniteGalleries = computed(() => {
+    const galleries = this.galleryService.galleries();
+    if (galleries.length === 0) {
+      return [] as Gallery[];
+    }
+
+    const looped: Gallery[] = [];
+    for (let index = 0; index < this.MOBILE_GALLERY_LOOP_MULTIPLIER; index += 1) {
+      looped.push(...galleries);
+    }
+    return looped;
+  });
   private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -329,6 +342,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private boundOnMouseLeave: () => void;
   private boundOnMouseMove: (event: MouseEvent) => void;
   private interactiveCursor: InteractiveCursor | null = null;
+  private readonly supportsFinePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
 
   constructor() {
     gsap.registerPlugin(CustomEase);
@@ -341,9 +355,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.boundOnMouseLeave = this.onMouseLeave.bind(this);
     this.boundOnMouseMove = this.onMouseMove.bind(this);
 
-    effect(() => {
-      document.body.classList.toggle('custom-cursor-hidden', this.isIdle());
-    });
+    if (this.supportsFinePointer) {
+      effect(() => {
+        document.body.classList.toggle('custom-cursor-hidden', this.isIdle());
+      });
+    }
 
     effect(() => {
       if (!this.isViewInitialized()) return;
@@ -352,6 +368,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.images();
       this.galleryService.galleries();
       this.updateVisibleItems(true);
+    });
+
+    effect(() => {
+      if (!this.isViewInitialized()) {
+        return;
+      }
+
+      const isMobile = this.isMobileLayout();
+      const view = this.currentView();
+      const galleries = this.galleryService.galleries();
+
+      if (isMobile && view === 'galleries' && galleries.length > 0) {
+        this.resetMobileScrollPosition();
+      }
     });
 
     effect(() => {
@@ -387,7 +417,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     hostElement.addEventListener('mouseleave', this.boundOnMouseLeave);
     window.addEventListener('mousemove', this.boundOnMouseMove);
 
-    this.interactiveCursor = new InteractiveCursor('.custom-cursor');
+    if (this.supportsFinePointer) {
+      this.interactiveCursor = new InteractiveCursor('.custom-cursor');
+    }
 
     if (this.isMobileLayout()) {
       this.scheduleMobilePanelReveal();
@@ -581,9 +613,31 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.mobileScrollResetTimeout = setTimeout(() => {
-      const container = this.mobileScrollContainer();
-      if (container) {
-        container.nativeElement.scrollTo({ top: 0, behavior: 'auto' });
+      const containerRef = this.mobileScrollContainer();
+      if (!containerRef) {
+        return;
+      }
+
+      const element = containerRef.nativeElement;
+      const galleries = this.galleryService.galleries();
+      if (galleries.length === 0) {
+        element.scrollTo({ top: 0, behavior: 'auto' });
+        return;
+      }
+
+      const adjustScroll = () => {
+        const segmentHeight = element.scrollHeight / this.MOBILE_GALLERY_LOOP_MULTIPLIER;
+        if (segmentHeight > 0) {
+          element.scrollTo({ top: segmentHeight, behavior: 'auto' });
+        } else {
+          element.scrollTo({ top: 0, behavior: 'auto' });
+        }
+      };
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(adjustScroll);
+      } else {
+        adjustScroll();
       }
     }, 0);
   }
@@ -591,6 +645,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   onMobileScroll(): void {
     if (!this.isMobileLayout()) {
       return;
+    }
+
+    const containerRef = this.mobileScrollContainer();
+    if (containerRef) {
+      const element = containerRef.nativeElement;
+      const galleries = this.galleryService.galleries();
+      if (galleries.length > 0) {
+        const segmentHeight = element.scrollHeight / this.MOBILE_GALLERY_LOOP_MULTIPLIER;
+        if (segmentHeight > 0) {
+          const lowerBound = segmentHeight * 0.5;
+          const upperBound = segmentHeight * 1.5;
+          if (element.scrollTop < lowerBound) {
+            element.scrollTop += segmentHeight;
+          } else if (element.scrollTop > upperBound) {
+            element.scrollTop -= segmentHeight;
+          }
+        }
+      }
     }
 
     this.mobileCommandPanelVisible.set(false);
@@ -648,6 +720,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   trackMobileGallery(_index: number, gallery: Gallery): string {
     return gallery.id;
+  }
+
+  trackMobileGalleryLoop(index: number, gallery: Gallery): string {
+    return `${index}-${gallery.id}`;
   }
 
   trackMobileImage(index: number, imageUrl: string): string {
