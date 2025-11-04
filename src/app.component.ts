@@ -269,6 +269,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  private lastMobileScrollTop = 0;
 
   // --- Sinais para o RelÃ³gio e Data ---
   currentTime = signal('');
@@ -581,6 +582,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     } else if (previousState) {
       this.mobileCommandPanelVisible.set(false);
       this.clearMobileScrollTimeout();
+      this.lastMobileScrollTop = 0;
     }
   }
 
@@ -622,6 +624,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const galleries = this.galleryService.galleries();
       if (galleries.length === 0) {
         element.scrollTo({ top: 0, behavior: 'auto' });
+        this.lastMobileScrollTop = element.scrollTop;
         return;
       }
 
@@ -632,6 +635,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
           element.scrollTo({ top: 0, behavior: 'auto' });
         }
+        this.lastMobileScrollTop = element.scrollTop;
       };
 
       if (typeof requestAnimationFrame === 'function') {
@@ -653,16 +657,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const galleries = this.galleryService.galleries();
       if (galleries.length > 0) {
         const segmentHeight = element.scrollHeight / this.MOBILE_GALLERY_LOOP_MULTIPLIER;
-        if (segmentHeight > 0) {
-          const lowerBound = segmentHeight * 0.5;
-          const upperBound = segmentHeight * 1.5;
-          if (element.scrollTop < lowerBound) {
-            element.scrollTop += segmentHeight;
-          } else if (element.scrollTop > upperBound) {
-            element.scrollTop -= segmentHeight;
+        const maxScroll = element.scrollHeight - element.clientHeight;
+        if (segmentHeight > 0 && maxScroll > 0) {
+          const previousScrollTop = this.lastMobileScrollTop;
+          const currentScrollTop = element.scrollTop;
+          const isScrollingDown = currentScrollTop > previousScrollTop;
+          const isScrollingUp = currentScrollTop < previousScrollTop;
+          const offsetWithinSegment = currentScrollTop % segmentHeight;
+
+          if (isScrollingUp && currentScrollTop <= 0) {
+            const targetScrollTop = segmentHeight + offsetWithinSegment;
+            element.scrollTop = Math.min(Math.max(targetScrollTop, 0), maxScroll);
+          } else if (isScrollingDown && currentScrollTop >= maxScroll) {
+            const targetScrollTop = segmentHeight + offsetWithinSegment;
+            element.scrollTop = Math.min(Math.max(targetScrollTop, 0), maxScroll);
           }
         }
       }
+      this.lastMobileScrollTop = element.scrollTop;
     }
 
     this.mobileCommandPanelVisible.set(false);
@@ -911,35 +923,37 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private startAnimationLoop(): void {
     this.ngZone.runOutsideAngular(() => {
       const animate = () => {
-        if (this.isIdle()) {
-          // Atualiza o ângulo para percorrer a elipse
-          this.idleEllipseAngle += this.idleSpeed;
+        if (!this.isMobileLayout()) {
+          if (this.isIdle()) {
+            // Atualiza o ângulo para percorrer a elipse
+            this.idleEllipseAngle += this.idleSpeed;
 
-          // Calcula a posição na elipse usando funções trigonométricas
-          // x = centerX + radiusX * cos(angle)
-          // y = centerY + radiusY * sin(angle)
-          this.target.x = this.idleEllipseCenter.x + this.idleEllipseRadiusX * Math.cos(this.idleEllipseAngle);
-          this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
-        } else if (this.isInteractionEnabled()) {
-          const { deltaX: edgeDeltaX, deltaY: edgeDeltaY } = this.calculateEdgeScroll();
-          const { deltaX: keyboardDeltaX, deltaY: keyboardDeltaY } = this.calculateKeyboardScroll();
-          const combinedDeltaX = edgeDeltaX + keyboardDeltaX;
-          const combinedDeltaY = edgeDeltaY + keyboardDeltaY;
-          if (combinedDeltaX !== 0 || combinedDeltaY !== 0) {
-            this.target.x += combinedDeltaX;
-            this.target.y += combinedDeltaY;
-          }
-        }
-
-        if (this.isInteractionEnabled()) {
-          this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
-          this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
-          
-          if (this.canvas()) {
-            this.canvas()!.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
+            // Calcula a posição na elipse usando funções trigonométricas
+            // x = centerX + radiusX * cos(angle)
+            // y = centerY + radiusY * sin(angle)
+            this.target.x = this.idleEllipseCenter.x + this.idleEllipseRadiusX * Math.cos(this.idleEllipseAngle);
+            this.target.y = this.idleEllipseCenter.y + this.idleEllipseRadiusY * Math.sin(this.idleEllipseAngle);
+          } else if (this.isInteractionEnabled()) {
+            const { deltaX: edgeDeltaX, deltaY: edgeDeltaY } = this.calculateEdgeScroll();
+            const { deltaX: keyboardDeltaX, deltaY: keyboardDeltaY } = this.calculateKeyboardScroll();
+            const combinedDeltaX = edgeDeltaX + keyboardDeltaX;
+            const combinedDeltaY = edgeDeltaY + keyboardDeltaY;
+            if (combinedDeltaX !== 0 || combinedDeltaY !== 0) {
+              this.target.x += combinedDeltaX;
+              this.target.y += combinedDeltaY;
+            }
           }
 
-          this.updateVisibleItems();
+          if (this.isInteractionEnabled()) {
+            this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
+            this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
+
+            if (this.canvas()) {
+              this.canvas()!.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
+            }
+
+            this.updateVisibleItems();
+          }
         }
         this.animationFrameId = requestAnimationFrame(animate);
       };
