@@ -170,6 +170,69 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  @HostListener('document:keydown.p', ['$event'])
+  handlePKey(event: KeyboardEvent): void {
+    // Check if user is typing in an input field, textarea, or contenteditable element
+    const target = event.target as HTMLElement;
+    const isTyping = target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      target.closest('input') ||
+      target.closest('textarea')
+    );
+
+    if (isTyping) {
+      // Allow 'p' to be typed normally in input fields
+      return;
+    }
+
+    event.preventDefault();
+    
+    // Toggle gallery preview play/pause
+    if (this.currentView() === 'galleries') {
+      // For now, we'll just toggle previews on currently visible gallery items
+      const visibleGalleries = this.visibleItems().filter(item => item.type === 'gallery');
+      if (visibleGalleries.length > 0) {
+        // Toggle play/pause for all visible galleries that have preview images set
+        const allNotSlideshow = visibleGalleries.every(gallery => {
+          const timer = this.galleryPreviewTimers.get(gallery.previewKey);
+          return !timer || !timer.intervalId;
+        });
+        
+        if (allNotSlideshow) {
+          // Start slideshow for all visible galleries that have images
+          visibleGalleries.forEach(gallery => {
+            if (gallery.imageUrls.length > 1) { // Only start slideshow if there are multiple images
+              // Clear any existing timers and start new slideshow
+              this.clearGalleryPreviewTimers(gallery.previewKey);
+              this.startPreviewForGallery(gallery.id, gallery.previewKey);
+            } else if (gallery.imageUrls.length === 1) {
+              // For single-image galleries, just ensure the image is shown
+              this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+            }
+          });
+        } else {
+          // Stop slideshow for all visible galleries (show first image only)
+          visibleGalleries.forEach(gallery => {
+            if (this.galleryPreviewTimers.has(gallery.previewKey)) {
+              const timers = this.galleryPreviewTimers.get(gallery.previewKey);
+              if (timers && timers.intervalId) {
+                // Clear the slideshow interval, keep showing the current image
+                clearInterval(timers.intervalId);
+                this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: timers.startTimeoutId, intervalId: null });
+              }
+            }
+            // Make sure we're showing the first image
+            if (gallery.imageUrls.length > 0) {
+              this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+            }
+          });
+        }
+      }
+    }
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleZoomKeys(event: KeyboardEvent): void {
     if (!this.isInteractionEnabled()) return;
@@ -839,49 +902,63 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.clearGalleryPreviewTimers(previewKey);
 
-    const startTimeoutId = setTimeout(() => {
-      const activeGallery = this.galleryService.getGallery(galleryId);
-      const imageUrls = activeGallery?.imageUrls ?? [];
-      if (imageUrls.length === 0) {
-        this.onGalleryHoverEnd(previewKey);
-        return;
-      }
-
-      if (imageUrls.length === 1) {
-        this.setGalleryPreviewImage(previewKey, imageUrls[0]);
-        this.galleryPreviewTimers.delete(previewKey);
-        return;
-      }
-
-      let currentIndex = 0;
-      const updateImage = () => {
-        const refreshedGallery = this.galleryService.getGallery(galleryId);
-        const urls = refreshedGallery?.imageUrls ?? imageUrls;
-        if (urls.length === 0) {
-          this.onGalleryHoverEnd(previewKey);
-          return;
-        }
-        if (currentIndex >= urls.length) {
-          currentIndex = 0;
-        }
-        this.setGalleryPreviewImage(previewKey, urls[currentIndex]);
-        currentIndex = (currentIndex + 1) % urls.length;
-      };
-
-      updateImage();
-      const intervalId = setInterval(() => {
-        updateImage();
-      }, this.GALLERY_PREVIEW_INTERVAL);
-
-      this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId });
-    }, this.GALLERY_PREVIEW_DELAY);
-
-    this.galleryPreviewTimers.set(previewKey, { startTimeoutId, intervalId: null });
+    // Show the first image on hover but don't start the slideshow automatically
+    const imageUrls = gallery.imageUrls;
+    if (imageUrls.length > 0) {
+      this.setGalleryPreviewImage(previewKey, imageUrls[0]);
+      // Store the preview key with null timers to indicate it's being hovered but not auto-playing
+      this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId: null });
+    }
   }
 
   onGalleryHoverEnd(previewKey: string): void {
     this.clearGalleryPreviewTimers(previewKey);
     this.setGalleryPreviewImage(previewKey, null);
+  }
+
+  private startPreviewForGallery(galleryId: string, previewKey: string): void {
+    const gallery = this.galleryService.getGallery(galleryId);
+    if (!gallery || gallery.imageUrls.length === 0) {
+      return;
+    }
+
+    this.clearGalleryPreviewTimers(previewKey);
+
+    // Start the preview immediately without delay
+    const activeGallery = this.galleryService.getGallery(galleryId);
+    const imageUrls = activeGallery?.imageUrls ?? [];
+    if (imageUrls.length === 0) {
+      this.onGalleryHoverEnd(previewKey);
+      return;
+    }
+
+    if (imageUrls.length === 1) {
+      this.setGalleryPreviewImage(previewKey, imageUrls[0]);
+      this.galleryPreviewTimers.delete(previewKey);
+      return;
+    }
+
+    let currentIndex = 0;
+    const updateImage = () => {
+      const refreshedGallery = this.galleryService.getGallery(galleryId);
+      const urls = refreshedGallery?.imageUrls ?? imageUrls;
+      if (urls.length === 0) {
+        this.onGalleryHoverEnd(previewKey);
+        return;
+      }
+      if (currentIndex >= urls.length) {
+        currentIndex = 0;
+      }
+      this.setGalleryPreviewImage(previewKey, urls[currentIndex]);
+      currentIndex = (currentIndex + 1) % urls.length;
+    };
+
+    updateImage();
+    const intervalId = setInterval(() => {
+      updateImage();
+    }, this.GALLERY_PREVIEW_INTERVAL);
+
+    this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId });
   }
 
   private setGalleryPreviewImage(previewKey: string, imageUrl: string | null): void {
