@@ -1197,7 +1197,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       const animate = () => {
         if (!this.isMobileLayout()) {
-          if (this.isIdle()) {
+          if (this.isAutoNavigationActive()) {
             // Atualiza o ângulo para percorrer a elipse
             this.idleEllipseAngle += this.idleSpeed;
 
@@ -1217,7 +1217,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           }
 
-          const shouldUpdatePosition = this.isIdle() || this.isInteractionEnabled();
+          const shouldUpdatePosition = this.isAutoNavigationActive() || this.isInteractionEnabled();
 
           if (shouldUpdatePosition) {
             this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
