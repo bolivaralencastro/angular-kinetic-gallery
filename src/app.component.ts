@@ -266,8 +266,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.configureIdleEllipse();
+    this.stopAllGalleryPreviews();
     this.isAutoNavigationActive.set(true);
     this.isIdle.set(true);
+    this.showAutoNavigationHint();
   }
 
   private deactivateAutoNavigation(silent: boolean = false): void {
@@ -279,10 +281,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isAutoNavigationActive.set(false);
     this.exitIdleMode();
     this.cancelAutoNavigationCountdown();
+    this.hideAutoNavigationHint();
 
     if (!silent) {
       this.resetInactivityTimer();
     }
+  }
+
+  private showAutoNavigationHint(): void {
+    if (this.autoNavigationHintTimeoutId) {
+      clearTimeout(this.autoNavigationHintTimeoutId);
+    }
+
+    this.autoNavigationHintVisible.set(true);
+    this.autoNavigationHintTimeoutId = setTimeout(() => {
+      this.autoNavigationHintTimeoutId = null;
+      this.ngZone.run(() => this.autoNavigationHintVisible.set(false));
+    }, this.AUTO_NAVIGATION_HINT_DURATION);
+  }
+
+  private hideAutoNavigationHint(): void {
+    if (this.autoNavigationHintTimeoutId) {
+      clearTimeout(this.autoNavigationHintTimeoutId);
+      this.autoNavigationHintTimeoutId = null;
+    }
+
+    this.autoNavigationHintVisible.set(false);
   }
 
   private getVisibleGalleryItems(): GalleryCardItem[] {
@@ -378,6 +402,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly GALLERY_PREVIEW_DELAY = 300;
   private readonly GALLERY_PREVIEW_INTERVAL = 500;
   private readonly AUTO_NAVIGATION_COUNTDOWN_DURATION = 3;
+  private readonly AUTO_NAVIGATION_HINT_DURATION = 4000;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
@@ -396,6 +421,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   galleryPreviewImages = signal<Record<string, string>>({});
   isAutoNavigationActive = signal(false);
   autoNavigationCountdown = signal<number | null>(null);
+  autoNavigationHintVisible = signal(false);
+  autoNavigationOverlayVisible = computed(
+    () => this.autoNavigationCountdown() !== null || this.autoNavigationHintVisible()
+  );
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
@@ -479,7 +508,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !this.isWebcamVisible() &&
       !this.isGalleryEditorVisible() &&
       !this.isGalleryCreationDialogVisible() &&
-      !this.isInfoDialogVisible()
+      !this.isInfoDialogVisible() &&
+      !this.isAutoNavigationActive()
   );
 
   // --- ReferÃªncias a Elementos do Template ---
@@ -508,6 +538,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     intervalId: ReturnType<typeof setInterval> | null;
   }>();
   private autoNavigationCountdownIntervalId: ReturnType<typeof setInterval> | null = null;
+  private autoNavigationHintTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
@@ -532,7 +563,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.supportsFinePointer) {
       effect(() => {
-        document.body.classList.toggle('custom-cursor-hidden', this.isIdle());
+        const shouldHideCursor = this.isIdle() || this.isAutoNavigationActive();
+        document.body.classList.toggle('custom-cursor-hidden', shouldHideCursor);
       });
     }
 
@@ -618,6 +650,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       clearInterval(this.clockIntervalId);
     }
     clearTimeout(this.inactivityTimeoutId);
+    if (this.autoNavigationHintTimeoutId) {
+      clearTimeout(this.autoNavigationHintTimeoutId);
+      this.autoNavigationHintTimeoutId = null;
+    }
+    this.autoNavigationHintVisible.set(false);
     this.interactiveCursor?.destroy();
     this.interactiveCursor = null;
     document.body.classList.remove('custom-cursor-hidden');
@@ -648,9 +685,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.inactivityTimeoutId = setTimeout(() => {
       this.inactivityTimeoutId = null;
-      this.configureIdleEllipse();
-      this.isAutoNavigationActive.set(true);
-      this.isIdle.set(true);
+      this.ngZone.run(() => this.activateAutoNavigation());
     }, 5000);
   }
 
@@ -1046,6 +1081,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onGalleryHoverStart(galleryId: string, previewKey: string): void {
+    if (this.isAutoNavigationActive()) {
+      return;
+    }
+
     const gallery = this.galleryService.getGallery(galleryId);
     if (!gallery || gallery.imageUrls.length === 0) {
       return;
