@@ -30,7 +30,11 @@ import { ThemeService } from '../../services/theme.service';
       </div>
 
       <!-- Content in three columns -->
-      <div class="flex-1 overflow-y-auto p-8" [style.color]="themeService.dialogPalette().text">
+      <div
+        class="flex-1 overflow-y-auto p-8"
+        [style.color]="themeService.dialogPalette().text"
+        [style.backgroundColor]="themeService.dialogPalette().surface"
+      >
         <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
 
           <!-- Column 1: Apresentação -->
