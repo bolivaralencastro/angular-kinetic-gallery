@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone, HostListener } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone, HostListener, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService } from './services/gallery.service';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
@@ -67,6 +67,16 @@ interface ExpandedItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
+  @HostBinding('style.background-color')
+  get hostBackgroundColor(): string {
+    return this.themeService.bodyBackground();
+  }
+
+  @HostBinding('style.color')
+  get hostTextColor(): string {
+    return this.themeService.bodyText();
+  }
+
   @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
     if (event instanceof KeyboardEvent) {

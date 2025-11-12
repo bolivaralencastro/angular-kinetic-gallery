@@ -133,6 +133,8 @@ export class ThemeService {
   readonly contextMenuPalette = computed(() => this.palettes[this.themeSignal()].contextMenu);
   readonly dialogPalette = computed(() => this.palettes[this.themeSignal()].dialog);
   readonly scrimColor = computed(() => this.palettes[this.themeSignal()].scrim);
+  readonly bodyBackground = computed(() => this.palettes[this.themeSignal()].bodyBackground);
+  readonly bodyText = computed(() => this.palettes[this.themeSignal()].bodyText);
 
   constructor(@Inject(DOCUMENT) private readonly documentRef: Document) {
     effect(() => {
