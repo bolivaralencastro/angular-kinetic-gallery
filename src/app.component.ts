@@ -188,139 +188,109 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     event.preventDefault();
-    this.togglePreviewPlayback();
+    this.toggleAutoNavigation();
   }
 
-  togglePreviewPlayback(): void {
+  toggleAutoNavigation(): void {
     if (this.currentView() !== 'galleries') {
       return;
     }
 
-    if (this.previewCountdown() !== null) {
-      this.cancelPreviewCountdown();
+    if (this.autoNavigationCountdown() !== null) {
+      this.cancelAutoNavigationCountdown();
       this.resetInactivityTimer();
       return;
     }
 
-    if (this.isPreviewPlaying()) {
-      this.stopPreviewPlayback();
+    if (this.isAutoNavigationActive()) {
+      this.deactivateAutoNavigation();
       return;
     }
 
-    const hasImagesToAnimate = this.getVisibleGalleryItems().some(gallery => gallery.imageUrls.length > 0);
-    if (!hasImagesToAnimate) {
+    if (!this.hasVisibleGalleries()) {
       return;
     }
 
-    this.startPreviewCountdown();
+    this.startAutoNavigationCountdown();
   }
 
-  private isPreviewSequenceActive(): boolean {
-    return this.previewCountdown() !== null || this.isPreviewPlaying();
+  private isAutoNavigationSequenceActive(): boolean {
+    return this.autoNavigationCountdown() !== null || this.isAutoNavigationActive();
   }
 
-  private startPreviewCountdown(): void {
-    this.cancelPreviewCountdown();
+  private startAutoNavigationCountdown(): void {
+    this.cancelAutoNavigationCountdown();
 
-    const hasPlayableGalleries = this.getVisibleGalleryItems().some(gallery => gallery.imageUrls.length > 0);
-    if (!hasPlayableGalleries) {
+    if (!this.hasVisibleGalleries()) {
       this.resetInactivityTimer();
       return;
     }
 
-    let remaining = this.PREVIEW_COUNTDOWN_DURATION;
-    this.previewCountdown.set(remaining);
-    this.resetInactivityTimer();
-    this.previewCountdownIntervalId = setInterval(() => {
+    let remaining = this.AUTO_NAVIGATION_COUNTDOWN_DURATION;
+    this.autoNavigationCountdown.set(remaining);
+    this.autoNavigationCountdownIntervalId = setInterval(() => {
       remaining -= 1;
       if (remaining > 0) {
-        this.ngZone.run(() => this.previewCountdown.set(remaining));
+        this.ngZone.run(() => this.autoNavigationCountdown.set(remaining));
         return;
       }
 
-      if (this.previewCountdownIntervalId) {
-        clearInterval(this.previewCountdownIntervalId);
-        this.previewCountdownIntervalId = null;
+      if (this.autoNavigationCountdownIntervalId) {
+        clearInterval(this.autoNavigationCountdownIntervalId);
+        this.autoNavigationCountdownIntervalId = null;
       }
 
       this.ngZone.run(() => {
-        this.previewCountdown.set(null);
-        this.beginPreviewPlayback();
+        this.autoNavigationCountdown.set(null);
+        this.activateAutoNavigation();
       });
     }, 1000);
   }
 
-  private cancelPreviewCountdown(): void {
-    if (this.previewCountdownIntervalId) {
-      clearInterval(this.previewCountdownIntervalId);
-      this.previewCountdownIntervalId = null;
+  private cancelAutoNavigationCountdown(): void {
+    if (this.autoNavigationCountdownIntervalId) {
+      clearInterval(this.autoNavigationCountdownIntervalId);
+      this.autoNavigationCountdownIntervalId = null;
     }
-    this.previewCountdown.set(null);
+    this.autoNavigationCountdown.set(null);
   }
 
-  private beginPreviewPlayback(): void {
-    const playableGalleries = this.getVisibleGalleryItems().filter(gallery => gallery.imageUrls.length > 0);
-    if (playableGalleries.length === 0) {
-      this.isPreviewPlaying.set(false);
-      this.resetInactivityTimer();
+  private activateAutoNavigation(): void {
+    if (!this.hasVisibleGalleries()) {
       return;
     }
 
-    this.syncPreviewPlaybackForVisibleGalleries(true);
-    this.isPreviewPlaying.set(true);
-    this.resetInactivityTimer();
+    if (this.inactivityTimeoutId) {
+      clearTimeout(this.inactivityTimeoutId);
+      this.inactivityTimeoutId = null;
+    }
+
+    this.configureIdleEllipse();
+    this.isAutoNavigationActive.set(true);
+    this.isIdle.set(true);
   }
 
-  private stopPreviewPlayback(): void {
-    this.stopAllGalleryPreviews();
+  private deactivateAutoNavigation(silent: boolean = false): void {
+    if (!this.isAutoNavigationActive()) {
+      this.cancelAutoNavigationCountdown();
+      return;
+    }
+
+    this.isAutoNavigationActive.set(false);
+    this.exitIdleMode();
+    this.cancelAutoNavigationCountdown();
+
+    if (!silent) {
+      this.resetInactivityTimer();
+    }
   }
 
   private getVisibleGalleryItems(): GalleryCardItem[] {
     return this.visibleItems().filter((item): item is GalleryCardItem => item.type === 'gallery');
   }
 
-  private syncPreviewPlaybackForVisibleGalleries(forceRestart: boolean = false): void {
-    const visibleGalleries = this.getVisibleGalleryItems();
-
-    for (const gallery of visibleGalleries) {
-      if (gallery.imageUrls.length === 0) {
-        continue;
-      }
-
-      const existingTimers = this.galleryPreviewTimers.get(gallery.previewKey);
-      if (!forceRestart && existingTimers) {
-        if (existingTimers.intervalId) {
-          continue;
-        }
-
-        const currentPreviewImage = this.galleryPreviewImages()[gallery.previewKey];
-        if (currentPreviewImage) {
-          continue;
-        }
-      }
-
-      this.clearGalleryPreviewTimers(gallery.previewKey);
-
-      if (gallery.imageUrls.length === 1) {
-        this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
-        this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: null, intervalId: null });
-        continue;
-      }
-
-      this.startPreviewForGallery(gallery.id, gallery.previewKey);
-    }
-  }
-
-  private cleanupInactivePreviewTimers(visiblePreviewKeys: Set<string>): void {
-    const activeKeys = Array.from(this.galleryPreviewTimers.keys());
-    for (const key of activeKeys) {
-      if (visiblePreviewKeys.has(key)) {
-        continue;
-      }
-
-      this.clearGalleryPreviewTimers(key);
-      this.setGalleryPreviewImage(key, null);
-    }
+  private hasVisibleGalleries(): boolean {
+    return this.getVisibleGalleryItems().length > 0;
   }
 
   @HostListener('document:keydown.t', ['$event'])
@@ -407,7 +377,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   private readonly GALLERY_PREVIEW_DELAY = 300;
   private readonly GALLERY_PREVIEW_INTERVAL = 500;
-  private readonly PREVIEW_COUNTDOWN_DURATION = 3;
+  private readonly AUTO_NAVIGATION_COUNTDOWN_DURATION = 3;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
@@ -424,8 +394,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
   galleryPreviewImages = signal<Record<string, string>>({});
-  isPreviewPlaying = signal(false);
-  previewCountdown = signal<number | null>(null);
+  isAutoNavigationActive = signal(false);
+  autoNavigationCountdown = signal<number | null>(null);
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
@@ -537,7 +507,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     startTimeoutId: ReturnType<typeof setTimeout> | null;
     intervalId: ReturnType<typeof setInterval> | null;
   }>();
-  private previewCountdownIntervalId: ReturnType<typeof setInterval> | null = null;
+  private autoNavigationCountdownIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
@@ -661,37 +631,52 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
 
   private resetInactivityTimer(): void {
-    if (this.isIdle()) {
-      this.isIdle.set(false);
-      // Reseta o ângulo quando sai do modo idle
-      this.idleEllipseAngle = 0;
-    }
-    if (this.inactivityTimeoutId) {
-      clearTimeout(this.inactivityTimeoutId);
+    if (this.isAutoNavigationActive()) {
+      this.deactivateAutoNavigation(true);
+    } else {
+      this.exitIdleMode();
     }
 
-    if (this.isPreviewSequenceActive()) {
+    if (this.inactivityTimeoutId) {
+      clearTimeout(this.inactivityTimeoutId);
+      this.inactivityTimeoutId = null;
+    }
+
+    if (this.isAutoNavigationSequenceActive()) {
       return;
     }
 
     this.inactivityTimeoutId = setTimeout(() => {
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-
-      // Define raios largos para uma trajetória ampla que circunda a área atual
-      this.idleEllipseRadiusX = screenWidth * 2.5;
-      this.idleEllipseRadiusY = screenHeight * 1.5;
-
-      const currentTargetX = this.target.x;
-      const currentTargetY = this.target.y;
-
-      // Posiciona o centro da elipse à esquerda para que o ponto atual seja o início da órbita
-      this.idleEllipseCenter.x = currentTargetX - this.idleEllipseRadiusX;
-      this.idleEllipseCenter.y = currentTargetY;
-
-      this.idleEllipseAngle = 0;
+      this.inactivityTimeoutId = null;
+      this.configureIdleEllipse();
+      this.isAutoNavigationActive.set(true);
       this.isIdle.set(true);
     }, 5000);
+  }
+
+  private configureIdleEllipse(): void {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    this.idleEllipseRadiusX = screenWidth * 2.5;
+    this.idleEllipseRadiusY = screenHeight * 1.5;
+
+    const currentTargetX = this.target.x;
+    const currentTargetY = this.target.y;
+
+    this.idleEllipseCenter.x = currentTargetX - this.idleEllipseRadiusX;
+    this.idleEllipseCenter.y = currentTargetY;
+
+    this.idleEllipseAngle = 0;
+  }
+
+  private exitIdleMode(): void {
+    if (!this.isIdle()) {
+      return;
+    }
+
+    this.isIdle.set(false);
+    this.idleEllipseAngle = 0;
   }
   
   private calculateGridDimensions(): void {
@@ -1038,14 +1023,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.visibleItems.set(newVisibleItems);
 
-    if (isGalleryView && this.isPreviewPlaying()) {
+    if (isGalleryView && !this.isAutoNavigationActive()) {
       const visiblePreviewKeys = new Set(
         newVisibleItems
           .filter((item): item is GalleryCardItem => item.type === 'gallery')
           .map(item => item.previewKey)
       );
-      this.syncPreviewPlaybackForVisibleGalleries();
-      this.cleanupInactivePreviewTimers(visiblePreviewKeys);
+      for (const key of Array.from(this.galleryPreviewTimers.keys())) {
+        if (!visiblePreviewKeys.has(key)) {
+          this.clearGalleryPreviewTimers(key);
+          this.setGalleryPreviewImage(key, null);
+        }
+      }
     }
   }
 
@@ -1064,12 +1053,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.clearGalleryPreviewTimers(previewKey);
 
-    // Show the first image on hover but don't start the slideshow automatically
     const imageUrls = gallery.imageUrls;
     if (imageUrls.length > 0) {
       this.setGalleryPreviewImage(previewKey, imageUrls[0]);
-      // Store the preview key with null timers to indicate it's being hovered but not auto-playing
-      this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId: null });
+      if (imageUrls.length === 1) {
+        this.galleryPreviewTimers.set(previewKey, { startTimeoutId: null, intervalId: null });
+        return;
+      }
+
+      const startTimeoutId = setTimeout(() => {
+        this.ngZone.run(() => this.startPreviewForGallery(galleryId, previewKey));
+      }, this.GALLERY_PREVIEW_DELAY);
+      this.galleryPreviewTimers.set(previewKey, { startTimeoutId, intervalId: null });
     }
   }
 
@@ -1157,9 +1152,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.clearGalleryPreviewTimers(key);
     }
     this.galleryPreviewImages.set({});
-    this.isPreviewPlaying.set(false);
-    this.cancelPreviewCountdown();
-    this.resetInactivityTimer();
   }
 
   private startAnimationLoop(): void {
@@ -1221,7 +1213,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-    editGallery(id: string): void {
+  editGallery(id: string): void {
+    this.deactivateAutoNavigation(true);
     const galleryToEdit = this.galleryService.getGallery(id);
     if (galleryToEdit) {
       this.editingGallery.set(galleryToEdit);
@@ -1349,6 +1342,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openWebcamCapture(): void {
+    this.deactivateAutoNavigation(true);
     this.isWebcamVisible.set(true);
   }
 
@@ -1379,6 +1373,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectGallery(id: string): void {
+    this.deactivateAutoNavigation(true);
     this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(id);
     this.currentView.set('photos');
@@ -1402,10 +1397,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openGalleryCreationDialog(): void {
+    this.deactivateAutoNavigation(true);
     this.isGalleryCreationDialogVisible.set(true);
   }
 
   toggleInfoDialog(): void {
+    this.deactivateAutoNavigation(true);
     this.isInfoDialogVisible.update(visible => !visible);
   }
 
@@ -1427,6 +1424,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   backToGalleries(): void {
+    this.deactivateAutoNavigation(true);
     this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(null);
     this.currentView.set('galleries');
