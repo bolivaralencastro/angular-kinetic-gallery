@@ -336,7 +336,7 @@
   }
 </div>
 
-@if (previewCountdown() !== null) {
+@if (autoNavigationCountdown() !== null) {
   <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
     <div
       class="rounded-full border px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] backdrop-blur-md transition-colors duration-300"
@@ -344,16 +344,16 @@
         ? 'bg-black/80 text-white/90 border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.55)]'
         : 'bg-white/85 text-slate-900/90 border-slate-200/80 shadow-[0_30px_90px_rgba(15,23,42,0.18)]'"
     >
-      Animação começa em {{ previewCountdown() }}s
+      Navegação automática começa em {{ autoNavigationCountdown() }}s
     </div>
   </div>
 }
 
-@if (isPreviewPlaying() && previewCountdown() === null) {
+@if (isAutoNavigationActive() && autoNavigationCountdown() === null) {
   <div
     class="pointer-events-none fixed left-1/2 top-20 z-30 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-xs font-medium uppercase tracking-[0.28em] text-white/80"
   >
-    Animação em andamento — pressione P para parar
+    Navegação automática em andamento — pressione P para parar
   </div>
 }
 
@@ -366,13 +366,13 @@
     [groups]="contextMenu().groups"
     [themePalette]="themeService.contextMenuPalette()"
     [themeMode]="themeService.theme()"
-    [isPreviewPlaying]="isPreviewPlaying()"
-    [previewCountdown]="previewCountdown()"
+    [isAutoNavigationActive]="isAutoNavigationActive()"
+    [autoNavigationCountdown]="autoNavigationCountdown()"
     (close)="closeContextMenu()"
     (capture)="openWebcamCapture()"
     (toggleFullscreen)="toggleFullscreen()"
     (toggleTheme)="toggleThemeMode()"
-    (togglePlayback)="togglePreviewPlayback()"
+    (togglePlayback)="toggleAutoNavigation()"
     (createGallery)="openGalleryCreationDialog()"
     (editGallery)="editGalleryContextMenu()"
     (deleteGallery)="deleteGalleryContextMenu()"
