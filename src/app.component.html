@@ -174,13 +174,14 @@
                 [class.rounded-[2.5rem]]="themeService.isLight()"
                 [class.ring-white\/10]="themeService.isDark()"
                 [class.ring-slate-300\/60]="themeService.isLight()"
+                [class.pointer-events-none]="!isInteractionEnabled()"
                 [class.bg-slate-100]="themeService.isLight()"
                 [style.width.px]="item.width"
                 [style.height.px]="item.height"
                 [style.left.px]="item.x"
                 [style.top.px]="item.y"
                 [class.cursor-pointer]="isInteractionEnabled()"
-                data-cursor-pointer
+                [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
                 (click)="selectGallery(item.id)"
                 (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
                 (mouseleave)="onGalleryHoverEnd(item.previewKey)"
@@ -250,13 +251,14 @@
             [class.rounded-[2.5rem]]="themeService.isLight()"
             [class.ring-white\/10]="themeService.isDark()"
             [class.ring-slate-300\/60]="themeService.isLight()"
+            [class.pointer-events-none]="!isInteractionEnabled()"
             [class.bg-slate-100]="themeService.isLight()"
             [style.width.px]="item.width"
             [style.height.px]="item.height"
             [style.left.px]="item.x"
             [style.top.px]="item.y"
             [class.cursor-pointer]="isInteractionEnabled()"
-            data-cursor-pointer
+            [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
             (click)="onImageClick($event, item)"
           >
             <div class="item-image-container relative h-full w-full overflow-hidden">
