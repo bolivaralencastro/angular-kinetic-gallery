@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService } from '../../services/gallery.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-webcam-capture',
@@ -8,40 +9,56 @@ import { GalleryService } from '../../services/gallery.service';
   template: `
       <div 
       class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
-      style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
+      [style.backgroundColor]="themeService.dialogPalette().surface"
+      [style.border]="'1px solid ' + themeService.dialogPalette().border"
+      [style.color]="themeService.dialogPalette().text"
+      [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
+      [style.--vignette-color]="themeService.isDark() ? 'rgba(0, 0, 0, 0.8)' : 'rgba(15, 23, 42, 0.35)'"
       (click)="$event.stopPropagation()">
-      
+
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-medium text-gray-200 tracking-wider">Capturar Foto</h2>
+        <h2 class="text-xl font-medium tracking-wider" [style.color]="themeService.dialogPalette().title">Capturar Foto</h2>
         <button
           (click)="close.emit()"
           data-cursor-pointer
           class="text-2xl leading-none rounded-sm focus:outline-none"
-          style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
+          [style.color]="themeService.dialogPalette().icon"
+          style="background: none; border: none; padding: 0; cursor: pointer;">
           &times;
         </button>
       </div>
-      
+
       @if (error()) {
-        <div class="text-gray-300 px-3 py-2 rounded-lg text-sm mb-4" style="background-color: rgb(38, 38, 38); border: 1px solid rgb(70, 70, 70);">
+        <div
+          class="px-3 py-2 rounded-lg text-sm mb-4"
+          [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+          [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+          [style.color]="themeService.dialogPalette().text">
           <p class="font-semibold">Erro ao acessar a câmera:</p>
-          <p class="tracking-wider" style="color: rgb(180, 180, 180);">{{ error() }}</p>
+          <p class="tracking-wider" [style.color]="themeService.dialogPalette().muted">{{ error() }}</p>
         </div>
       }
 
       <!-- 1:1 aspect ratio container maintained throughout loading -->
-      <div class="relative w-full aspect-square bg-black rounded-md overflow-hidden mb-4 vignette-effect">
+      <div
+        class="relative w-full aspect-square rounded-md overflow-hidden mb-4 vignette-effect"
+        [style.backgroundColor]="themeService.isDark() ? '#000000' : '#e2e8f0'">
         <div class="w-full h-full flex items-center justify-center">
           <!-- Loading state - always maintains the 1:1 aspect ratio -->
           @if (!isStreaming() && !error()) {
             <div class="absolute inset-0 flex items-center justify-center">
-              <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg
+                class="animate-spin h-10 w-10"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                [attr.stroke]="themeService.dialogPalette().icon">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
           }
-          
+
           <!-- Video element - only shows when streaming -->
           <video #videoElement 
             class="w-full h-full object-cover grayscale" 
@@ -52,7 +69,9 @@ import { GalleryService } from '../../services/gallery.service';
           
           <!-- Countdown overlay - only shows during countdown -->
           @if (countdown() !== null && countdown()! > 0) {
-            <div class="absolute inset-0 flex items-center justify-center text-white text-9xl font-bold z-20">
+            <div
+              class="absolute inset-0 flex items-center justify-center text-9xl font-bold z-20"
+              [style.color]="themeService.isDark() ? '#ffffff' : '#0f172a'">
               {{ countdown() }}
             </div>
           }
@@ -64,9 +83,9 @@ import { GalleryService } from '../../services/gallery.service';
           (click)="captureImage()"
           [disabled]="!isStreaming() || (countdown() !== null)"
           data-cursor-pointer
-          class="w-full text-white font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
-          [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? 'rgb(38, 38, 38)' : 'rgb(60, 60, 60)'"
-          [style.color]="(!isStreaming() || countdown() !== null) ? 'rgb(150, 150, 150)' : 'white'"
+          class="w-full font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
+          [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
+          [style.color]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
           [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
           style="border: none;">
           <span>{{ isTimerEnabled() ? 'Iniciar Timer' : 'Tirar Foto' }}</span>
@@ -75,9 +94,9 @@ import { GalleryService } from '../../services/gallery.service';
         <button
           (click)="toggleTimer()"
           data-cursor-pointer
-          class="p-3 rounded-md text-gray-400 focus:outline-none"
-          [style.backgroundColor]="isTimerEnabled() ? 'rgb(80, 80, 80)' : 'rgb(38, 38, 38)'"
-          [style.color]="isTimerEnabled() ? 'white' : 'rgb(180, 180, 180)'"
+          class="p-3 rounded-md focus:outline-none"
+          [style.backgroundColor]="isTimerEnabled() ? themeService.dialogPalette().timerActiveBg : themeService.dialogPalette().timerInactiveBg"
+          [style.color]="isTimerEnabled() ? themeService.dialogPalette().buttonPrimaryText : themeService.dialogPalette().timerInactiveText"
           style="border: none;"
           title="Ativar/Desativar timer">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -104,20 +123,12 @@ import { GalleryService } from '../../services/gallery.service';
       position: absolute;
       inset: 0;
       pointer-events: none;
-      box-shadow: inset 0 0 40px 20px rgba(0, 0, 0, 0.8);
+      box-shadow: inset 0 0 40px 20px var(--vignette-color, rgba(0, 0, 0, 0.8));
       z-index: 10;
     }
 
     button:not(:disabled):hover {
-      background-color: rgb(80, 80, 80) !important;
-    }
-
-    button[style*="rgb(38, 38, 38)"]:not(:disabled):hover {
-      background-color: rgb(80, 80, 80) !important;
-    }
-
-    button[style*="color: rgb(180, 180, 180)"]:hover {
-      color: white !important;
+      filter: brightness(1.05);
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -129,8 +140,8 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     this.captureImage();
   }
 
-  @HostListener('document:keydown.t', ['$event'])
-  handleTKey(event: KeyboardEvent): void {
+  @HostListener('document:keydown.r', ['$event'])
+  handleTimerShortcut(event: KeyboardEvent): void {
     event.preventDefault();
     this.toggleTimer();
   }
@@ -145,6 +156,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
 
   private galleryService = inject(GalleryService);
+  themeService = inject(ThemeService);
   private stream: MediaStream | null = null;
   private countdownIntervalId: any;
 
@@ -197,8 +209,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
     if (this.isTimerEnabled()) {
       this.startCountdown();
-    }
-    else {
+    } else {
       this.takePicture();
     }
   }

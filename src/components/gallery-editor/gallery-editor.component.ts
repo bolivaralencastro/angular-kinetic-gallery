@@ -1,87 +1,114 @@
-import { Component, ChangeDetectionStrategy, input, output, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Gallery } from '../../interfaces/gallery.interface';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-gallery-editor',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="close.emit()" data-cursor-pointer>
-      <div 
+    <div
+      class="fixed inset-0 flex justify-center items-center z-[10000]"
+      data-cursor-pointer
+      [style.backgroundColor]="themeService.scrimColor()"
+      (click)="close.emit()">
+      <div
         class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
-        style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
+        [style.backgroundColor]="themeService.dialogPalette().surface"
+        [style.border]="'1px solid ' + themeService.dialogPalette().border"
+        [style.color]="themeService.dialogPalette().text"
+        [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
         (click)="$event.stopPropagation()">
-        
+
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-medium text-gray-200 tracking-wider">
+          <h2
+            class="text-xl font-medium tracking-wider"
+            [style.color]="themeService.dialogPalette().title">
             {{ gallery() ? 'Editar Galeria' : 'Criar Galeria' }}
           </h2>
           <button
             (click)="close.emit()"
             data-cursor-pointer
             class="text-2xl leading-none rounded-sm focus:outline-none"
-            style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
+            [style.color]="themeService.dialogPalette().icon"
+            style="background: none; border: none; padding: 0; cursor: pointer;">
             &times;
           </button>
         </div>
 
         <form (ngSubmit)="onSubmit()">
           <div class="mb-4">
-            <label for="name" class="block text-gray-300 text-sm font-medium mb-2 tracking-wider">Nome</label>
+            <label
+              for="name"
+              class="block text-sm font-medium mb-2 tracking-wider"
+              [style.color]="themeService.dialogPalette().muted">Nome</label>
             <input
               id="name"
               type="text"
               [(ngModel)]="name"
               name="name"
-              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
-              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
+              class="w-full rounded-md py-3 px-4 focus:outline-none"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.color]="themeService.dialogPalette().inputText"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              style="outline: none;"
               placeholder="Digite o nome da galeria"
               required>
           </div>
 
           <div class="mb-6">
-            <label for="description" class="block text-gray-300 text-sm font-medium mb-2 tracking-wider">Descrição</label>
+            <label
+              for="description"
+              class="block text-sm font-medium mb-2 tracking-wider"
+              [style.color]="themeService.dialogPalette().muted">Descrição</label>
             <textarea
               id="description"
               [(ngModel)]="description"
               name="description"
               rows="3"
-              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
-              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
+              class="w-full rounded-md py-3 px-4 focus:outline-none"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.color]="themeService.dialogPalette().inputText"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              style="outline: none;"
               placeholder="Digite a descrição da galeria"
               required>
             </textarea>
           </div>
 
-          <div class="flex justify-between">
+          <div class="flex justify-between items-center">
             @if (gallery()) {
-            <button
-              type="button"
-              (click)="onDelete()"
-              data-cursor-pointer
-              class="px-4 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-              style="background-color: rgb(150, 40, 40); border: none;">
-              Excluir
-            </button>
+              <button
+                type="button"
+                (click)="onDelete()"
+                data-cursor-pointer
+                class="px-4 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+                style="background-color: rgb(150, 40, 40); border: none; color: #fff;">
+                Excluir
+              </button>
             }
-            
+
             <div class="flex gap-3 ml-auto">
               <button
                 type="button"
                 (click)="close.emit()"
                 data-cursor-pointer
-                class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-                style="background-color: rgb(60, 60, 60); border: none;">
+                class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+                [style.backgroundColor]="themeService.dialogPalette().buttonSecondaryBg"
+                [style.color]="themeService.dialogPalette().buttonSecondaryText"
+                style="border: none;">
                 Cancelar
               </button>
 
               <button
                 type="submit"
                 data-cursor-pointer
-                class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-                style="background-color: rgb(60, 60, 60); border: none;">
+                class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+                [style.backgroundColor]="themeService.dialogPalette().buttonPrimaryBg"
+                [style.color]="themeService.dialogPalette().buttonPrimaryText"
+                style="border: none;">
                 {{ gallery() ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
@@ -101,21 +128,17 @@ import { Gallery } from '../../interfaces/gallery.interface';
     }
 
     button:not(:disabled):hover {
-      background-color: rgb(80, 80, 80) !important;
+      filter: brightness(1.05);
     }
 
     button[style*="rgb(150, 40, 40)"]:hover {
-      background-color: rgb(170, 50, 50) !important;
+      filter: brightness(1.1);
     }
 
     input:focus,
     textarea:focus {
-      border-color: rgb(100, 100, 100) !important;
-      box-shadow: 0 0 0 2px rgba(100, 100, 100, 0.3) !important;
-    }
-
-    button[style*="color: rgb(180, 180, 180)"]:hover {
-      color: white !important;
+      border-color: var(--dialog-focus-ring) !important;
+      box-shadow: 0 0 0 2px var(--dialog-focus-ring) !important;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -128,6 +151,8 @@ export class GalleryEditorComponent implements OnInit {
 
   name = '';
   description = '';
+
+  themeService = inject(ThemeService);
 
   ngOnInit() {
     if (this.gallery()) {
