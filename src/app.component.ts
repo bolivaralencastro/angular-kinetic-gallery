@@ -198,6 +198,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.previewCountdown() !== null) {
       this.cancelPreviewCountdown();
+      this.resetInactivityTimer();
       return;
     }
 
@@ -214,16 +215,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.startPreviewCountdown();
   }
 
+  private isPreviewSequenceActive(): boolean {
+    return this.previewCountdown() !== null || this.isPreviewPlaying();
+  }
+
   private startPreviewCountdown(): void {
     this.cancelPreviewCountdown();
 
     const hasPlayableGalleries = this.getVisibleGalleryItems().some(gallery => gallery.imageUrls.length > 0);
     if (!hasPlayableGalleries) {
+      this.resetInactivityTimer();
       return;
     }
 
     let remaining = this.PREVIEW_COUNTDOWN_DURATION;
     this.previewCountdown.set(remaining);
+    this.resetInactivityTimer();
     this.previewCountdownIntervalId = setInterval(() => {
       remaining -= 1;
       if (remaining > 0) {
@@ -255,11 +262,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const playableGalleries = this.getVisibleGalleryItems().filter(gallery => gallery.imageUrls.length > 0);
     if (playableGalleries.length === 0) {
       this.isPreviewPlaying.set(false);
+      this.resetInactivityTimer();
       return;
     }
 
     this.syncPreviewPlaybackForVisibleGalleries(true);
     this.isPreviewPlaying.set(true);
+    this.resetInactivityTimer();
   }
 
   private stopPreviewPlayback(): void {
@@ -657,7 +666,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       // Reseta o ângulo quando sai do modo idle
       this.idleEllipseAngle = 0;
     }
-    clearTimeout(this.inactivityTimeoutId);
+    if (this.inactivityTimeoutId) {
+      clearTimeout(this.inactivityTimeoutId);
+    }
+
+    if (this.isPreviewSequenceActive()) {
+      return;
+    }
+
     this.inactivityTimeoutId = setTimeout(() => {
       const screenWidth = window.innerWidth;
       const screenHeight = window.innerHeight;
@@ -1143,6 +1159,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.galleryPreviewImages.set({});
     this.isPreviewPlaying.set(false);
     this.cancelPreviewCountdown();
+    this.resetInactivityTimer();
   }
 
   private startAnimationLoop(): void {

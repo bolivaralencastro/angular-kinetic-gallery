@@ -337,10 +337,15 @@
 </div>
 
 @if (previewCountdown() !== null) {
-  <div
-    class="pointer-events-none fixed left-1/2 top-6 z-40 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-white/90"
-  >
-    Animação começa em {{ previewCountdown() }}s
+  <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
+    <div
+      class="rounded-full border px-6 py-3 text-xs font-semibold uppercase tracking-[0.32em] backdrop-blur-md transition-colors duration-300"
+      [ngClass]="themeService.isDark()
+        ? 'bg-black/80 text-white/90 border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.55)]'
+        : 'bg-white/85 text-slate-900/90 border-slate-200/80 shadow-[0_30px_90px_rgba(15,23,42,0.18)]'"
+    >
+      Animação começa em {{ previewCountdown() }}s
+    </div>
   </div>
 }
 
