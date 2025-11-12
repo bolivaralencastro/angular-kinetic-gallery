@@ -214,10 +214,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.startAutoNavigationCountdown();
   }
 
-  private isAutoNavigationSequenceActive(): boolean {
-    return this.autoNavigationCountdown() !== null || this.isAutoNavigationActive();
-  }
-
   private startAutoNavigationCountdown(): void {
     this.cancelAutoNavigationCountdown();
 
@@ -258,11 +254,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private activateAutoNavigation(): void {
     if (!this.hasVisibleGalleries()) {
       return;
-    }
-
-    if (this.inactivityTimeoutId) {
-      clearTimeout(this.inactivityTimeoutId);
-      this.inactivityTimeoutId = null;
     }
 
     this.configureIdleEllipse();
@@ -466,7 +457,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
-  private inactivityTimeoutId: any;
   private idleEllipseAngle = 0;
   private idleEllipseCenter = { x: 0, y: 0 };
   private idleEllipseRadiusX = 0; // Semi-eixo maior (horizontal) - será calculado baseado na tela
@@ -649,7 +639,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.clockIntervalId) {
       clearInterval(this.clockIntervalId);
     }
-    clearTimeout(this.inactivityTimeoutId);
     if (this.autoNavigationHintTimeoutId) {
       clearTimeout(this.autoNavigationHintTimeoutId);
       this.autoNavigationHintTimeoutId = null;
@@ -670,23 +659,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private resetInactivityTimer(): void {
     if (this.isAutoNavigationActive()) {
       this.deactivateAutoNavigation(true);
-    } else {
-      this.exitIdleMode();
-    }
-
-    if (this.inactivityTimeoutId) {
-      clearTimeout(this.inactivityTimeoutId);
-      this.inactivityTimeoutId = null;
-    }
-
-    if (this.isAutoNavigationSequenceActive()) {
       return;
     }
 
-    this.inactivityTimeoutId = setTimeout(() => {
-      this.inactivityTimeoutId = null;
-      this.ngZone.run(() => this.activateAutoNavigation());
-    }, 5000);
+    this.exitIdleMode();
   }
 
   private configureIdleEllipse(): void {
@@ -1197,7 +1173,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       const animate = () => {
         if (!this.isMobileLayout()) {
-          if (this.isIdle()) {
+          if (this.isAutoNavigationActive()) {
             // Atualiza o ângulo para percorrer a elipse
             this.idleEllipseAngle += this.idleSpeed;
 
@@ -1217,7 +1193,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           }
 
-          const shouldUpdatePosition = this.isIdle() || this.isInteractionEnabled();
+          const shouldUpdatePosition = this.isAutoNavigationActive() || this.isInteractionEnabled();
 
           if (shouldUpdatePosition) {
             this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;

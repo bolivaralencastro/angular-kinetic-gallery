@@ -180,6 +180,7 @@
                 [style.left.px]="item.x"
                 [style.top.px]="item.y"
                 [class.cursor-pointer]="isInteractionEnabled()"
+                [class.pointer-events-none]="isAutoNavigationActive()"
                 data-cursor-pointer
                 (click)="selectGallery(item.id)"
                 (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
