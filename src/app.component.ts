@@ -1217,7 +1217,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           }
 
-          if (this.isInteractionEnabled()) {
+          const shouldUpdatePosition = this.isIdle() || this.isInteractionEnabled();
+
+          if (shouldUpdatePosition) {
             this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
             this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
 
