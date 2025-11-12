@@ -11,6 +11,8 @@ import { InfoDialogComponent } from './components/info-dialog/info-dialog.compon
 
 import { Gallery } from './interfaces/gallery.interface';
 import { InteractiveCursor } from './services/interactive-cursor';
+import { ThemeService } from './services/theme.service';
+import { ContextMenuAction, ContextMenuGroup } from './types/context-menu';
 
 // Interfaces para tipagem dos dados
 interface BaseItem {
@@ -172,65 +174,69 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown.p', ['$event'])
   handlePKey(event: KeyboardEvent): void {
-    // Check if user is typing in an input field, textarea, or contenteditable element
-    const target = event.target as HTMLElement;
-    const isTyping = target && (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable ||
-      target.closest('input') ||
-      target.closest('textarea')
-    );
-
-    if (isTyping) {
-      // Allow 'p' to be typed normally in input fields
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target)) {
       return;
     }
 
     event.preventDefault();
-    
-    // Toggle gallery preview play/pause
-    if (this.currentView() === 'galleries') {
-      // For now, we'll just toggle previews on currently visible gallery items
-      const visibleGalleries = this.visibleItems().filter(item => item.type === 'gallery');
-      if (visibleGalleries.length > 0) {
-        // Toggle play/pause for all visible galleries that have preview images set
-        const allNotSlideshow = visibleGalleries.every(gallery => {
-          const timer = this.galleryPreviewTimers.get(gallery.previewKey);
-          return !timer || !timer.intervalId;
-        });
-        
-        if (allNotSlideshow) {
-          // Start slideshow for all visible galleries that have images
-          visibleGalleries.forEach(gallery => {
-            if (gallery.imageUrls.length > 1) { // Only start slideshow if there are multiple images
-              // Clear any existing timers and start new slideshow
-              this.clearGalleryPreviewTimers(gallery.previewKey);
-              this.startPreviewForGallery(gallery.id, gallery.previewKey);
-            } else if (gallery.imageUrls.length === 1) {
-              // For single-image galleries, just ensure the image is shown
-              this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
-            }
-          });
-        } else {
-          // Stop slideshow for all visible galleries (show first image only)
-          visibleGalleries.forEach(gallery => {
-            if (this.galleryPreviewTimers.has(gallery.previewKey)) {
-              const timers = this.galleryPreviewTimers.get(gallery.previewKey);
-              if (timers && timers.intervalId) {
-                // Clear the slideshow interval, keep showing the current image
-                clearInterval(timers.intervalId);
-                this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: timers.startTimeoutId, intervalId: null });
-              }
-            }
-            // Make sure we're showing the first image
-            if (gallery.imageUrls.length > 0) {
-              this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
-            }
-          });
-        }
-      }
+    this.togglePreviewPlayback();
+  }
+
+  togglePreviewPlayback(): void {
+    if (this.currentView() !== 'galleries') {
+      return;
     }
+
+    const visibleGalleries = this.visibleItems().filter(item => item.type === 'gallery');
+    if (visibleGalleries.length === 0) {
+      return;
+    }
+
+    const allNotSlideshow = visibleGalleries.every(gallery => {
+      const timer = this.galleryPreviewTimers.get(gallery.previewKey);
+      return !timer || !timer.intervalId;
+    });
+
+    if (allNotSlideshow) {
+      visibleGalleries.forEach(gallery => {
+        if (gallery.imageUrls.length > 1) {
+          this.clearGalleryPreviewTimers(gallery.previewKey);
+          this.startPreviewForGallery(gallery.id, gallery.previewKey);
+        } else if (gallery.imageUrls.length === 1) {
+          this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+        }
+      });
+    } else {
+      visibleGalleries.forEach(gallery => {
+        if (this.galleryPreviewTimers.has(gallery.previewKey)) {
+          const timers = this.galleryPreviewTimers.get(gallery.previewKey);
+          if (timers && timers.intervalId) {
+            clearInterval(timers.intervalId);
+            this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: timers.startTimeoutId, intervalId: null });
+          }
+        }
+
+        if (gallery.imageUrls.length > 0) {
+          this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+        }
+      });
+    }
+  }
+
+  @HostListener('document:keydown.t', ['$event'])
+  handleThemeKey(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.toggleThemeMode();
+  }
+
+  toggleThemeMode(): void {
+    this.themeService.toggleTheme();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -288,6 +294,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   galleryService = inject(GalleryService);
+  themeService = inject(ThemeService);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
 
@@ -308,7 +315,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   visibleItems = signal<VisibleItem[]>([]);
   expandedItem = signal<ExpandedItem | null>(null);
   isWebcamVisible = signal(false);
-  contextMenu = signal<{ visible: boolean; x: number; y: number; options?: string[] }>({ visible: false, x: 0, y: 0 });
+  contextMenu = signal<{ visible: boolean; x: number; y: number; groups: ContextMenuGroup[] }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    groups: [],
+  });
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
   galleryPreviewImages = signal<Record<string, string>>({});
@@ -362,6 +374,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
+  private readonly generalGroupLabel = 'Ações gerais';
+
+  private createGeneralGroup(): ContextMenuGroup {
+    const actions: ContextMenuAction[] = ['toggleTheme'];
+
+    if (this.currentView() === 'galleries') {
+      actions.push('togglePlayback');
+    }
+
+    actions.push('toggleFullscreen', 'info');
+
+    return {
+      label: this.generalGroupLabel,
+      actions,
+    };
+  }
+
+  private isTypingElement(target: HTMLElement | null): boolean {
+    return !!target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      !!target.closest('input') ||
+      !!target.closest('textarea')
+    );
+  }
   
   isInteractionEnabled = computed(
     () =>
@@ -1152,25 +1190,35 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onRightClick(event: MouseEvent): void {
     event.preventDefault();
+    const groups: ContextMenuGroup[] = [this.createGeneralGroup()];
+
     if (this.currentView() === 'galleries') {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery'] });
+      groups.push({ label: 'Galerias', actions: ['createGallery'] });
     } else {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['capturePhoto'] });
+      groups.push({ label: 'Fotos', actions: ['capturePhoto'] });
     }
+
+    this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
   }
 
   onGalleryRightClick(event: MouseEvent, galleryId: string): void {
     event.preventDefault();
     event.stopPropagation();
     if (this.currentView() === 'galleries') {
-      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, options: ['createGallery', 'editGallery', 'deleteGallery'] });
+      const groups: ContextMenuGroup[] = [
+        this.createGeneralGroup(),
+        { label: 'Galerias', actions: ['createGallery'] },
+        { label: 'Galeria selecionada', actions: ['editGallery', 'deleteGallery'] },
+      ];
+      this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
     }
   }
 
   closeContextMenu(): void {
-    this.contextMenu.set({ visible: false, x: 0, y: 0 });
+    this.contextMenu.set({ visible: false, x: 0, y: 0, groups: [] });
+    this.contextMenuGalleryId = null;
   }
 
   openWebcamCapture(): void {

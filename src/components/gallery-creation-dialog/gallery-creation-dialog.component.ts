@@ -1,52 +1,75 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-gallery-creation-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[10000]" (click)="onClose()" data-cursor-pointer>
-      <div 
+    <div
+      class="fixed inset-0 flex justify-center items-center z-[10000]"
+      data-cursor-pointer
+      [style.backgroundColor]="themeService.scrimColor()"
+      (click)="onClose()">
+      <div
         class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
-        style="background-color: rgba(30, 30, 30, 0.95); border: 1px solid rgb(50, 50, 50);"
+        [style.backgroundColor]="themeService.dialogPalette().surface"
+        [style.border]="'1px solid ' + themeService.dialogPalette().border"
+        [style.color]="themeService.dialogPalette().text"
+        [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
         (click)="$event.stopPropagation()">
-        
+
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-medium text-gray-200 tracking-wider">
+          <h2
+            class="text-xl font-medium tracking-wider"
+            [style.color]="themeService.dialogPalette().title">
             Criar Galeria
           </h2>
           <button
             (click)="onClose()"
             data-cursor-pointer
             class="text-2xl leading-none rounded-sm focus:outline-none"
-            style="color: rgb(180, 180, 180); background: none; border: none; padding: 0; cursor: pointer;">
+            [style.color]="themeService.dialogPalette().icon"
+            style="background: none; border: none; padding: 0; cursor: pointer;">
             &times;
           </button>
         </div>
 
         <form [formGroup]="galleryForm" (ngSubmit)="onSubmit()">
           <div class="mb-4">
-            <label for="name" class="block text-gray-300 text-sm font-medium mb-2 tracking-wider">Nome</label>
+            <label
+              for="name"
+              class="block text-sm font-medium mb-2 tracking-wider"
+              [style.color]="themeService.dialogPalette().muted">Nome</label>
             <input
               id="name"
               type="text"
               formControlName="name"
-              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
-              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
+              class="w-full rounded-md py-3 px-4 focus:outline-none"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.color]="themeService.dialogPalette().inputText"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              style="outline: none;"
               placeholder="Digite o nome da galeria"
               required>
           </div>
 
           <div class="mb-6">
-            <label for="description" class="block text-gray-300 text-sm font-medium mb-2 tracking-wider">Descrição</label>
+            <label
+              for="description"
+              class="block text-sm font-medium mb-2 tracking-wider"
+              [style.color]="themeService.dialogPalette().muted">Descrição</label>
             <textarea
               id="description"
               formControlName="description"
               rows="3"
-              class="w-full text-gray-200 rounded-md py-3 px-4 focus:outline-none"
-              style="background-color: rgb(38, 38, 38); border: 1px solid rgb(60, 60, 60); outline: none; outline-color: transparent;"
+              class="w-full rounded-md py-3 px-4 focus:outline-none"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.color]="themeService.dialogPalette().inputText"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              style="outline: none;"
               placeholder="Digite a descrição da galeria"
               required>
             </textarea>
@@ -57,8 +80,10 @@ import { CommonModule } from '@angular/common';
               type="button"
               (click)="onClose()"
               data-cursor-pointer
-              class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-              style="background-color: rgb(60, 60, 60); border: none;">
+              class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+              [style.backgroundColor]="themeService.dialogPalette().buttonSecondaryBg"
+              [style.color]="themeService.dialogPalette().buttonSecondaryText"
+              style="border: none;">
               Cancelar
             </button>
 
@@ -66,9 +91,9 @@ import { CommonModule } from '@angular/common';
               type="submit"
               [disabled]="galleryForm.invalid"
               data-cursor-pointer
-              class="px-6 py-2 text-white font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-              [style.backgroundColor]="galleryForm.invalid ? 'rgb(38, 38, 38)' : 'rgb(60, 60, 60)'"
-              [style.color]="galleryForm.invalid ? 'rgb(150, 150, 150)' : 'white'"
+              class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
+              [style.backgroundColor]="galleryForm.invalid ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
+              [style.color]="galleryForm.invalid ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
               [style.cursor]="galleryForm.invalid ? 'not-allowed' : 'pointer'"
               style="border: none;">
               Criar
@@ -89,17 +114,13 @@ import { CommonModule } from '@angular/common';
     }
 
     button:not(:disabled):hover {
-      background-color: rgb(80, 80, 80) !important;
+      filter: brightness(1.05);
     }
 
     input:focus,
     textarea:focus {
-      border-color: rgb(100, 100, 100) !important;
-      box-shadow: 0 0 0 2px rgba(100, 100, 100, 0.3) !important;
-    }
-
-    button[style*="color: rgb(180, 180, 180)"]:hover {
-      color: white !important;
+      border-color: var(--dialog-focus-ring) !important;
+      box-shadow: 0 0 0 2px var(--dialog-focus-ring) !important;
     }
   `],
 })
@@ -108,6 +129,8 @@ export class GalleryCreationDialogComponent {
   @Output() save = new EventEmitter<{ name: string, description: string }>();
 
   galleryForm: FormGroup;
+
+  themeService = inject(ThemeService);
 
   constructor(private fb: FormBuilder) {
     this.galleryForm = this.fb.group({
