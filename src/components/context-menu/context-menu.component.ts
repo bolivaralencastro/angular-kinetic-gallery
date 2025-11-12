@@ -46,10 +46,37 @@ import { ContextMenuPalette, ThemeMode } from '../../services/theme.service';
                       <span>{{ themeMode() === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro' }}</span>
                     </ng-container>
                     <ng-container *ngSwitchCase="'togglePlayback'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" [attr.fill]="themePalette().icon">
-                        <path d="M5.25 5.653c0-1.44 1.585-2.294 2.8-1.509l8.087 5.094a1.8 1.8 0 0 1 0 3.024L8.05 17.357c-1.215.785-2.8-.07-2.8-1.51V5.653Z" />
-                      </svg>
-                      <span>Play/Pause pré-visualização</span>
+                      @if (isPreviewPlaying()) {
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke-width="1.5"
+                          stroke="currentColor"
+                          [attr.stroke]="themePalette().icon"
+                        >
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h-3A1.5 1.5 0 0 0 6 7.5v9A1.5 1.5 0 0 0 7.5 18h3A1.5 1.5 0 0 0 12 16.5v-9A1.5 1.5 0 0 0 10.5 6Zm7.5 1.5v9A1.5 1.5 0 0 1 16.5 18h-3a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 13.5 6h3A1.5 1.5 0 0 1 18 7.5Z" />
+                        </svg>
+                        <span>Parar animação</span>
+                      } @else {
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                          [attr.fill]="themePalette().icon"
+                        >
+                          <path d="M5.25 5.653c0-1.44 1.585-2.294 2.8-1.509l8.087 5.094a1.8 1.8 0 0 1 0 3.024L8.05 17.357c-1.215.785-2.8-.07-2.8-1.51V5.653Z" />
+                        </svg>
+                        <span>
+                          @if (previewCountdown() !== null) {
+                            Iniciar animação ({{ previewCountdown() }}s)
+                          } @else {
+                            Iniciar animação
+                          }
+                        </span>
+                      }
                     </ng-container>
                     <ng-container *ngSwitchCase="'toggleFullscreen'">
                       @if (isFullscreen()) {
@@ -130,6 +157,8 @@ export class ContextMenuComponent {
   groups = input.required<ContextMenuGroup[]>();
   themePalette = input.required<ContextMenuPalette>();
   themeMode = input.required<ThemeMode>();
+  isPreviewPlaying = input<boolean>(false);
+  previewCountdown = input<number | null>(null);
 
   hoveredAction = signal<ContextMenuAction | null>(null);
 

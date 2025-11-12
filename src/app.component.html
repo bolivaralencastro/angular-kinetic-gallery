@@ -336,6 +336,22 @@
   }
 </div>
 
+@if (previewCountdown() !== null) {
+  <div
+    class="pointer-events-none fixed left-1/2 top-6 z-40 -translate-x-1/2 rounded-full bg-black/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-white/90"
+  >
+    Animação começa em {{ previewCountdown() }}s
+  </div>
+}
+
+@if (isPreviewPlaying() && previewCountdown() === null) {
+  <div
+    class="pointer-events-none fixed left-1/2 top-20 z-30 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-xs font-medium uppercase tracking-[0.28em] text-white/80"
+  >
+    Animação em andamento — pressione P para parar
+  </div>
+}
+
 <!-- Componentes de UI flutuantes -->
 @if (contextMenu().visible) {
   <app-context-menu
@@ -345,6 +361,8 @@
     [groups]="contextMenu().groups"
     [themePalette]="themeService.contextMenuPalette()"
     [themeMode]="themeService.theme()"
+    [isPreviewPlaying]="isPreviewPlaying()"
+    [previewCountdown]="previewCountdown()"
     (close)="closeContextMenu()"
     (capture)="openWebcamCapture()"
     (toggleFullscreen)="toggleFullscreen()"
