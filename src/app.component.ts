@@ -4,8 +4,6 @@ import { GalleryService } from './services/gallery.service';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
 import { WebcamCaptureComponent } from './components/webcam-capture/webcam-capture.component';
 import { GalleryEditorComponent } from './components/gallery-editor/gallery-editor.component';
-
-
 import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
 import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
 
@@ -198,39 +196,121 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const visibleGalleries = this.visibleItems().filter(item => item.type === 'gallery');
-    if (visibleGalleries.length === 0) {
+    if (this.previewCountdown() !== null) {
+      this.cancelPreviewCountdown();
       return;
     }
 
-    const allNotSlideshow = visibleGalleries.every(gallery => {
-      const timer = this.galleryPreviewTimers.get(gallery.previewKey);
-      return !timer || !timer.intervalId;
-    });
+    if (this.isPreviewPlaying()) {
+      this.stopPreviewPlayback();
+      return;
+    }
 
-    if (allNotSlideshow) {
-      visibleGalleries.forEach(gallery => {
-        if (gallery.imageUrls.length > 1) {
-          this.clearGalleryPreviewTimers(gallery.previewKey);
-          this.startPreviewForGallery(gallery.id, gallery.previewKey);
-        } else if (gallery.imageUrls.length === 1) {
-          this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
-        }
+    const hasImagesToAnimate = this.getVisibleGalleryItems().some(gallery => gallery.imageUrls.length > 0);
+    if (!hasImagesToAnimate) {
+      return;
+    }
+
+    this.startPreviewCountdown();
+  }
+
+  private startPreviewCountdown(): void {
+    this.cancelPreviewCountdown();
+
+    const hasPlayableGalleries = this.getVisibleGalleryItems().some(gallery => gallery.imageUrls.length > 0);
+    if (!hasPlayableGalleries) {
+      return;
+    }
+
+    let remaining = this.PREVIEW_COUNTDOWN_DURATION;
+    this.previewCountdown.set(remaining);
+    this.previewCountdownIntervalId = setInterval(() => {
+      remaining -= 1;
+      if (remaining > 0) {
+        this.ngZone.run(() => this.previewCountdown.set(remaining));
+        return;
+      }
+
+      if (this.previewCountdownIntervalId) {
+        clearInterval(this.previewCountdownIntervalId);
+        this.previewCountdownIntervalId = null;
+      }
+
+      this.ngZone.run(() => {
+        this.previewCountdown.set(null);
+        this.beginPreviewPlayback();
       });
-    } else {
-      visibleGalleries.forEach(gallery => {
-        if (this.galleryPreviewTimers.has(gallery.previewKey)) {
-          const timers = this.galleryPreviewTimers.get(gallery.previewKey);
-          if (timers && timers.intervalId) {
-            clearInterval(timers.intervalId);
-            this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: timers.startTimeoutId, intervalId: null });
-          }
+    }, 1000);
+  }
+
+  private cancelPreviewCountdown(): void {
+    if (this.previewCountdownIntervalId) {
+      clearInterval(this.previewCountdownIntervalId);
+      this.previewCountdownIntervalId = null;
+    }
+    this.previewCountdown.set(null);
+  }
+
+  private beginPreviewPlayback(): void {
+    const playableGalleries = this.getVisibleGalleryItems().filter(gallery => gallery.imageUrls.length > 0);
+    if (playableGalleries.length === 0) {
+      this.isPreviewPlaying.set(false);
+      return;
+    }
+
+    this.syncPreviewPlaybackForVisibleGalleries(true);
+    this.isPreviewPlaying.set(true);
+  }
+
+  private stopPreviewPlayback(): void {
+    this.stopAllGalleryPreviews();
+  }
+
+  private getVisibleGalleryItems(): GalleryCardItem[] {
+    return this.visibleItems().filter((item): item is GalleryCardItem => item.type === 'gallery');
+  }
+
+  private syncPreviewPlaybackForVisibleGalleries(forceRestart: boolean = false): void {
+    const visibleGalleries = this.getVisibleGalleryItems();
+
+    for (const gallery of visibleGalleries) {
+      if (gallery.imageUrls.length === 0) {
+        continue;
+      }
+
+      const existingTimers = this.galleryPreviewTimers.get(gallery.previewKey);
+      if (!forceRestart && existingTimers) {
+        if (existingTimers.intervalId) {
+          continue;
         }
 
-        if (gallery.imageUrls.length > 0) {
-          this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+        const currentPreviewImage = this.galleryPreviewImages()[gallery.previewKey];
+        if (currentPreviewImage) {
+          continue;
         }
-      });
+      }
+
+      this.clearGalleryPreviewTimers(gallery.previewKey);
+
+      if (gallery.imageUrls.length === 1) {
+        this.setGalleryPreviewImage(gallery.previewKey, gallery.imageUrls[0]);
+        this.galleryPreviewTimers.set(gallery.previewKey, { startTimeoutId: null, intervalId: null });
+        continue;
+      }
+
+      this.startPreviewForGallery(gallery.id, gallery.previewKey);
+    }
+  }
+
+  private cleanupInactivePreviewTimers(visiblePreviewKeys: Set<string>): void {
+    const activeKeys = Array.from(this.galleryPreviewTimers.keys());
+    for (const key of activeKeys) {
+      if (visiblePreviewKeys.has(key)) {
+        continue;
+      }
+
+      this.clearGalleryPreviewTimers(key);
+      this.setGalleryPreviewImage(key, null);
     }
   }
 
@@ -318,6 +398,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   };
   private readonly GALLERY_PREVIEW_DELAY = 300;
   private readonly GALLERY_PREVIEW_INTERVAL = 500;
+  private readonly PREVIEW_COUNTDOWN_DURATION = 3;
 
   // --- Sinais para o Estado da UI ---
   currentView = signal<'galleries' | 'photos'>('galleries'); // 'galleries' or 'photos'
@@ -334,6 +415,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isFullscreen = signal(false);
   private isViewInitialized = signal(false);
   galleryPreviewImages = signal<Record<string, string>>({});
+  isPreviewPlaying = signal(false);
+  previewCountdown = signal<number | null>(null);
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
@@ -386,10 +469,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private contextMenuGalleryId: string | null = null;
   private readonly generalGroupLabel = 'Ações gerais';
 
-  private createGeneralGroup(): ContextMenuGroup {
+  private createGeneralGroup(includePlayback: boolean = true): ContextMenuGroup {
     const actions: ContextMenuAction[] = ['toggleTheme'];
 
-    if (this.currentView() === 'galleries') {
+    if (includePlayback && this.currentView() === 'galleries') {
       actions.push('togglePlayback');
     }
 
@@ -445,6 +528,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     startTimeoutId: ReturnType<typeof setTimeout> | null;
     intervalId: ReturnType<typeof setInterval> | null;
   }>();
+  private previewCountdownIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
@@ -633,6 +717,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private calculateEdgeScroll(): { deltaX: number; deltaY: number } {
     if (!this.interactionState.isMouseOver) {
+      return { deltaX: 0, deltaY: 0 };
+    }
+
+    if (this.contextMenu().visible) {
       return { deltaX: 0, deltaY: 0 };
     }
 
@@ -933,6 +1021,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
     this.visibleItems.set(newVisibleItems);
+
+    if (isGalleryView && this.isPreviewPlaying()) {
+      const visiblePreviewKeys = new Set(
+        newVisibleItems
+          .filter((item): item is GalleryCardItem => item.type === 'gallery')
+          .map(item => item.previewKey)
+      );
+      this.syncPreviewPlaybackForVisibleGalleries();
+      this.cleanupInactivePreviewTimers(visiblePreviewKeys);
+    }
   }
 
   private calculateCreationOrder(totalItems: number, index: number): number {
@@ -1043,6 +1141,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.clearGalleryPreviewTimers(key);
     }
     this.galleryPreviewImages.set({});
+    this.isPreviewPlaying.set(false);
+    this.cancelPreviewCountdown();
   }
 
   private startAnimationLoop(): void {
@@ -1216,9 +1316,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.stopPropagation();
     if (this.currentView() === 'galleries') {
       const groups: ContextMenuGroup[] = [
-        this.createGeneralGroup(),
+        this.createGeneralGroup(false),
         { label: 'Galerias', actions: ['createGallery'] },
-        { label: 'Galeria selecionada', actions: ['editGallery', 'deleteGallery'] },
+        { label: 'Galeria selecionada', actions: ['togglePlayback', 'editGallery', 'deleteGallery'] },
       ];
       this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
       // Store the gallery ID for context menu actions
