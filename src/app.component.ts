@@ -466,7 +466,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Sinais e Propriedades para o Modo Ocioso ---
   isIdle = signal(false);
-  private inactivityTimeoutId: any;
+  private inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private idleEllipseAngle = 0;
   private idleEllipseCenter = { x: 0, y: 0 };
   private idleEllipseRadiusX = 0; // Semi-eixo maior (horizontal) - será calculado baseado na tela
@@ -682,11 +682,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isAutoNavigationSequenceActive()) {
       return;
     }
-
-    this.inactivityTimeoutId = setTimeout(() => {
-      this.inactivityTimeoutId = null;
-      this.ngZone.run(() => this.activateAutoNavigation());
-    }, 5000);
   }
 
   private configureIdleEllipse(): void {
