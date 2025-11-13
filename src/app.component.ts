@@ -6,6 +6,7 @@ import { WebcamCaptureComponent } from './components/webcam-capture/webcam-captu
 import { GalleryEditorComponent } from './components/gallery-editor/gallery-editor.component';
 import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
 import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
+import { MobileGalleryCardComponent } from './components/mobile-gallery-card/mobile-gallery-card.component';
 
 import { Gallery } from './interfaces/gallery.interface';
 import { InteractiveCursor } from './services/interactive-cursor';
@@ -59,7 +60,7 @@ interface ExpandedItem {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent],
+  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent, MobileGalleryCardComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
