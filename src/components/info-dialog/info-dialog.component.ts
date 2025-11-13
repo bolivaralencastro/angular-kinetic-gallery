@@ -57,14 +57,23 @@ import { ThemeService } from '../../services/theme.service';
                 para preto e branco, criando uma estética minimalista e elegante.
               </p>
               <p>
-                Os dados são armazenados localmente no navegador, garantindo privacidade e acesso 
+                Os dados são armazenados localmente no navegador, garantindo privacidade e acesso
                 rápido às suas galerias.
               </p>
+              <div class="space-y-2 pt-4 border-t" [style.borderColor]="themeService.dialogPalette().border">
+                <h3 class="text-sm font-medium" [style.color]="themeService.dialogPalette().title">Fluxo de funcionamento</h3>
+                <ul class="space-y-2 text-sm">
+                  <li>Abra o painel lateral para criar uma nova galeria e defina nome, descrição e capa.</li>
+                  <li>Dentro de uma galeria, utilize a câmera integrada para capturar novas fotos ou importe arquivos existentes.</li>
+                  <li>Organize as imagens com o menu de contexto: renomeie, exclua ou mova fotos entre galerias.</li>
+                  <li>Ao acessar uma foto, utilize o modo expandido para analisar detalhes e aplicar efeitos.</li>
+                </ul>
+              </div>
             </div>
           </div>
 
           <!-- Column 2: Comandos -->
-          <div class="space-y-4 max-w-xs">
+          <div class="space-y-6 max-w-xs">
             <h2
               class="text-sm font-medium uppercase mb-4"
               [style.color]="themeService.dialogPalette().title"
@@ -73,10 +82,10 @@ import { ThemeService } from '../../services/theme.service';
               <div>
                 <h3 class="text-sm font-medium mb-2" [style.color]="themeService.dialogPalette().title">Navegação</h3>
                 <ul class="space-y-2 text-sm">
-                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">W</span> ou <span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">↑</span> - Mover para cima</li>
-                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">S</span> ou <span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">↓</span> - Mover para baixo</li>
-                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">A</span> ou <span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">←</span> - Mover para esquerda</li>
-                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">D</span> ou <span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">→</span> - Mover para direita</li>
+                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">↑</span> - Mover para cima</li>
+                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">↓</span> - Mover para baixo</li>
+                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">←</span> - Mover para esquerda</li>
+                  <li><span class="font-mono px-2 py-1 rounded" [style.backgroundColor]="themeService.dialogPalette().inputBackground" [style.color]="themeService.dialogPalette().inputText">→</span> - Mover para direita</li>
                 </ul>
               </div>
 
@@ -101,6 +110,7 @@ import { ThemeService } from '../../services/theme.service';
                   <li>Clique em foto - Expandir foto</li>
                 </ul>
               </div>
+
             </div>
           </div>
 
