@@ -10,11 +10,9 @@ import { ThemeService } from '../../services/theme.service';
       <div class="flex h-full flex-col">
         <div class="flex-1 px-2 pb-6">
           <div class="flex h-full flex-col items-center justify-between gap-8">
-            <div
-              class="relative w-full max-w-[26rem] flex-1 select-none"
-              data-cursor-pointer
-              (click)="toggleGridOverlay()">
-              <div class="relative h-full w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+            <div class="flex-1 w-full max-w-[26rem] select-none" data-cursor-pointer (click)="toggleGridOverlay()">
+              <div
+                class="relative aspect-square w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
                 <video
                   #videoElement
                   class="h-full w-full object-cover"
