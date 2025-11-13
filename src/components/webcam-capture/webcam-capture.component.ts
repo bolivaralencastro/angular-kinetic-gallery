@@ -127,7 +127,7 @@ import { ThemeService } from '../../services/theme.service';
               [style.backgroundColor]="themeService.dialogPalette().inputBackground"
               [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
               [value]="selectedCameraId() ?? ''"
-              (change)="setCamera(($event.target as HTMLSelectElement).value)"
+              (change)="onCameraChange($event)"
             >
               @for (camera of availableCameras(); track camera.deviceId; let index = $index) {
                 <option [value]="camera.deviceId">{{ camera.label || 'Câmera ' + (index + 1) }}</option>
@@ -214,6 +214,15 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
   cycleTimerDuration(): void {
     this.timerDurationIndex.update(currentIndex => (currentIndex + 1) % this.timerDurations.length);
+  }
+
+  onCameraChange(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    void this.setCamera(target.value);
   }
 
   async setCamera(deviceId: string): Promise<void> {
