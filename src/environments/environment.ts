@@ -4,7 +4,8 @@ const DEFAULT_SUPABASE_ANON_KEY =
 const DEFAULT_SUPABASE_BUCKET = 'gallery-images';
 
 function readEnv(key: keyof ImportMetaEnv, fallback: string): string {
-  const rawValue = import.meta.env[key];
+  const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
+  const rawValue = env?.[key];
   const trimmed = (rawValue ?? '').trim();
   return trimmed || fallback;
 }
