@@ -1614,7 +1614,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  closeContextMenu(): void {
+  closeContextMenu(event?: MouseEvent): void {
+    if (event) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('app-context-menu')) {
+        return;
+      }
+    }
+
     this.contextMenu.set({ visible: false, x: 0, y: 0, groups: [] });
     this.contextMenuGalleryId = null;
   }
