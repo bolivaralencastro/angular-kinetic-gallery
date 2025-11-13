@@ -487,20 +487,39 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
-  private readonly MOBILE_GALLERY_LOOP_MULTIPLIER = 3;
   isMobileLayout = signal(false);
   mobileCommandPanelVisible = signal(false);
-  mobileInfiniteGalleries = computed(() => {
-    const galleries = this.galleryService.galleries();
-    if (galleries.length === 0) {
-      return [] as Gallery[];
+  captureMode = signal<'selected' | 'unassigned'>('selected');
+  pendingCaptures = computed(() => this.galleryService.pendingCaptures());
+  lastCapturedImage = signal<string | null>(null);
+  pendingCaptureToAssign = signal<string | null>(null);
+  selectedPendingCapture = computed(() => {
+    const pending = this.pendingCaptures();
+    if (pending.length === 0) {
+      return null;
     }
 
-    const looped: Gallery[] = [];
-    for (let index = 0; index < this.MOBILE_GALLERY_LOOP_MULTIPLIER; index += 1) {
-      looped.push(...galleries);
+    const selected = this.pendingCaptureToAssign();
+    if (selected && pending.includes(selected)) {
+      return selected;
     }
-    return looped;
+
+    return pending[0];
+  });
+  isLastCapturePending = computed(() => {
+    const last = this.lastCapturedImage();
+    if (!last) {
+      return false;
+    }
+    return this.pendingCaptures().includes(last);
+  });
+  galleries = computed(() => this.galleryService.galleries());
+  activeGallery = computed(() => {
+    const selectedId = this.galleryService.selectedGalleryId();
+    if (!selectedId) {
+      return null;
+    }
+    return this.galleryService.getGallery(selectedId) ?? null;
   });
   private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -655,6 +674,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const item = this.expandedItem();
       if (elementRef && item) {
         this.runExpandAnimation(elementRef.nativeElement, item);
+      }
+    });
+
+    effect(() => {
+      const pending = this.pendingCaptures();
+      if (pending.length === 0) {
+        if (this.pendingCaptureToAssign()) {
+          this.pendingCaptureToAssign.set(null);
+        }
+        return;
+      }
+
+      const selected = this.pendingCaptureToAssign();
+      if (!selected || !pending.includes(selected)) {
+        this.pendingCaptureToAssign.set(pending[0]);
       }
     });
 
@@ -919,28 +953,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       const element = containerRef.nativeElement;
-      const galleries = this.galleryService.galleries();
-      if (galleries.length === 0) {
-        element.scrollTo({ top: 0, behavior: 'auto' });
-        this.lastMobileScrollTop = element.scrollTop;
-        return;
-      }
-
-      const adjustScroll = () => {
-        const segmentHeight = element.scrollHeight / this.MOBILE_GALLERY_LOOP_MULTIPLIER;
-        if (segmentHeight > 0) {
-          element.scrollTo({ top: segmentHeight, behavior: 'auto' });
-        } else {
-          element.scrollTo({ top: 0, behavior: 'auto' });
-        }
-        this.lastMobileScrollTop = element.scrollTop;
-      };
-
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(adjustScroll);
-      } else {
-        adjustScroll();
-      }
+      element.scrollTo({ top: 0, behavior: 'auto' });
+      this.lastMobileScrollTop = element.scrollTop;
     }, 0);
   }
 
@@ -951,28 +965,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const containerRef = this.mobileScrollContainer();
     if (containerRef) {
-      const element = containerRef.nativeElement;
-      const galleries = this.galleryService.galleries();
-      if (galleries.length > 0) {
-        const segmentHeight = element.scrollHeight / this.MOBILE_GALLERY_LOOP_MULTIPLIER;
-        const maxScroll = element.scrollHeight - element.clientHeight;
-        if (segmentHeight > 0 && maxScroll > 0) {
-          const previousScrollTop = this.lastMobileScrollTop;
-          const currentScrollTop = element.scrollTop;
-          const isScrollingDown = currentScrollTop > previousScrollTop;
-          const isScrollingUp = currentScrollTop < previousScrollTop;
-          const offsetWithinSegment = currentScrollTop % segmentHeight;
-
-          if (isScrollingUp && currentScrollTop <= 0) {
-            const targetScrollTop = segmentHeight + offsetWithinSegment;
-            element.scrollTop = Math.min(Math.max(targetScrollTop, 0), maxScroll);
-          } else if (isScrollingDown && currentScrollTop >= maxScroll) {
-            const targetScrollTop = segmentHeight + offsetWithinSegment;
-            element.scrollTop = Math.min(Math.max(targetScrollTop, 0), maxScroll);
-          }
-        }
-      }
-      this.lastMobileScrollTop = element.scrollTop;
+      this.lastMobileScrollTop = containerRef.nativeElement.scrollTop;
     }
 
     this.mobileCommandPanelVisible.set(false);
@@ -1008,6 +1001,64 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  startQuickCapture(): void {
+    this.galleryService.selectGallery(null);
+    this.openWebcamCapture('unassigned');
+  }
+
+  startCaptureForGallery(galleryId: string): void {
+    this.galleryService.selectGallery(galleryId);
+    this.openWebcamCapture('selected');
+  }
+
+  viewGallery(galleryId: string): void {
+    this.selectGallery(galleryId);
+  }
+
+  onCaptureComplete(imageUrl: string): void {
+    const mode = this.captureMode();
+    const selectedGalleryId = this.galleryService.selectedGalleryId();
+
+    if (mode === 'selected' && selectedGalleryId) {
+      this.galleryService.addImage(imageUrl);
+    } else {
+      this.galleryService.addPendingCapture(imageUrl);
+    }
+
+    this.lastCapturedImage.set(imageUrl);
+  }
+
+  assignPendingToGallery(galleryId: string, imageUrl?: string): void {
+    const targetImage = imageUrl ?? this.selectedPendingCapture();
+    if (!targetImage) {
+      return;
+    }
+
+    this.galleryService.assignPendingCaptureToGallery(galleryId, targetImage);
+    this.lastCapturedImage.set(targetImage);
+    if (this.pendingCaptureToAssign() === targetImage) {
+      this.pendingCaptureToAssign.set(null);
+    }
+  }
+
+  discardPendingCapture(imageUrl: string): void {
+    this.galleryService.removePendingCapture(imageUrl);
+    if (this.pendingCaptureToAssign() === imageUrl) {
+      this.pendingCaptureToAssign.set(null);
+    }
+  }
+
+  onPendingGallerySelect(event: Event, imageUrl: string): void {
+    const selectElement = event.target as HTMLSelectElement;
+    const galleryId = selectElement.value;
+    if (!galleryId) {
+      return;
+    }
+
+    this.assignPendingToGallery(galleryId, imageUrl);
+    selectElement.value = '';
+  }
+
   getGalleryCover(gallery: Gallery): string {
     if (gallery.thumbnailUrl) {
       return gallery.thumbnailUrl;
@@ -1032,11 +1083,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return gallery.id;
   }
 
-  trackMobileGalleryLoop(index: number, gallery: Gallery): string {
-    return `${index}-${gallery.id}`;
+  trackMobileImage(index: number, imageUrl: string): string {
+    return `${index}-${imageUrl}`;
   }
 
-  trackMobileImage(index: number, imageUrl: string): string {
+  trackPendingCapture(index: number, imageUrl: string): string {
     return `${index}-${imageUrl}`;
   }
 
@@ -1445,7 +1496,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contextMenuGalleryId = null;
   }
 
-  openWebcamCapture(): void {
+  openWebcamCapture(mode: 'selected' | 'unassigned' = 'selected'): void {
+    this.captureMode.set(mode);
     this.deactivateAutoNavigation(true);
     this.isWebcamVisible.set(true);
   }

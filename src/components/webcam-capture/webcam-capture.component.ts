@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GalleryService } from '../../services/gallery.service';
 import { ThemeService } from '../../services/theme.service';
 
 @Component({
@@ -180,6 +179,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   close = output<void>();
+  capture = output<string>();
   isStreaming = signal(false);
   error = signal<string | null>(null);
   isTimerEnabled = signal(false);
@@ -193,7 +193,6 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   videoElement = viewChild.required<ElementRef<HTMLVideoElement>>('videoElement');
   canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
 
-  private galleryService = inject(GalleryService);
   themeService = inject(ThemeService);
   private stream: MediaStream | null = null;
   private countdownIntervalId: any;
@@ -361,7 +360,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
       // Get the processed image URL
       const dataUrl = canvas.toDataURL('image/png');
-      this.galleryService.addImage(dataUrl);
+      this.capture.emit(dataUrl);
       this.close.emit();
     } else {
       this.error.set('Não foi possível capturar a imagem.');

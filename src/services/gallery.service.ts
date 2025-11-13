@@ -2,15 +2,18 @@ import { Injectable, signal, effect, computed } from '@angular/core';
 import { Gallery } from '../interfaces/gallery.interface';
 
 const STORAGE_KEY_GALLERIES = 'kinetic-galleries';
+const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GalleryService {
   private initialGalleries: Gallery[] = this.loadGalleriesFromLocalStorage();
+  private initialPendingCaptures: string[] = this.loadPendingCapturesFromLocalStorage();
 
   galleries = signal<Gallery[]>(this.initialGalleries);
   selectedGalleryId = signal<string | null>(null);
+  pendingCaptures = signal<string[]>(this.initialPendingCaptures);
 
   // Computed signal for the images of the currently selected gallery
   images = computed(() => {
@@ -25,6 +28,10 @@ export class GalleryService {
   constructor() {
     effect(() => {
       this.saveGalleriesToLocalStorage(this.galleries());
+    });
+
+    effect(() => {
+      this.savePendingCapturesToLocalStorage(this.pendingCaptures());
     });
   }
 
@@ -85,11 +92,24 @@ export class GalleryService {
         this.selectedGalleryId.set(firstGallery.id);
       }
     }
-    
+
     const selectedGalleryId = this.selectedGalleryId();
     if (selectedGalleryId) {
       this.addImageToGallery(selectedGalleryId, imageUrl);
     }
+  }
+
+  addPendingCapture(imageUrl: string): void {
+    this.pendingCaptures.update(current => [imageUrl, ...current]);
+  }
+
+  assignPendingCaptureToGallery(galleryId: string, imageUrl: string): void {
+    this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
+    this.addImageToGallery(galleryId, imageUrl);
+  }
+
+  removePendingCapture(imageUrl: string): void {
+    this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
   }
 
   addImageToGallery(galleryId: string, imageUrl: string): void {
@@ -126,6 +146,14 @@ export class GalleryService {
     }
   }
 
+  private savePendingCapturesToLocalStorage(pending: string[]): void {
+    try {
+      localStorage.setItem(STORAGE_KEY_PENDING_CAPTURES, JSON.stringify(pending));
+    } catch (e) {
+      console.error('Error saving pending captures to localStorage', e);
+    }
+  }
+
   private loadGalleriesFromLocalStorage(): Gallery[] {
     try {
       const storedGalleries = localStorage.getItem(STORAGE_KEY_GALLERIES);
@@ -153,6 +181,16 @@ export class GalleryService {
       });
     } catch (e) {
       console.error('Error reading galleries from localStorage', e);
+      return [];
+    }
+  }
+
+  private loadPendingCapturesFromLocalStorage(): string[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_PENDING_CAPTURES);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error('Error reading pending captures from localStorage', e);
       return [];
     }
   }
