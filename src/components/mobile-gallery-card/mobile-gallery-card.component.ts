@@ -11,6 +11,10 @@ import { Gallery } from '../../interfaces/gallery.interface';
     <div
       class="group relative flex w-full items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
       [class.cursor-default]="!selectable()"
+      [class.border-emerald-400/80]="showActiveIndicator() && active()"
+      [class.ring-2]="showActiveIndicator() && active()"
+      [class.ring-emerald-400/40]="showActiveIndicator() && active()"
+      [class.bg-emerald-400/5]="showActiveIndicator() && active()"
       [attr.data-cursor-pointer]="selectable() ? '' : null"
       (click)="handleSelect($event)">
       <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
@@ -57,9 +61,6 @@ import { Gallery } from '../../interfaces/gallery.interface';
             d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
         </svg>
       </button>
-      @if (active()) {
-        <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] rounded-b-3xl bg-emerald-400/80"></span>
-      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,6 +70,7 @@ export class MobileGalleryCardComponent {
   coverUrl = input.required<string>();
   active = input<boolean>(false);
   selectable = input<boolean>(true);
+  showActiveIndicator = input<boolean>(true);
   viewLabel = input<string>('Abrir galeria');
 
   select = output<void>();
