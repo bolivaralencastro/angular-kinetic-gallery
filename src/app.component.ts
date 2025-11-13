@@ -1071,6 +1071,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mobileView.set('galleryDetail');
   }
 
+  deleteActiveGalleryFromMobile(): void {
+    const activeGallery = this.activeGallery();
+    if (!activeGallery) {
+      return;
+    }
+
+    const shouldDelete = window.confirm('Tem certeza que deseja excluir esta galeria? Esta ação não pode ser desfeita.');
+    if (!shouldDelete) {
+      return;
+    }
+
+    this.galleryService.deleteGallery(activeGallery.id);
+    this.updateVisibleItems(true);
+    this.returnToMobileGalleries();
+  }
+
   returnToMobileGalleries(): void {
     this.currentView.set('galleries');
     this.mobileView.set('galleries');
