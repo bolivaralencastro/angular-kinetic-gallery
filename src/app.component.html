@@ -26,6 +26,7 @@
           <div class="flex-1 px-6">
             <app-webcam-capture
               [variant]="'mobile'"
+              [captureAllowed]="!!mobileCaptureGallery()"
               (prepareCapture)="prepareMobileCapture()"
               (capture)="onCaptureComplete($event)">
             </app-webcam-capture>

@@ -76,8 +76,8 @@ import { ThemeService } from '../../services/theme.service';
                   type="button"
                   (click)="captureImage()"
                   class="flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-white bg-black/60 shadow-[0_0_0_10px_rgba(0,0,0,0.45)] transition active:scale-95"
-                  [disabled]="!isStreaming() || (countdown() !== null)"
-                  [class.opacity-50]="!isStreaming() || (countdown() !== null)">
+                  [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
+                  [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
                   <span class="sr-only">Capturar foto</span>
                 </button>
 
@@ -276,6 +276,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   close = output<void>();
   capture = output<string>();
   prepareCapture = output<void>();
+  captureAllowed = input(true);
   isStreaming = signal(false);
   error = signal<string | null>(null);
   isTimerEnabled = signal(false);
@@ -403,7 +404,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   captureImage(): void {
-    if (!this.isStreaming() || this.countdown() !== null) {
+    if (!this.isStreaming() || this.countdown() !== null || !this.captureAllowed()) {
       return;
     }
 
@@ -506,7 +507,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Aplica um filtro de preto e branco fotogrÃ¡fico que preserva os detalhes.
+   * Aplica um filtro de preto e branco fotográfico que preserva os detalhes.
    * @param context O contexto 2D do canvas.
    * @param width A largura da imagem.
    * @param height A altura da imagem.
@@ -520,7 +521,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       const g = data[i + 1];
       const b = data[i + 2];
       
-      // Converte para escala de cinza usando a fÃ³rmula de luminosidade (percepÃ§Ã£o humana)
+      // Converte para escala de cinza usando a fórmula de luminosidade (percepção humana)
       const grayscale = r * 0.299 + g * 0.587 + b * 0.114;
       
       data[i] = grayscale;     // Red

@@ -81,22 +81,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       // Check if user is typing in an input field, textarea, or contenteditable element
       const target = event.target as HTMLElement;
       const isTyping = target && (
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
         target.isContentEditable ||
         target.closest('input') ||
         target.closest('textarea')
       );
-      
+
       if (isTyping) {
         // Allow space to be typed normally in input fields
         return;
       }
-      
+
       event.preventDefault();
     }
     if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {
-      
+
       if (this.currentView() === 'galleries') {
         // Create a new gallery when in gallery view
         this.openGalleryCreationDialog();
@@ -112,18 +112,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     // Check if user is typing in an input field, textarea, or contenteditable element
     const target = event.target as HTMLElement;
     const isTyping = target && (
-      target.tagName === 'INPUT' || 
-      target.tagName === 'TEXTAREA' || 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
       target.isContentEditable ||
       target.closest('input') ||
       target.closest('textarea')
     );
-    
+
     if (isTyping) {
       // Allow 'f' to be typed normally in input fields
       return;
     }
-    
+
     // Allow fullscreen toggle when info dialog is visible or when can drag
     if (this.isInteractionEnabled() || this.isInfoDialogVisible()) {
       event.preventDefault();
@@ -450,7 +450,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
 
-  // --- ConfiguraÃ§Ãµes da Galeria ---
+  // --- Configurações da Galeria ---
   private numColumns = signal(4);
   private readonly ITEM_GAP = 32;
   private readonly settings = {
@@ -523,6 +523,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.galleries().find(gallery => gallery.id === captureId) ?? null;
   });
+  galleryLatestImages = computed(() => {
+    const latest: Record<string, string> = {};
+    for (const gallery of this.galleries()) {
+      const [recent] = gallery.imageUrls;
+      if (recent) {
+        latest[gallery.id] = recent;
+      }
+    }
+    return latest;
+  });
   galleries = computed(() => this.galleryService.galleries());
   activeGallery = computed(() => {
     const selectedId = this.galleryService.selectedGalleryId();
@@ -536,7 +546,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private assignNextGalleryToMobileCapture = false;
   private lastMobileScrollTop = 0;
 
-  // --- Sinais para o RelÃ³gio e Data ---
+  // --- Sinais para o Relógio e Data ---
   currentTime = signal('');
   currentDate = signal('');
   private clockIntervalId: any;
@@ -561,7 +571,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private idleEllipseRadiusX = 0; // Semi-eixo maior (horizontal) - será calculado baseado na tela
   private idleEllipseRadiusY = 0; // Semi-eixo menor (vertical) - será calculado baseado na tela
   private readonly idleSpeed = 0.001; // Velocidade angular (reduzida para movimento mais lento)
-  
+
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
   private readonly generalGroupLabel = 'Ações gerais';
@@ -590,7 +600,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !!target.closest('textarea')
     );
   }
-  
+
   isInteractionEnabled = computed(
     () =>
       !this.expandedItem() &&
@@ -601,12 +611,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !this.isAutoNavigationActive()
   );
 
-  // --- ReferÃªncias a Elementos do Template ---
+  // --- Referências a Elementos do Template ---
   private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
   private expandedItemElement = viewChild<ElementRef<HTMLDivElement>>('expandedItemElement');
   private mobileScrollContainer = viewChild<ElementRef<HTMLDivElement>>('mobileScrollContainer');
 
-  // --- Estado Privado para LÃ³gica de AnimaÃ§Ã£o ---
+  // --- Estado Privado para Lógica de Animação ---
   private itemDimensions = { width: 0, height: 0, cellWidth: 0, cellHeight: 0 };
   private target = { x: 0, y: 0 };
   private current = { x: 0, y: 0 };
@@ -629,7 +639,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private autoNavigationCountdownIntervalId: ReturnType<typeof setInterval> | null = null;
   private autoNavigationHintTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  // --- Listeners de eventos vinculados para remoÃ§Ã£o correta ---
+  // --- Listeners de eventos vinculados para remoção correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
   private boundOnWheel: (event: WheelEvent) => void;
@@ -787,8 +797,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.mobileScrollResetTimeout = null;
     }
   }
-  
-  // --- LÃ³gica do Grid e AnimaÃ§Ã£o ---
+
+  // --- Lógica do Grid e Animação ---
 
   private resetInactivityTimer(): void {
     if (this.isAutoNavigationActive()) {
@@ -831,7 +841,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isIdle.set(false);
     this.idleEllipseAngle = 0;
   }
-  
+
   private calculateGridDimensions(): void {
     const totalGapWidth = (this.numColumns() - 1) * this.ITEM_GAP;
     const containerWidth = this.elementRef.nativeElement.clientWidth;
@@ -1135,15 +1145,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCaptureComplete(imageUrl: string): void {
-    const mode = this.captureMode();
     const selectedGalleryId = this.galleryService.selectedGalleryId();
 
-    if (mode === 'selected' && selectedGalleryId) {
-      this.galleryService.addImage(imageUrl);
-    } else {
+    if (!selectedGalleryId) {
       this.galleryService.addPendingCapture(imageUrl);
+      this.lastCapturedImage.set(imageUrl);
+      return;
     }
 
+    this.galleryService.addImageToGallery(selectedGalleryId, imageUrl);
     this.lastCapturedImage.set(imageUrl);
   }
 
@@ -1471,7 +1481,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private runExpandAnimation(element: HTMLElement, item: ExpandedItem): void {
     const side = Math.min(window.innerWidth, window.innerHeight) * 0.9;
-    
+
     gsap.fromTo(element, {
       width: item.originalWidth,
       height: item.originalHeight,
@@ -1509,7 +1519,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resetInactivityTimer();
     if (!this.isInteractionEnabled()) return;
     event.preventDefault();
-    
+
     if (event.deltaY < 0) {
       this.zoomIn();
     } else {
@@ -1680,13 +1690,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   deleteGallery(id: string): void {
     this.galleryService.deleteGallery(id);
   }
-  
+
   editGalleryContextMenu(): void {
     if (this.contextMenuGalleryId) {
       this.editGallery(this.contextMenuGalleryId);
     }
   }
-  
+
   deleteGalleryContextMenu(): void {
     if (this.contextMenuGalleryId) {
       this.deleteGallery(this.contextMenuGalleryId);
@@ -1712,7 +1722,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    
+
     const timestamp = `${day}/${month}/${year} às ${hours}:${minutes}:${seconds}`;
     const galleryName = `Galeria ${timestamp}`;
 
