@@ -1081,12 +1081,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.handleMobileNavigationTransition();
   }
 
-  showMobileGalleries(): void {
-    this.currentView.set('galleries');
-    this.mobileView.set('galleries');
-    this.handleMobileNavigationTransition();
-  }
-
   openMobileGalleryDetail(galleryId: string): void {
     this.selectGallery(galleryId);
     this.mobileView.set('galleryDetail');
