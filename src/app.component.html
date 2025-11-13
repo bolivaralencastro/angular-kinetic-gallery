@@ -64,46 +64,24 @@
                     </svg>
                   </button>
                 } @else if (mobileCaptureGallery()) {
-                  <button
-                    type="button"
-                    class="group flex w-full items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                    (click)="openMobileGalleryPicker()"
-                    data-cursor-pointer>
-                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                      <img
-                        [src]="getGalleryCover(mobileCaptureGallery()!)"
-                        class="h-full w-full object-cover"
-                        loading="lazy"
-                        alt="Prévia da galeria {{ mobileCaptureGallery()!.name }}">
+                  <div class="space-y-3">
+                    <app-mobile-gallery-card
+                      [gallery]="mobileCaptureGallery()!"
+                      [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
+                      [active]="true"
+                      (select)="openMobileGalleryPicker()"
+                      (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
+                    />
+                    <div class="flex justify-end">
+                      <button
+                        type="button"
+                        class="rounded-full border border-white/20 px-4 py-2 text-[11px] uppercase tracking-[0.24em] text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                        (click)="openMobileGalleryPicker()"
+                        data-cursor-pointer>
+                        Trocar galeria
+                      </button>
                     </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-white">{{ mobileCaptureGallery()!.name }}</h3>
-                        <span class="rounded-full border border-emerald-400/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-emerald-200">ativo</span>
-                      </div>
-                      <p class="mt-1 truncate text-xs text-gray-400">
-                        {{ mobileCaptureGallery()!.description || 'Sem descrição' }}
-                      </p>
-                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
-                        @if (mobileCaptureGallery()!.createdAt) {
-                          <span>{{ mobileCaptureGallery()!.createdAt }}</span>
-                        }
-                        <span>{{ mobileCaptureGallery()!.imageUrls.length }} fotos</span>
-                      </div>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      class="h-5 w-5 text-gray-400 transition group-hover:text-white">
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  </div>
                 } @else {
                   <button
                     type="button"
@@ -182,63 +160,13 @@
             } @else {
               <div class="space-y-4">
                 @for (gallery of galleries(); track gallery.id) {
-                  <div
-                    class="flex items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
-                    (click)="selectMobileCaptureGallery(gallery.id)"
-                    data-cursor-pointer>
-                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                      <img
-                        [src]="getGalleryCover(gallery)"
-                        class="h-full w-full object-cover"
-                        loading="lazy"
-                        alt="Prévia da galeria {{ gallery.name }}">
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-white">{{ gallery.name }}</h3>
-                        @if (mobileCaptureGalleryId() === gallery.id) {
-                          <span class="rounded-full border border-emerald-400/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-emerald-200">ativo</span>
-                        }
-                      </div>
-                      <p class="mt-1 truncate text-xs text-gray-400">
-                        {{ gallery.description || 'Sem descrição' }}
-                      </p>
-                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
-                        @if (gallery.createdAt) {
-                          <span>{{ gallery.createdAt }}</span>
-                        }
-                        <span>{{ gallery.imageUrls.length }} fotos</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      class="rounded-full border border-white/20 p-3 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-                      aria-label="Abrir galeria"
-                      (click)="$event.stopPropagation(); openMobileGalleryDetail(gallery.id)">
-                      <svg
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        class="h-5 w-5"
-                      >
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M2.25 12s2.608-6.75 9.75-6.75 9.75 6.75 9.75 6.75-2.608 6.75-9.75 6.75S2.25 12 2.25 12Z"
-                        />
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                  <app-mobile-gallery-card
+                    [gallery]="gallery"
+                    [coverUrl]="getGalleryCover(gallery)"
+                    [active]="mobileCaptureGalleryId() === gallery.id"
+                    (select)="selectMobileCaptureGallery(gallery.id)"
+                    (open)="openMobileGalleryDetail(gallery.id)"
+                  />
                 }
               </div>
             }
