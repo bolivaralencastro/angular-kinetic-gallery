@@ -723,6 +723,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private onMouseEnter(): void {
     this.interactionState.isMouseOver = true;
+    if (this.isAutoNavigationActive()) {
+      return;
+    }
+
     this.resetInactivityTimer();
   }
 
@@ -743,6 +747,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.interactionState.mouseX = clampedX;
     this.interactionState.mouseY = clampedY;
+
+    if (this.isAutoNavigationActive()) {
+      return;
+    }
+
     this.resetInactivityTimer();
   }
 
