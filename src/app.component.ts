@@ -514,7 +514,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.pendingCaptures().includes(last);
   });
   mobileView = signal<'capture' | 'galleries' | 'galleryDetail'>('capture');
-  mobileGalleryPickerOpen = signal(false);
   mobileCaptureGalleryId = signal<string | null>(null);
   mobileCaptureGallery = computed(() => {
     const captureId = this.mobileCaptureGalleryId();
@@ -949,7 +948,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (isMobile) {
       if (!previousState) {
         this.mobileView.set('capture');
-        this.mobileGalleryPickerOpen.set(false);
         this.mobileCommandPanelVisible.set(false);
       }
       this.scheduleMobilePanelReveal(previousState ? 600 : 400);
@@ -957,7 +955,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.mobileCommandPanelVisible.set(false);
       this.clearMobileScrollTimeout();
       this.lastMobileScrollTop = 0;
-      this.mobileGalleryPickerOpen.set(false);
     }
   }
 
@@ -1092,16 +1089,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openMobileGalleryPicker(): void {
-    this.mobileGalleryPickerOpen.set(true);
-  }
-
-  closeMobileGalleryPicker(): void {
-    this.mobileGalleryPickerOpen.set(false);
+    this.currentView.set('galleries');
+    this.mobileView.set('galleries');
+    this.handleMobileNavigationTransition();
   }
 
   selectMobileCaptureGallery(galleryId: string): void {
     this.mobileCaptureGalleryId.set(galleryId);
-    this.closeMobileGalleryPicker();
+    this.showMobileCapture();
   }
 
   prepareMobileCapture(): void {
@@ -1116,7 +1111,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   openGalleryCreationDialogForMobileCapture(): void {
     this.assignNextGalleryToMobileCapture = true;
-    this.closeMobileGalleryPicker();
     this.openGalleryCreationDialog();
   }
 
