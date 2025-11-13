@@ -489,7 +489,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly MOBILE_BREAKPOINT = 768;
   isMobileLayout = signal(false);
   mobileCommandPanelVisible = signal(false);
-  captureMode = signal<'selected' | 'unassigned'>('selected');
+  captureMode = signal<'selected'>('selected');
   pendingCaptures = computed(() => this.galleryService.pendingCaptures());
   lastCapturedImage = signal<string | null>(null);
   pendingCaptureToAssign = signal<string | null>(null);
@@ -1044,18 +1044,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  startQuickCapture(): void {
-    if (this.isMobileLayout()) {
-      this.mobileCaptureGalleryId.set(null);
-      this.captureMode.set('unassigned');
-      this.showMobileCapture();
-      return;
-    }
-
-    this.galleryService.selectGallery(null);
-    this.openWebcamCapture('unassigned');
-  }
-
   startCaptureForGallery(galleryId: string): void {
     if (this.isMobileLayout()) {
       this.showCaptureWithGallery(galleryId);
@@ -1063,7 +1051,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.galleryService.selectGallery(galleryId);
-    this.openWebcamCapture('selected');
+    this.openWebcamCapture();
   }
 
   viewGallery(galleryId: string): void {
@@ -1116,20 +1104,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.closeMobileGalleryPicker();
   }
 
-  clearMobileCaptureGallery(): void {
-    this.mobileCaptureGalleryId.set(null);
-    this.closeMobileGalleryPicker();
-  }
-
   prepareMobileCapture(): void {
     const captureId = this.mobileCaptureGalleryId();
-    if (captureId) {
-      this.galleryService.selectGallery(captureId);
-      this.captureMode.set('selected');
-    } else {
-      this.galleryService.selectGallery(null);
-      this.captureMode.set('unassigned');
+    if (!captureId) {
+      return;
     }
+
+    this.galleryService.selectGallery(captureId);
+    this.captureMode.set('selected');
   }
 
   openGalleryCreationDialogForMobileCapture(): void {
@@ -1627,22 +1609,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contextMenuGalleryId = null;
   }
 
-  openWebcamCapture(mode: 'selected' | 'unassigned' = 'selected'): void {
+  openWebcamCapture(): void {
     if (this.isMobileLayout()) {
-      this.captureMode.set(mode);
-      if (mode === 'selected') {
-        const selectedId = this.galleryService.selectedGalleryId();
-        if (selectedId) {
-          this.mobileCaptureGalleryId.set(selectedId);
-        }
-      } else {
-        this.mobileCaptureGalleryId.set(null);
+      this.captureMode.set('selected');
+      const selectedId = this.galleryService.selectedGalleryId();
+      if (selectedId) {
+        this.mobileCaptureGalleryId.set(selectedId);
       }
       this.showMobileCapture();
       return;
     }
 
-    this.captureMode.set(mode);
+    this.captureMode.set('selected');
     this.deactivateAutoNavigation(true);
     this.isWebcamVisible.set(true);
   }
