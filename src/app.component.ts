@@ -1670,7 +1670,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteGallery(id: string): void {
+    const activeGallery = this.galleryService.selectedGalleryId();
     this.galleryService.deleteGallery(id);
+
+    if (activeGallery === id) {
+      this.backToGalleries();
+    }
+
+    this.updateVisibleItems(true);
   }
 
   editGalleryContextMenu(): void {
