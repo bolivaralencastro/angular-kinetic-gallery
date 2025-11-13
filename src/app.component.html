@@ -38,7 +38,7 @@
       }
       @case ('galleries') {
         <div class="flex min-h-screen flex-col bg-black text-white">
-          <header class="flex items-center justify-between px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
+          <header class="flex items-center justify-between gap-4 px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
             <button
               type="button"
               class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
@@ -82,11 +82,9 @@
                           <span class="rounded-full border border-emerald-400/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.3em] text-emerald-200">ativo</span>
                         }
                       </div>
-                      @if (gallery.description) {
-                        <p class="mt-1 truncate text-xs text-gray-400">
-                          {{ gallery.description }}
-                        </p>
-                      }
+                      <p class="mt-1 truncate text-xs text-gray-400">
+                        {{ gallery.description || 'Sem descrição' }}
+                      </p>
                       <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
                         @if (gallery.createdAt) {
                           <span>{{ gallery.createdAt }}</span>
