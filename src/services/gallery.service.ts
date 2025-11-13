@@ -1,5 +1,6 @@
-import { Injectable, signal, effect, computed } from '@angular/core';
+import { Injectable, signal, effect, computed, inject } from '@angular/core';
 import { Gallery } from '../interfaces/gallery.interface';
+import { SupabaseService } from './supabase.service';
 
 const STORAGE_KEY_GALLERIES = 'kinetic-galleries';
 const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
@@ -8,6 +9,9 @@ const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
   providedIn: 'root'
 })
 export class GalleryService {
+  private readonly supabaseService = inject(SupabaseService);
+  private readonly ongoingUploads = new Set<string>();
+
   private initialGalleries: Gallery[] = this.loadGalleriesFromLocalStorage();
   private initialPendingCaptures: string[] = this.loadPendingCapturesFromLocalStorage();
 
@@ -26,6 +30,10 @@ export class GalleryService {
   });
 
   constructor() {
+    if (this.supabaseService.isEnabled()) {
+      void this.loadRemoteGalleries();
+    }
+
     effect(() => {
       this.saveGalleriesToLocalStorage(this.galleries());
     });
@@ -53,6 +61,7 @@ export class GalleryService {
       createdAt,
     };
     this.galleries.update(currentGalleries => [newGallery, ...currentGalleries]);
+    this.persistGallery(newGallery);
     return newGallery.id;
   }
 
@@ -66,14 +75,22 @@ export class GalleryService {
         g.id === id ? { ...g, name, description } : g
       )
     );
+    const updatedGallery = this.getGallery(id);
+    if (updatedGallery) {
+      this.persistGallery(updatedGallery);
+    }
   }
 
   deleteGallery(id: string): void {
+    const galleryToDelete = this.getGallery(id);
     this.galleries.update(currentGalleries =>
       currentGalleries.filter(g => g.id !== id)
     );
     if (this.selectedGalleryId() === id) {
       this.selectedGalleryId.set(null); // Deselect if the current gallery is deleted
+    }
+    if (galleryToDelete) {
+      void this.supabaseService.deleteGallery(id, galleryToDelete.imageUrls);
     }
   }
 
@@ -119,18 +136,35 @@ export class GalleryService {
         return g;
       })
     );
+    const gallery = this.getGallery(galleryId);
+    if (gallery) {
+      this.persistGallery(gallery);
+    }
+
+    this.syncGalleryBase64Images(galleryId, [imageUrl]);
   }
 
   removeImageFromGallery(galleryId: string, imageUrl: string): void {
+    let nextThumbnail: string | undefined;
     this.galleries.update(currentGalleries =>
       currentGalleries.map(g => {
         if (g.id === galleryId) {
           const updatedImageUrls = g.imageUrls.filter(url => url !== imageUrl);
-          return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: updatedImageUrls[0] || undefined }; // Update thumbnail
+          nextThumbnail = updatedImageUrls[0];
+          return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: nextThumbnail }; // Update thumbnail
         }
         return g;
       })
     );
+
+    const updatedGallery = this.getGallery(galleryId);
+    if (updatedGallery) {
+      this.persistGallery(updatedGallery);
+    }
+
+    if (this.supabaseService.isEnabled()) {
+      void this.supabaseService.removeImageFromGallery(galleryId, imageUrl, nextThumbnail);
+    }
   }
 
   // --- Local Storage Handling ---
@@ -190,5 +224,127 @@ export class GalleryService {
       console.error('Error reading pending captures from localStorage', e);
       return [];
     }
+  }
+
+  private async loadRemoteGalleries(): Promise<void> {
+    const remoteGalleries = await this.supabaseService.fetchGalleries();
+    if (remoteGalleries.length === 0) {
+      return;
+    }
+
+    const currentGalleries = this.galleries();
+    const remoteMap = new Map(remoteGalleries.map(gallery => [gallery.id, gallery] as const));
+    const galleriesToSync: Array<{ id: string; base64Urls: string[] }> = [];
+
+    const mergedGalleries = remoteGalleries.map(remote => {
+      const local = currentGalleries.find(gallery => gallery.id === remote.id);
+      if (!local) {
+        return remote;
+      }
+
+      const remoteImageSet = new Set(remote.imageUrls);
+      const base64Images = local.imageUrls.filter(url => url.startsWith('data:'));
+      const additionalLocalImages = local.imageUrls.filter(
+        url => !remoteImageSet.has(url) && !url.startsWith('data:'),
+      );
+
+      if (base64Images.length > 0) {
+        galleriesToSync.push({ id: remote.id, base64Urls: base64Images });
+      }
+
+      return {
+        ...remote,
+        imageUrls: [...remote.imageUrls, ...additionalLocalImages, ...base64Images],
+        thumbnailUrl: remote.thumbnailUrl ?? local.thumbnailUrl,
+        createdAt: remote.createdAt ?? local.createdAt,
+      };
+    });
+
+    for (const localGallery of currentGalleries) {
+      if (remoteMap.has(localGallery.id)) {
+        continue;
+      }
+
+      mergedGalleries.push(localGallery);
+      this.persistGallery(localGallery);
+
+      const base64Images = localGallery.imageUrls.filter(url => url.startsWith('data:'));
+      if (base64Images.length > 0) {
+        galleriesToSync.push({ id: localGallery.id, base64Urls: base64Images });
+      }
+    }
+
+    this.galleries.set(mergedGalleries);
+
+    const selectedId = this.selectedGalleryId();
+    if (selectedId && !mergedGalleries.some(gallery => gallery.id === selectedId)) {
+      this.selectedGalleryId.set(null);
+    }
+
+    for (const { id, base64Urls } of galleriesToSync) {
+      this.syncGalleryBase64Images(id, base64Urls);
+    }
+  }
+
+  private syncGalleryBase64Images(galleryId: string, imageUrls: readonly string[]): void {
+    if (!this.supabaseService.isEnabled()) {
+      return;
+    }
+
+    imageUrls
+      .filter(url => url.startsWith('data:'))
+      .forEach(base64Url => {
+        if (!this.beginUpload(galleryId, base64Url)) {
+          return;
+        }
+
+        void this.supabaseService.uploadImage(galleryId, base64Url).then(remoteUrl => {
+          if (!remoteUrl) {
+            return;
+          }
+
+          this.galleries.update(currentGalleries =>
+            currentGalleries.map(g => {
+              if (g.id === galleryId) {
+                const updatedImageUrls = g.imageUrls.map(url => (url === base64Url ? remoteUrl : url));
+                const updatedThumbnail = g.thumbnailUrl === base64Url ? remoteUrl : g.thumbnailUrl;
+                return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: updatedThumbnail };
+              }
+              return g;
+            }),
+          );
+
+          const updatedGallery = this.getGallery(galleryId);
+          if (updatedGallery) {
+            this.persistGallery(updatedGallery);
+          }
+        }).finally(() => {
+          this.endUpload(galleryId, base64Url);
+        });
+      });
+  }
+
+  private beginUpload(galleryId: string, imageUrl: string): boolean {
+    const key = this.createUploadKey(galleryId, imageUrl);
+    if (this.ongoingUploads.has(key)) {
+      return false;
+    }
+
+    this.ongoingUploads.add(key);
+    return true;
+  }
+
+  private endUpload(galleryId: string, imageUrl: string): void {
+    this.ongoingUploads.delete(this.createUploadKey(galleryId, imageUrl));
+  }
+
+  private createUploadKey(galleryId: string, imageUrl: string): string {
+    const prefix = imageUrl.slice(0, 64);
+    const suffix = imageUrl.slice(-16);
+    return `${galleryId}::${imageUrl.length}::${prefix}::${suffix}`;
+  }
+
+  private persistGallery(gallery: Gallery): void {
+    void this.supabaseService.upsertGallery(gallery);
   }
 }
