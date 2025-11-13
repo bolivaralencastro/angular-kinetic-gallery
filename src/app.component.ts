@@ -191,6 +191,65 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.toggleAutoNavigation();
   }
 
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target)) {
+      return;
+    }
+
+    if (
+      !this.expandedItem() &&
+      !this.isWebcamVisible() &&
+      !this.isGalleryEditorVisible() &&
+      !this.isGalleryCreationDialogVisible() &&
+      !this.isInfoDialogVisible() &&
+      !this.contextMenu().visible &&
+      !document.fullscreenElement
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (this.expandedItem()) {
+      this.closeExpandedItem();
+      return;
+    }
+
+    if (this.isWebcamVisible()) {
+      this.isWebcamVisible.set(false);
+      return;
+    }
+
+    if (this.isGalleryEditorVisible()) {
+      this.isGalleryEditorVisible.set(false);
+      this.editingGallery.set(null);
+      return;
+    }
+
+    if (this.isGalleryCreationDialogVisible()) {
+      this.isGalleryCreationDialogVisible.set(false);
+      return;
+    }
+
+    if (this.isInfoDialogVisible()) {
+      this.isInfoDialogVisible.set(false);
+      return;
+    }
+
+    if (this.contextMenu().visible) {
+      this.closeContextMenu();
+      return;
+    }
+
+    if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+      document.exitFullscreen().catch(err => {
+        console.error('Erro ao sair da tela cheia:', err);
+      });
+    }
+  }
+
   toggleAutoNavigation(): void {
     if (this.currentView() !== 'galleries') {
       return;
