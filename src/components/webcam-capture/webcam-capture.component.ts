@@ -115,26 +115,25 @@ import { ThemeService } from '../../services/theme.service';
               title="Alternar duração do timer">
               {{ timerDuration() }}s
             </button>
+
+            @if (availableCameras().length > 1) {
+              <button
+                (click)="cycleCamera()"
+                [disabled]="!isStreaming()"
+                data-cursor-pointer
+                class="p-3 rounded-md focus:outline-none transition-colors duration-200"
+                [style.backgroundColor]="isStreaming() ? themeService.dialogPalette().inputBackground : themeService.dialogPalette().disabledBg"
+                [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+                [style.color]="isStreaming() ? themeService.dialogPalette().text : themeService.dialogPalette().disabledText"
+                [style.cursor]="isStreaming() ? 'pointer' : 'not-allowed'"
+                title="Alternar câmera">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 8h.01M4.13 7.21a2 2 0 011.74-1.21h2.17l1.12-1.68A2 2 0 0111.86 3h.28a2 2 0 011.7 1l1.12 2h2.18a2 2 0 011.74 1.21l1.73 3.99a2 2 0 01-.08 1.77l-1.1 1.9M7 16l-2 3m0 0l-2-3m2 3v-5m5.22 5a4 4 0 007.18-2" />
+                </svg>
+              </button>
+            }
           </div>
         </div>
-
-        @if (availableCameras().length > 1) {
-          <label class="flex flex-col gap-1 text-xs font-medium tracking-wider" [style.color]="themeService.dialogPalette().muted">
-            Selecionar câmera
-            <select
-              class="rounded-md bg-transparent px-3 py-2 text-sm tracking-wider focus:outline-none"
-              [style.color]="themeService.dialogPalette().text"
-              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
-              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-              [value]="selectedCameraId() ?? ''"
-              (change)="onCameraChange($event)"
-            >
-              @for (camera of availableCameras(); track camera.deviceId; let index = $index) {
-                <option [value]="camera.deviceId">{{ camera.label || 'Câmera ' + (index + 1) }}</option>
-              }
-            </select>
-          </label>
-        }
       </div>
 
       <canvas #canvasElement class="hidden"></canvas>
@@ -216,15 +215,6 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     this.timerDurationIndex.update(currentIndex => (currentIndex + 1) % this.timerDurations.length);
   }
 
-  onCameraChange(event: Event): void {
-    const target = event.target;
-    if (!(target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    void this.setCamera(target.value);
-  }
-
   async setCamera(deviceId: string): Promise<void> {
     if (this.selectedCameraId() === deviceId) {
       return;
@@ -232,6 +222,19 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
     this.selectedCameraId.set(deviceId);
     await this.restartCamera();
+  }
+
+  cycleCamera(): void {
+    const cameras = this.availableCameras();
+    if (cameras.length <= 1) {
+      return;
+    }
+
+    const currentId = this.selectedCameraId();
+    const currentIndex = currentId ? cameras.findIndex(camera => camera.deviceId === currentId) : -1;
+    const nextIndex = (currentIndex + 1) % cameras.length;
+
+    void this.setCamera(cameras[nextIndex].deviceId);
   }
 
   private async restartCamera(): Promise<void> {
