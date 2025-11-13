@@ -180,7 +180,7 @@
                 [style.left.px]="item.x"
                 [style.top.px]="item.y"
                 [class.cursor-pointer]="isInteractionEnabled()"
-                data-cursor-pointer
+                [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
                 (click)="selectGallery(item.id)"
                 (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
                 (mouseleave)="onGalleryHoverEnd(item.previewKey)"
@@ -256,7 +256,7 @@
             [style.left.px]="item.x"
             [style.top.px]="item.y"
             [class.cursor-pointer]="isInteractionEnabled()"
-            data-cursor-pointer
+            [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
             (click)="onImageClick($event, item)"
           >
             <div class="item-image-container relative h-full w-full overflow-hidden">
@@ -310,6 +310,14 @@
         </svg>
       </button>
     }
+  }
+
+  @if (isAutoNavigationActive()) {
+    <div
+      class="fixed inset-0 z-30 cursor-default pointer-events-auto"
+      aria-hidden="true"
+      data-auto-navigation-shield
+    ></div>
   }
 
   <!-- Overlay para o modo de visualização expandida -->
