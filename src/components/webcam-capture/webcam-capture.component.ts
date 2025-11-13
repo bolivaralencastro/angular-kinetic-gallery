@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService } from '../../services/gallery.service';
 import { ThemeService } from '../../services/theme.service';
@@ -78,31 +78,64 @@ import { ThemeService } from '../../services/theme.service';
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
-        <button
-          (click)="captureImage()"
-          [disabled]="!isStreaming() || (countdown() !== null)"
-          data-cursor-pointer
-          class="w-full font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
-          [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
-          [style.color]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
-          [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
-          style="border: none;">
-          <span>{{ isTimerEnabled() ? 'Iniciar Timer' : 'Tirar Foto' }}</span>
-        </button>
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-4">
+          <button
+            (click)="captureImage()"
+            [disabled]="!isStreaming() || (countdown() !== null)"
+            data-cursor-pointer
+            class="w-full font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
+            [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
+            [style.color]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
+            [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
+            style="border: none;">
+            <span>{{ isTimerEnabled() ? 'Iniciar Timer (' + timerDuration() + 's)' : 'Tirar Foto' }}</span>
+          </button>
 
-        <button
-          (click)="toggleTimer()"
-          data-cursor-pointer
-          class="p-3 rounded-md focus:outline-none"
-          [style.backgroundColor]="isTimerEnabled() ? themeService.dialogPalette().timerActiveBg : themeService.dialogPalette().timerInactiveBg"
-          [style.color]="isTimerEnabled() ? themeService.dialogPalette().buttonPrimaryText : themeService.dialogPalette().timerInactiveText"
-          style="border: none;"
-          title="Ativar/Desativar timer">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
+          <div class="flex items-center gap-2">
+            <button
+              (click)="toggleTimer()"
+              data-cursor-pointer
+              class="p-3 rounded-md focus:outline-none"
+              [style.backgroundColor]="isTimerEnabled() ? themeService.dialogPalette().timerActiveBg : themeService.dialogPalette().timerInactiveBg"
+              [style.color]="isTimerEnabled() ? themeService.dialogPalette().buttonPrimaryText : themeService.dialogPalette().timerInactiveText"
+              style="border: none;"
+              title="Ativar/Desativar timer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+
+            <button
+              (click)="cycleTimerDuration()"
+              data-cursor-pointer
+              class="px-3 py-2 rounded-md text-sm font-semibold focus:outline-none transition-colors duration-200"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.color]="themeService.dialogPalette().text"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              title="Alternar duração do timer">
+              {{ timerDuration() }}s
+            </button>
+          </div>
+        </div>
+
+        @if (availableCameras().length > 1) {
+          <label class="flex flex-col gap-1 text-xs font-medium tracking-wider" [style.color]="themeService.dialogPalette().muted">
+            Selecionar câmera
+            <select
+              class="rounded-md bg-transparent px-3 py-2 text-sm tracking-wider focus:outline-none"
+              [style.color]="themeService.dialogPalette().text"
+              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+              [value]="selectedCameraId() ?? ''"
+              (change)="setCamera(($event.target as HTMLSelectElement).value)"
+            >
+              @for (camera of availableCameras(); track camera.deviceId; let index = $index) {
+                <option [value]="camera.deviceId">{{ camera.label || 'Câmera ' + (index + 1) }}</option>
+              }
+            </select>
+          </label>
+        }
       </div>
 
       <canvas #canvasElement class="hidden"></canvas>
@@ -151,6 +184,11 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   error = signal<string | null>(null);
   isTimerEnabled = signal(false);
   countdown = signal<number | null>(null);
+  timerDurations = [3, 5, 10] as const;
+  timerDurationIndex = signal(0);
+  timerDuration = computed(() => this.timerDurations[this.timerDurationIndex()]);
+  availableCameras = signal<MediaDeviceInfo[]>([]);
+  selectedCameraId = signal<string | null>(null);
 
   videoElement = viewChild.required<ElementRef<HTMLVideoElement>>('videoElement');
   canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
@@ -175,22 +213,55 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     this.isTimerEnabled.update(enabled => !enabled);
   }
 
+  cycleTimerDuration(): void {
+    this.timerDurationIndex.update(currentIndex => (currentIndex + 1) % this.timerDurations.length);
+  }
+
+  async setCamera(deviceId: string): Promise<void> {
+    if (this.selectedCameraId() === deviceId) {
+      return;
+    }
+
+    this.selectedCameraId.set(deviceId);
+    await this.restartCamera();
+  }
+
+  private async restartCamera(): Promise<void> {
+    this.stopCamera();
+    await this.startCamera();
+  }
+
   private async startCamera(): Promise<void> {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('A API de mÃ­dia do navegador nÃ£o estÃ¡ disponÃ­vel.');
+        throw new Error('A API de mídia do navegador não está disponível.');
       }
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+
+      const constraints: MediaStreamConstraints = {
+        video: this.selectedCameraId()
+          ? { deviceId: { exact: this.selectedCameraId()! } }
+          : { facingMode: 'environment' },
+      };
+
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.videoElement().nativeElement.srcObject = this.stream;
       this.isStreaming.set(true);
       this.error.set(null);
+
+      const [videoTrack] = this.stream.getVideoTracks();
+      const activeDeviceId = videoTrack?.getSettings().deviceId;
+      if (activeDeviceId) {
+        this.selectedCameraId.set(activeDeviceId);
+      }
+
+      await this.loadAvailableCameras();
     } catch (err: any) {
-      console.error("Erro ao iniciar a cÃ¢mera: ", err);
-      let message = 'NÃ£o foi possÃ­vel acessar a cÃ¢mera.';
+      console.error('Erro ao iniciar a câmera: ', err);
+      let message = 'Não foi possível acessar a câmera.';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        message = 'A permissÃ£o para acessar a cÃ¢mera foi negada.';
+        message = 'A permissão para acessar a câmera foi negada.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        message = 'Nenhuma cÃ¢mera foi encontrada no seu dispositivo.';
+        message = 'Nenhuma câmera foi encontrada no seu dispositivo.';
       }
       this.error.set(message);
       this.isStreaming.set(false);
@@ -215,7 +286,8 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   private startCountdown(): void {
-    this.countdown.set(3);
+    const duration = this.timerDuration();
+    this.countdown.set(duration);
     this.countdownIntervalId = setInterval(() => {
       this.countdown.update(c => c! - 1);
       if (this.countdown() === 0) {
@@ -224,6 +296,25 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
         this.countdown.set(null);
       }
     }, 1000);
+  }
+
+  private async loadAvailableCameras(): Promise<void> {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return;
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(device => device.kind === 'videoinput');
+      this.availableCameras.set(videoInputs);
+
+      if (videoInputs.length > 0 && !this.selectedCameraId()) {
+        const preferredDevice = videoInputs.find(device => device.label.toLowerCase().includes('back')) ?? videoInputs[0];
+        this.selectedCameraId.set(preferredDevice.deviceId);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar as câmeras disponíveis:', err);
+    }
   }
 
   private takePicture(): void {
@@ -273,7 +364,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       this.galleryService.addImage(dataUrl);
       this.close.emit();
     } else {
-      this.error.set('NÃ£o foi possÃ­vel capturar a imagem.');
+      this.error.set('Não foi possível capturar a imagem.');
     }
   }
 
