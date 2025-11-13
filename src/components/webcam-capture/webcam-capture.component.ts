@@ -8,9 +8,9 @@ import { ThemeService } from '../../services/theme.service';
   template: `
     @if (isMobileVariant()) {
       <div class="flex h-full flex-col">
-        <div class="flex-1 px-2 pb-6">
-          <div class="flex h-full flex-col items-center justify-between gap-8">
-            <div class="flex-1 w-full max-w-[26rem] select-none" data-cursor-pointer (click)="toggleGridOverlay()">
+        <div class="flex-1 px-4 pt-8">
+          <div class="mx-auto flex h-full w-full max-w-[26rem] flex-col items-center">
+            <div class="w-full select-none" data-cursor-pointer (click)="toggleGridOverlay()">
               <div
                 class="relative aspect-square w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
                 <video
@@ -48,54 +48,54 @@ import { ThemeService } from '../../services/theme.service';
                     {{ countdown() }}
                   </div>
                 }
-
-                <div class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-400">
-                  Toque para exibir a grade
-                </div>
               </div>
             </div>
 
-            <div class="flex w-full flex-col items-center gap-6">
-              <div class="flex w-full items-center justify-center gap-16">
-                <button
-                  type="button"
-                  (click)="cycleTimerSetting()"
-                  class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
-                  [disabled]="!isStreaming()"
-                  [class.opacity-50]="!isStreaming()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  <span class="absolute -bottom-5 text-[11px] font-medium uppercase tracking-[0.24em] text-gray-300">{{ timerLabel() }}</span>
-                </button>
-
-                <button
-                  type="button"
-                  (click)="captureImage()"
-                  class="flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-white bg-black/60 shadow-[0_0_0_10px_rgba(0,0,0,0.45)] transition active:scale-95"
-                  [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
-                  [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
-                  <span class="sr-only">Capturar foto</span>
-                </button>
-
-                @if (availableCameras().length > 1) {
-                  <button
-                    type="button"
-                    (click)="cycleCamera()"
-                    class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
-                    [disabled]="!isStreaming()"
-                    [class.opacity-50]="!isStreaming()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
-                      <path d="M23 4v6h-6"></path>
-                      <path d="M1 20v-6h6"></path>
-                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                      <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
-                    </svg>
-                  </button>
-                }
-              </div>
+            <div class="mt-3 w-full">
+              <ng-content select="[mobileGallerySelection]"></ng-content>
             </div>
+          </div>
+        </div>
+
+        <div class="px-8 pb-10 pt-6">
+          <div class="flex items-center justify-center gap-16">
+            <button
+              type="button"
+              (click)="cycleTimerSetting()"
+              class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+              [disabled]="!isStreaming()"
+              [class.opacity-50]="!isStreaming()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span class="absolute -bottom-5 text-[11px] font-medium uppercase tracking-[0.24em] text-gray-300">{{ timerLabel() }}</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="captureImage()"
+              class="flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-white bg-black/60 shadow-[0_0_0_10px_rgba(0,0,0,0.45)] transition active:scale-95"
+              [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
+              [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
+              <span class="sr-only">Capturar foto</span>
+            </button>
+
+            @if (availableCameras().length > 1) {
+              <button
+                type="button"
+                (click)="cycleCamera()"
+                class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+                [disabled]="!isStreaming()"
+                [class.opacity-50]="!isStreaming()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M1 20v-6h6"></path>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                  <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                </svg>
+              </button>
+            }
           </div>
         </div>
 
