@@ -8,111 +8,114 @@
   (contextmenu)="onRightClick($event)">
 
   @if (isMobileLayout()) {
-    <div class="flex h-full flex-col bg-black text-white">
-      @if (currentView() === 'galleries') {
-        <div #mobileScrollContainer class="flex-1 overflow-y-auto">
-          <div class="flex flex-col gap-6 px-6 pb-20 pt-12">
-            <header class="space-y-4">
-              <div class="flex items-start justify-between gap-4">
-                <div class="space-y-1">
-                  <p class="text-xs uppercase tracking-[0.35em] text-gray-500">Diário visual</p>
-                  <h1 class="text-2xl font-semibold leading-tight text-white">Captura instantânea</h1>
-                  <p class="text-sm text-gray-400">Um toque para registrar, outro para guardar.</p>
+    @switch (mobileView()) {
+      @case ('capture') {
+        <div class="flex min-h-screen flex-col bg-black text-white">
+          <header class="flex items-center justify-between px-6 pt-8 pb-4">
+            <div>
+              <p class="text-[10px] uppercase tracking-[0.38em] text-gray-500">Diário visual</p>
+              <h1 class="mt-1 text-xl font-semibold">Captura em foco</h1>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              (click)="showMobileGalleries()">
+              Galerias
+            </button>
+          </header>
+          <div class="flex-1 px-6">
+            <app-webcam-capture
+              [variant]="'mobile'"
+              (prepareCapture)="prepareMobileCapture()"
+              (capture)="onCaptureComplete($event)">
+            </app-webcam-capture>
+          </div>
+          <div class="space-y-5 px-6 pb-10">
+            <button
+              type="button"
+              class="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+              (click)="openMobileGalleryPicker()">
+              <span class="block text-[11px] uppercase tracking-[0.32em] text-gray-500">Galeria alvo</span>
+              <span class="mt-1 block truncate text-sm font-semibold text-white">
+                @if (mobileCaptureGallery()) {
+                  {{ mobileCaptureGallery()!.name }}
+                } @else {
+                  Selecionar galeria
+                }
+              </span>
+            </button>
+            @if (lastCapturedImage()) {
+              <div class="overflow-hidden rounded-3xl border border-white/10">
+                <img
+                  [src]="lastCapturedImage()!"
+                  alt="Última captura registrada"
+                  class="h-48 w-full object-cover">
+                <div class="flex items-center justify-between bg-black/70 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.3em] text-gray-200">
+                  <span>Última captura</span>
+                  <span
+                    [class.text-emerald-300]="!isLastCapturePending()"
+                    [class.text-amber-300]="isLastCapturePending()">
+                    {{ isLastCapturePending() ? 'aguardando envio' : 'registrada' }}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  data-cursor-pointer
-                  class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-lg shadow-white/20 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/60"
-                  (click)="startQuickCapture()">
-                  Capturar
-                </button>
               </div>
-              @if (lastCapturedImage()) {
-                <div class="overflow-hidden rounded-3xl border border-white/10">
-                  <img
-                    [src]="lastCapturedImage()!"
-                    alt="Última captura registrada"
-                    class="h-48 w-full object-cover">
-                  <div class="flex items-center justify-between bg-black/70 px-4 py-3 text-xs font-medium tracking-wide text-gray-200">
-                    <span>Última captura</span>
-                    <span
-                      class="uppercase"
-                      [class.text-emerald-300]="!isLastCapturePending()"
-                      [class.text-amber-300]="isLastCapturePending()">
-                      {{ isLastCapturePending() ? 'aguardando envio' : 'registrada' }}
-                    </span>
-                  </div>
-                </div>
-              }
-            </header>
-
-            @if (pendingCaptures().length > 0) {
-              <section class="rounded-3xl border border-white/10 bg-white/5 p-4">
-                <div class="flex items-center justify-between text-sm font-medium text-gray-200">
-                  <span>Capturas guardadas</span>
-                  <span class="text-xs text-gray-400">{{ pendingCaptures().length }} aguardando</span>
-                </div>
-                <p class="mt-2 text-xs text-gray-400">
-                  Escolha uma galeria para enviar ou descarte o que não for necessário.
-                </p>
-                <div class="mt-4 grid grid-cols-2 gap-3">
-                  @for (capture of pendingCaptures(); track trackPendingCapture($index, capture)) {
-                    <div class="flex flex-col gap-2 rounded-2xl bg-black/50 p-3">
-                      <div class="relative overflow-hidden rounded-xl border border-white/10">
-                        <img
-                          [src]="capture"
-                          alt="Captura pendente"
-                          class="h-28 w-full object-cover">
-                      </div>
-                      <select
-                        class="w-full rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-200 focus:border-white focus:outline-none"
-                        (change)="onPendingGallerySelect($event, capture)">
-                        <option value="">Enviar para...</option>
-                        @for (gallery of galleries(); track gallery.id) {
-                          <option [value]="gallery.id">{{ gallery.name }}</option>
-                        }
-                      </select>
-                      <button
-                        type="button"
-                        data-cursor-pointer
-                        class="rounded-xl border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-400/40"
-                        (click)="discardPendingCapture(capture)">
-                        Descartar
-                      </button>
-                    </div>
-                  }
-                </div>
-              </section>
             }
-
-            <section class="space-y-4 pb-8">
+            <div class="rounded-3xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-gray-200">
               <div class="flex items-center justify-between">
-                <h2 class="text-xs uppercase tracking-[0.3em] text-gray-500">Galerias</h2>
-                <button
-                  type="button"
-                  data-cursor-pointer
-                  class="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-                  (click)="openGalleryCreationDialog()">
-                  Nova galeria
-                </button>
+                <span>Capturas guardadas</span>
+                <span class="text-xs text-gray-400">{{ pendingCaptures().length }} itens</span>
               </div>
-
+              <p class="mt-2 text-xs text-gray-400">
+                Toque para organizar capturas e enviar para uma galeria.
+              </p>
+              <button
+                type="button"
+                class="mt-4 w-full rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/50"
+                (click)="showMobileGalleries()"
+                [disabled]="pendingCaptures().length === 0"
+                [class.opacity-60]="pendingCaptures().length === 0">
+                Gerenciar capturas
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+      @case ('galleries') {
+        <div class="flex min-h-screen flex-col bg-black text-white">
+          <header class="flex items-center justify-between px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
+            <button
+              type="button"
+              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              (click)="showMobileCapture()">
+              ← Captura
+            </button>
+            <span class="text-sm font-semibold text-gray-300">Minhas galerias</span>
+            <button
+              type="button"
+              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              (click)="openGalleryCreationDialog()">
+              Nova
+            </button>
+          </header>
+          <div #mobileScrollContainer class="flex-1 overflow-y-auto px-6 pb-16">
+            <div class="space-y-5">
+              <div class="text-[11px] uppercase tracking-[0.38em] text-gray-500">Galerias</div>
               @if (galleries().length === 0) {
-                <div class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-white/20 bg-black/40 px-6 py-14 text-center text-gray-300">
+                <div class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-white/20 bg-white/5 px-6 py-16 text-center text-gray-300">
                   <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                   </svg>
-                  <h3 class="text-lg font-medium text-white">Nenhuma galeria ainda</h3>
-                  <p class="text-sm text-gray-400">Crie uma galeria ou comece capturando para salvar depois.</p>
+                  <h3 class="text-lg font-medium">Nenhuma galeria ainda</h3>
+                  <p class="text-sm text-gray-400">Crie uma galeria para começar ou capture e salve depois.</p>
                 </div>
               } @else {
-                <div class="space-y-3">
+                <div class="space-y-4">
                   @for (gallery of galleries(); track gallery.id) {
-                    <div class="rounded-3xl border border-white/10 bg-black/50 p-4">
+                    <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
                       <div class="flex items-start justify-between gap-4">
                         <div class="space-y-1">
                           @if (gallery.createdAt) {
-                            <p class="text-[10px] uppercase tracking-[0.4em] text-gray-500">{{ gallery.createdAt }}</p>
+                            <p class="text-[10px] uppercase tracking-[0.38em] text-gray-500">{{ gallery.createdAt }}</p>
                           }
                           <h3 class="text-lg font-semibold text-white">{{ gallery.name }}</h3>
                           <p class="text-xs text-gray-400">{{ gallery.imageUrls.length }} fotos</p>
@@ -120,18 +123,22 @@
                         <div class="flex flex-col gap-2 text-xs font-semibold">
                           <button
                             type="button"
-                            data-cursor-pointer
                             class="rounded-full bg-white px-4 py-2 text-black transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/60"
-                            (click)="startCaptureForGallery(gallery.id)">
+                            (click)="showCaptureWithGallery(gallery.id)">
                             Capturar
                           </button>
-                          @if (selectedPendingCapture()) {
+                          <button
+                            type="button"
+                            class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                            (click)="openMobileGalleryDetail(gallery.id)">
+                            Ver galeria
+                          </button>
+                          @if (pendingCaptures().length > 0) {
                             <button
                               type="button"
-                              data-cursor-pointer
-                              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                              class="rounded-full border border-emerald-400/40 px-4 py-2 text-emerald-200 transition hover:bg-emerald-500/20 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
                               (click)="assignPendingToGallery(gallery.id)">
-                              Enviar captura
+                              Enviar capturas
                             </button>
                           }
                         </div>
@@ -139,14 +146,12 @@
                       <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-400">
                         <button
                           type="button"
-                          data-cursor-pointer
                           class="rounded-full border border-white/20 px-3 py-1 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-                          (click)="viewGallery(gallery.id)">
-                          Ver fotos
+                          (click)="useGalleryForCapture(gallery.id)">
+                          Usar como destino
                         </button>
                         <button
                           type="button"
-                          data-cursor-pointer
                           class="rounded-full border border-red-500/40 px-3 py-1 text-red-200 transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-400/40"
                           (click)="deleteGallery(gallery.id)">
                           Excluir
@@ -156,52 +161,52 @@
                   }
                 </div>
               }
-            </section>
+            </div>
           </div>
         </div>
-      } @else {
-        <div class="flex h-full flex-col bg-black">
-          <header class="flex items-center justify-between px-4 pb-4 pt-6">
+      }
+      @case ('galleryDetail') {
+        <div class="flex min-h-screen flex-col bg-black text-white">
+          <header class="flex items-center justify-between px-6 pt-8 pb-4 text-xs uppercase tracking-[0.3em] text-gray-500">
             <button
               type="button"
-              data-cursor-pointer
-              class="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-              (click)="backToGalleries()">
-              Galerias
+              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              (click)="returnToMobileGalleries()">
+              ← Galerias
             </button>
-            <div class="text-center text-xs text-gray-400">
-              @if (activeGallery()) {
-                <p class="uppercase tracking-[0.3em] text-gray-500">{{ activeGallery()!.createdAt }}</p>
-                <p class="mt-1 text-sm font-semibold text-white">{{ activeGallery()!.name }}</p>
-                <p class="mt-1 text-xs text-gray-400">{{ images().length }} fotos</p>
-              } @else {
-                <p class="text-sm font-semibold text-white">Galeria</p>
-              }
-            </div>
             <button
               type="button"
-              data-cursor-pointer
-              class="rounded-full bg-white px-3 py-2 text-xs font-semibold text-black transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/60 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-black/60"
+              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)">
+              Usar esta galeria
+            </button>
+            <button
+              type="button"
+              class="rounded-full bg-white px-4 py-2 text-black transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/60 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-black/60"
               [disabled]="!activeGallery()"
-              (click)="activeGallery() && startCaptureForGallery(activeGallery()!.id)">
-              Capturar
+              (click)="activeGallery() && showCaptureWithGallery(activeGallery()!.id)">
+              ● Capturar
             </button>
           </header>
-          <div class="flex-1 overflow-y-auto px-4 pb-20">
+          <div class="px-6 pb-16">
+            <div class="space-y-2">
+              <h2 class="text-2xl font-semibold text-white">{{ activeGallery()?.name ?? 'Galeria' }}</h2>
+              <p class="text-xs text-gray-400">{{ activeGallery()?.createdAt }}</p>
+              <p class="text-xs text-gray-400">{{ images().length }} fotos</p>
+            </div>
             @if (images().length === 0) {
-              <div class="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-gray-300">
+              <div class="mt-12 flex flex-col items-center justify-center gap-3 text-center text-gray-300">
                 <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
-                <h2 class="text-lg font-medium">Esta galeria está vazia</h2>
+                <h3 class="text-lg font-medium">Esta galeria está vazia</h3>
                 <p class="text-sm text-gray-400">Capture novas imagens para começar seu diário.</p>
               </div>
             } @else {
-              <div class="grid grid-cols-3 gap-3 pb-10">
+              <div class="mt-8 grid grid-cols-3 gap-3">
                 @for (image of images(); track trackMobileImage($index, image); let index = $index) {
                   <button
                     type="button"
-                    data-cursor-pointer
                     class="group relative aspect-square overflow-hidden rounded-3xl bg-zinc-900/60"
                     (click)="onMobilePhotoClick($event, image, index)">
                     <img
@@ -217,7 +222,50 @@
           </div>
         </div>
       }
-    </div>
+    }
+    @if (mobileGalleryPickerOpen()) {
+      <div class="fixed inset-0 z-40 flex items-end justify-center bg-black/75 px-4 pb-6">
+        <div class="w-full max-w-md rounded-3xl bg-zinc-950 p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-base font-semibold text-white">Selecionar galeria</h2>
+            <button
+              type="button"
+              class="text-sm text-gray-400 transition hover:text-gray-200 focus:outline-none"
+              (click)="closeMobileGalleryPicker()">
+              Fechar
+            </button>
+          </div>
+          <div class="flex flex-col gap-3">
+            @for (gallery of galleries(); track gallery.id) {
+              <button
+                type="button"
+                class="flex items-center justify-between rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-left transition hover:bg-black/30 focus:outline-none focus:ring-2 focus:ring-white/30"
+                (click)="selectMobileCaptureGallery(gallery.id)">
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold text-white">{{ gallery.name }}</span>
+                  <span class="text-xs text-gray-400">{{ gallery.imageUrls.length }} fotos</span>
+                </div>
+                @if (mobileCaptureGalleryId() === gallery.id) {
+                  <span class="text-[10px] uppercase tracking-[0.3em] text-emerald-300">ativo</span>
+                }
+              </button>
+            }
+            <button
+              type="button"
+              class="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+              (click)="openGalleryCreationDialogForMobileCapture()">
+              Criar nova galeria
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl border border-white/15 bg-transparent px-4 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-white/20"
+              (click)="clearMobileCaptureGallery()">
+              Captura rápida (sem galeria)
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   } @else {
     @if (currentView() === 'galleries') {
       @if (galleryService.galleries().length === 0) {

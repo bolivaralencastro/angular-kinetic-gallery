@@ -513,6 +513,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.pendingCaptures().includes(last);
   });
+  mobileView = signal<'capture' | 'galleries' | 'galleryDetail'>('capture');
+  mobileGalleryPickerOpen = signal(false);
+  mobileCaptureGalleryId = signal<string | null>(null);
+  mobileCaptureGallery = computed(() => {
+    const captureId = this.mobileCaptureGalleryId();
+    if (!captureId) {
+      return null;
+    }
+    return this.galleries().find(gallery => gallery.id === captureId) ?? null;
+  });
   galleries = computed(() => this.galleryService.galleries());
   activeGallery = computed(() => {
     const selectedId = this.galleryService.selectedGalleryId();
@@ -523,6 +533,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  private assignNextGalleryToMobileCapture = false;
   private lastMobileScrollTop = 0;
 
   // --- Sinais para o RelÃ³gio e Data ---
@@ -689,6 +700,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       const selected = this.pendingCaptureToAssign();
       if (!selected || !pending.includes(selected)) {
         this.pendingCaptureToAssign.set(pending[0]);
+      }
+    });
+
+    effect(() => {
+      const availableGalleries = this.galleries();
+      const selectedCaptureId = this.mobileCaptureGalleryId();
+
+      if (selectedCaptureId && !availableGalleries.some(gallery => gallery.id === selectedCaptureId)) {
+        this.mobileCaptureGalleryId.set(null);
+      }
+
+      if (!selectedCaptureId && availableGalleries.length === 1) {
+        this.mobileCaptureGalleryId.set(availableGalleries[0].id);
+      }
+    });
+
+    effect(() => {
+      if (!this.isGalleryCreationDialogVisible()) {
+        this.assignNextGalleryToMobileCapture = false;
       }
     });
 
@@ -908,6 +938,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (isMobile) {
       if (!previousState) {
+        this.mobileView.set('capture');
+        this.mobileGalleryPickerOpen.set(false);
         this.mobileCommandPanelVisible.set(false);
       }
       this.scheduleMobilePanelReveal(previousState ? 600 : 400);
@@ -915,6 +947,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.mobileCommandPanelVisible.set(false);
       this.clearMobileScrollTimeout();
       this.lastMobileScrollTop = 0;
+      this.mobileGalleryPickerOpen.set(false);
     }
   }
 
@@ -1002,17 +1035,103 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startQuickCapture(): void {
+    if (this.isMobileLayout()) {
+      this.mobileCaptureGalleryId.set(null);
+      this.captureMode.set('unassigned');
+      this.showMobileCapture();
+      return;
+    }
+
     this.galleryService.selectGallery(null);
     this.openWebcamCapture('unassigned');
   }
 
   startCaptureForGallery(galleryId: string): void {
+    if (this.isMobileLayout()) {
+      this.showCaptureWithGallery(galleryId);
+      return;
+    }
+
     this.galleryService.selectGallery(galleryId);
     this.openWebcamCapture('selected');
   }
 
   viewGallery(galleryId: string): void {
+    if (this.isMobileLayout()) {
+      this.openMobileGalleryDetail(galleryId);
+      return;
+    }
+
     this.selectGallery(galleryId);
+  }
+
+  showMobileCapture(): void {
+    this.currentView.set('galleries');
+    this.mobileView.set('capture');
+    this.handleMobileNavigationTransition();
+  }
+
+  showMobileGalleries(): void {
+    this.currentView.set('galleries');
+    this.mobileView.set('galleries');
+    this.handleMobileNavigationTransition();
+  }
+
+  openMobileGalleryDetail(galleryId: string): void {
+    this.selectGallery(galleryId);
+    this.mobileView.set('galleryDetail');
+  }
+
+  returnToMobileGalleries(): void {
+    this.currentView.set('galleries');
+    this.mobileView.set('galleries');
+    this.handleMobileNavigationTransition();
+  }
+
+  showCaptureWithGallery(galleryId: string): void {
+    this.mobileCaptureGalleryId.set(galleryId);
+    this.galleryService.selectGallery(galleryId);
+    this.showMobileCapture();
+  }
+
+  useGalleryForCapture(galleryId: string): void {
+    this.mobileCaptureGalleryId.set(galleryId);
+    this.showMobileCapture();
+  }
+
+  openMobileGalleryPicker(): void {
+    this.mobileGalleryPickerOpen.set(true);
+  }
+
+  closeMobileGalleryPicker(): void {
+    this.mobileGalleryPickerOpen.set(false);
+  }
+
+  selectMobileCaptureGallery(galleryId: string): void {
+    this.mobileCaptureGalleryId.set(galleryId);
+    this.closeMobileGalleryPicker();
+  }
+
+  clearMobileCaptureGallery(): void {
+    this.mobileCaptureGalleryId.set(null);
+    this.closeMobileGalleryPicker();
+  }
+
+  prepareMobileCapture(): void {
+    const captureId = this.mobileCaptureGalleryId();
+    if (captureId) {
+      this.galleryService.selectGallery(captureId);
+      this.captureMode.set('selected');
+    } else {
+      this.galleryService.selectGallery(null);
+      this.captureMode.set('unassigned');
+    }
+  }
+
+  openGalleryCreationDialogForMobileCapture(): void {
+    this.assignNextGalleryToMobileCapture = true;
+    this.closeMobileGalleryPicker();
+    this.openGalleryCreationDialog();
   }
 
   onCaptureComplete(imageUrl: string): void {
@@ -1440,8 +1559,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleGalleryCreate(event: { name: string; description: string }): void {
-    this.galleryService.createGallery(event.name, event.description);
+    const newGalleryId = this.galleryService.createGallery(event.name, event.description);
     this.isGalleryCreationDialogVisible.set(false);
+    if (this.assignNextGalleryToMobileCapture) {
+      this.mobileCaptureGalleryId.set(newGalleryId);
+      this.assignNextGalleryToMobileCapture = false;
+    }
     this.updateVisibleItems(true); // Refresh the view
   }
 
@@ -1449,7 +1572,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (event.id) {
       this.galleryService.updateGallery(event.id, event.name, event.description);
     } else {
-      this.galleryService.createGallery(event.name, event.description);
+      const createdId = this.galleryService.createGallery(event.name, event.description);
+      if (this.assignNextGalleryToMobileCapture) {
+        this.mobileCaptureGalleryId.set(createdId);
+        this.assignNextGalleryToMobileCapture = false;
+      }
     }
     this.isGalleryEditorVisible.set(false);
     this.editingGallery.set(null);
@@ -1497,6 +1624,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openWebcamCapture(mode: 'selected' | 'unassigned' = 'selected'): void {
+    if (this.isMobileLayout()) {
+      this.captureMode.set(mode);
+      if (mode === 'selected') {
+        const selectedId = this.galleryService.selectedGalleryId();
+        if (selectedId) {
+          this.mobileCaptureGalleryId.set(selectedId);
+        }
+      } else {
+        this.mobileCaptureGalleryId.set(null);
+      }
+      this.showMobileCapture();
+      return;
+    }
+
     this.captureMode.set(mode);
     this.deactivateAutoNavigation(true);
     this.isWebcamVisible.set(true);
@@ -1574,7 +1715,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     
     const timestamp = `${day}/${month}/${year} às ${hours}:${minutes}:${seconds}`;
     const galleryName = `Galeria ${timestamp}`;
-    
+
     this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
     this.updateVisibleItems(true); // Refresh the view
   }
