@@ -228,7 +228,13 @@ export class GalleryService {
 
   private async loadRemoteGalleries(): Promise<void> {
     const remoteGalleries = await this.supabaseService.fetchGalleries();
+    if (remoteGalleries === null) {
+      return;
+    }
+
     if (remoteGalleries.length === 0) {
+      this.galleries.set([]);
+      this.selectedGalleryId.set(null);
       return;
     }
 

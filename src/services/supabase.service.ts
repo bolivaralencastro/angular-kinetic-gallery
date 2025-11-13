@@ -49,9 +49,9 @@ export class SupabaseService {
     console.error(`${context}:`, error);
   }
 
-  async fetchGalleries(): Promise<Gallery[]> {
+  async fetchGalleries(): Promise<Gallery[] | null> {
     if (!this.isEnabled()) {
-      return [];
+      return null;
     }
 
     try {
@@ -61,7 +61,7 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao buscar galerias no Supabase', await response.text());
-        return [];
+        return null;
       }
 
       const data = (await response.json()) as SupabaseGalleryRecord[];
@@ -75,7 +75,7 @@ export class SupabaseService {
       }));
     } catch (error) {
       this.logUnexpected('Erro inesperado ao carregar galerias do Supabase', error);
-      return [];
+      return null;
     }
   }
 
