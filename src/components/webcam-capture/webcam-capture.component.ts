@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 
@@ -6,7 +6,105 @@ import { ThemeService } from '../../services/theme.service';
   selector: 'app-webcam-capture',
   imports: [CommonModule],
   template: `
-      <div 
+    @if (isMobileVariant()) {
+      <div class="flex h-full flex-col">
+        <div class="flex-1 px-2 pb-6">
+          <div class="flex h-full flex-col items-center justify-between gap-8">
+            <div
+              class="relative w-full max-w-[26rem] flex-1 select-none"
+              data-cursor-pointer
+              (click)="toggleGridOverlay()">
+              <div class="relative h-full w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                <video
+                  #videoElement
+                  class="h-full w-full object-cover"
+                  [class.opacity-0]="!isStreaming()"
+                  autoplay
+                  playsinline>
+                </video>
+
+                @if (!isStreaming() && !error()) {
+                  <div class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+                    Preparando câmera...
+                  </div>
+                }
+
+                @if (error()) {
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/80 px-6 text-center text-sm font-medium text-red-200">
+                    {{ error() }}
+                  </div>
+                }
+
+                <div
+                  class="pointer-events-none absolute inset-0 transition-opacity duration-300"
+                  [class.opacity-0]="!showGrid()"
+                  [class.opacity-100]="showGrid()">
+                  <div class="absolute inset-x-0 top-[33.333%] h-px bg-white/25"></div>
+                  <div class="absolute inset-x-0 top-[66.666%] h-px bg-white/25"></div>
+                  <div class="absolute inset-y-0 left-[33.333%] w-px bg-white/25"></div>
+                  <div class="absolute inset-y-0 left-[66.666%] w-px bg-white/25"></div>
+                </div>
+
+                @if (countdown() !== null && countdown()! > 0) {
+                  <div class="absolute inset-0 flex items-center justify-center text-6xl font-semibold text-white">
+                    {{ countdown() }}
+                  </div>
+                }
+
+                <div class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-400">
+                  Toque para exibir a grade
+                </div>
+              </div>
+            </div>
+
+            <div class="flex w-full flex-col items-center gap-6">
+              <div class="flex w-full items-center justify-center gap-16">
+                <button
+                  type="button"
+                  (click)="cycleTimerSetting()"
+                  class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+                  [disabled]="!isStreaming()"
+                  [class.opacity-50]="!isStreaming()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="absolute -bottom-5 text-[11px] font-medium uppercase tracking-[0.24em] text-gray-300">{{ timerLabel() }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="captureImage()"
+                  class="flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-white bg-black/60 shadow-[0_0_0_10px_rgba(0,0,0,0.45)] transition active:scale-95"
+                  [disabled]="!isStreaming() || (countdown() !== null)"
+                  [class.opacity-50]="!isStreaming() || (countdown() !== null)">
+                  <span class="sr-only">Capturar foto</span>
+                </button>
+
+                @if (availableCameras().length > 1) {
+                  <button
+                    type="button"
+                    (click)="cycleCamera()"
+                    class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+                    [disabled]="!isStreaming()"
+                    [class.opacity-50]="!isStreaming()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                      <path d="M23 4v6h-6"></path>
+                      <path d="M1 20v-6h6"></path>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                      <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                    </svg>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <canvas #canvasElement class="hidden"></canvas>
+      </div>
+    } @else {
+      <div
       class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
       [style.backgroundColor]="themeService.dialogPalette().surface"
       [style.border]="'1px solid ' + themeService.dialogPalette().border"
@@ -38,12 +136,10 @@ import { ThemeService } from '../../services/theme.service';
         </div>
       }
 
-      <!-- 1:1 aspect ratio container maintained throughout loading -->
       <div
         class="relative w-full aspect-square rounded-md overflow-hidden mb-4 vignette-effect"
         [style.backgroundColor]="themeService.isDark() ? '#000000' : '#e2e8f0'">
         <div class="w-full h-full flex items-center justify-center">
-          <!-- Loading state - always maintains the 1:1 aspect ratio -->
           @if (!isStreaming() && !error()) {
             <div class="absolute inset-0 flex items-center justify-center">
               <svg
@@ -58,15 +154,13 @@ import { ThemeService } from '../../services/theme.service';
             </div>
           }
 
-          <!-- Video element - only shows when streaming -->
-          <video #videoElement 
-            class="w-full h-full object-cover grayscale" 
+          <video #videoElement
+            class="w-full h-full object-cover grayscale"
             [class.hidden]="!isStreaming()"
-            autoplay 
+            autoplay
             playsinline>
           </video>
-          
-          <!-- Countdown overlay - only shows during countdown -->
+
           @if (countdown() !== null && countdown()! > 0) {
             <div
               class="absolute inset-0 flex items-center justify-center text-9xl font-bold z-20"
@@ -138,6 +232,7 @@ import { ThemeService } from '../../services/theme.service';
 
       <canvas #canvasElement class="hidden"></canvas>
     </div>
+    }
   `,
   styles: [`
     .animate-slide-up {
@@ -177,8 +272,10 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     this.toggleTimer();
   }
 
+  variant = input<'dialog' | 'mobile'>('dialog');
   close = output<void>();
   capture = output<string>();
+  prepareCapture = output<void>();
   isStreaming = signal(false);
   error = signal<string | null>(null);
   isTimerEnabled = signal(false);
@@ -186,8 +283,11 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   timerDurations = [3, 5, 10] as const;
   timerDurationIndex = signal(0);
   timerDuration = computed(() => this.timerDurations[this.timerDurationIndex()]);
+  timerLabel = computed(() => (this.isTimerEnabled() ? `${this.timerDuration()}s` : '0s'));
   availableCameras = signal<MediaDeviceInfo[]>([]);
   selectedCameraId = signal<string | null>(null);
+  isMobileVariant = computed(() => this.variant() === 'mobile');
+  showGrid = signal(false);
 
   videoElement = viewChild.required<ElementRef<HTMLVideoElement>>('videoElement');
   canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
@@ -212,7 +312,23 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   cycleTimerDuration(): void {
+    this.isTimerEnabled.set(true);
     this.timerDurationIndex.update(currentIndex => (currentIndex + 1) % this.timerDurations.length);
+  }
+
+  cycleTimerSetting(): void {
+    if (!this.isTimerEnabled()) {
+      this.isTimerEnabled.set(true);
+      this.timerDurationIndex.set(0);
+      return;
+    }
+
+    const nextIndex = this.timerDurationIndex() + 1;
+    if (nextIndex >= this.timerDurations.length) {
+      this.isTimerEnabled.set(false);
+    } else {
+      this.timerDurationIndex.set(nextIndex);
+    }
   }
 
   async setCamera(deviceId: string): Promise<void> {
@@ -287,17 +403,21 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   captureImage(): void {
-    if (!this.isStreaming() || this.countdown() !== null) return;
+    if (!this.isStreaming() || this.countdown() !== null) {
+      return;
+    }
 
-    if (this.isTimerEnabled()) {
-      this.startCountdown();
+    this.prepareCapture.emit();
+
+    const duration = this.isTimerEnabled() ? this.timerDuration() : 0;
+    if (duration > 0) {
+      this.startCountdown(duration);
     } else {
       this.takePicture();
     }
   }
 
-  private startCountdown(): void {
-    const duration = this.timerDuration();
+  private startCountdown(duration: number): void {
     this.countdown.set(duration);
     this.countdownIntervalId = setInterval(() => {
       this.countdown.update(c => c! - 1);
@@ -373,10 +493,16 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       // Get the processed image URL
       const dataUrl = canvas.toDataURL('image/png');
       this.capture.emit(dataUrl);
-      this.close.emit();
+      if (!this.isMobileVariant()) {
+        this.close.emit();
+      }
     } else {
       this.error.set('Não foi possível capturar a imagem.');
     }
+  }
+
+  toggleGridOverlay(): void {
+    this.showGrid.update(value => !value);
   }
 
   /**

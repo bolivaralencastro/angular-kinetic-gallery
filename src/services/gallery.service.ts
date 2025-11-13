@@ -37,13 +37,13 @@ export class GalleryService {
 
   // --- Gallery Management ---
 
-  createGallery(name: string, description: string): void {
+  createGallery(name: string, description: string): string {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
     const year = now.getFullYear();
     const createdAt = `${day}/${month}/${year}`;
-    
+
     const newGallery: Gallery = {
       id: crypto.randomUUID(), // Generate a unique ID
       name,
@@ -53,6 +53,7 @@ export class GalleryService {
       createdAt,
     };
     this.galleries.update(currentGalleries => [newGallery, ...currentGalleries]);
+    return newGallery.id;
   }
 
   getGallery(id: string): Gallery | undefined {
@@ -85,12 +86,8 @@ export class GalleryService {
   addImage(imageUrl: string): void {
     // If no gallery is selected, create a default gallery
     if (!this.selectedGalleryId()) {
-      this.createGallery('Galeria Principal', 'Galeria padrão para fotos capturadas');
-      // After creating the gallery, we need to wait for it to be selected, so we'll add to the first gallery
-      const firstGallery = this.galleries()[0];
-      if (firstGallery) {
-        this.selectedGalleryId.set(firstGallery.id);
-      }
+      const newGalleryId = this.createGallery('Galeria Principal', 'Galeria padrão para fotos capturadas');
+      this.selectedGalleryId.set(newGalleryId);
     }
 
     const selectedGalleryId = this.selectedGalleryId();
