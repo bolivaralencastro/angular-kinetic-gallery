@@ -153,7 +153,7 @@ import { ThemeService } from '../../services/theme.service';
           }
 
           <video #videoElement
-            class="w-full h-full object-cover grayscale"
+            class="w-full h-full object-cover"
             [class.hidden]="!isStreaming()"
             autoplay
             playsinline>
@@ -472,7 +472,6 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     if (context) {
       // Draw only the central square portion of the video to the canvas
       // This ensures a perfect 1:1 aspect ratio without distortion
-      context.filter = 'grayscale(100%)';
       context.drawImage(
         video,
         sourceX,      // source x (crop from center)
@@ -484,10 +483,6 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
         size,         // destination width
         size          // destination height
       );
-      context.filter = 'none'; // Reseta o filtro do contexto do canvas
-
-      // Apply photographic BW filter
-      this.applyPhotographicBWFilter(context, size, size);
 
       // Get the processed image URL
       const dataUrl = canvas.toDataURL('image/png');
@@ -502,33 +497,5 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
   toggleGridOverlay(): void {
     this.showGrid.update(value => !value);
-  }
-
-  /**
-   * Aplica um filtro de preto e branco fotográfico que preserva os detalhes.
-   * @param context O contexto 2D do canvas.
-   * @param width A largura da imagem.
-   * @param height A altura da imagem.
-   */
-  private applyPhotographicBWFilter(context: CanvasRenderingContext2D, width: number, height: number): void {
-    const imageData = context.getImageData(0, 0, width, height);
-    const data = imageData.data; // Array de pixels [R,G,B,A, R,G,B,A, ...]
-
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      
-      // Converte para escala de cinza usando a fórmula de luminosidade (percepção humana)
-      const grayscale = r * 0.299 + g * 0.587 + b * 0.114;
-      
-      data[i] = grayscale;     // Red
-      data[i + 1] = grayscale; // Green
-      data[i + 2] = grayscale; // Blue
-      // O canal Alpha (data[i + 3]) permanece inalterado
-    }
-    
-    // Coloca os dados da imagem modificada de volta no canvas
-    context.putImageData(imageData, 0, 0);
   }
 }
