@@ -399,15 +399,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.toggleThemeMode();
   }
 
-  @HostListener('document:keydown', ['$event'])
+@HostListener('document:keydown', ['$event'])
   handleAdminAccessShortcut(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
 
+    // Se já está logado como admin, o diálogo de login está aberto
+    // ou a pessoa está digitando em algum campo, não faz nada
     if (this.isLoginDialogVisible() || this.canManageContent() || this.isTypingElement(target)) {
       return;
     }
 
     const key = event.key.toLowerCase();
+
+    // Atalho: apenas tecla "l" sem Ctrl/Alt/Shift/Meta
     if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && key === 'l') {
       event.preventDefault();
       this.openLoginDialog();
