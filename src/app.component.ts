@@ -399,7 +399,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.toggleThemeMode();
   }
 
-@HostListener('document:keydown', ['$event'])
+  @HostListener('document:keydown', ['$event'])
+  @HostListener('window:keydown', ['$event'])
   handleAdminAccessShortcut(event: KeyboardEvent): void {
     const target = event.target as HTMLElement | null;
 
@@ -411,7 +412,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const key = event.key.toLowerCase();
 
-  // Atalho: apenas tecla "n" sem Ctrl/Alt/Meta
+    // Atalho: apenas tecla "n" sem Ctrl/Alt/Meta
     if (!event.ctrlKey && !event.altKey && !event.metaKey && key === 'n') {
       event.preventDefault();
       this.openLoginDialog();
@@ -833,7 +834,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     effect(() => {
-      if (this.canManageContent()) {
+      if (this.canManageContent() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
         return;
       }
 
