@@ -579,6 +579,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Layout Responsivo ---
   private readonly MOBILE_BREAKPOINT = 768;
+  private readonly MOBILE_LOGIN_LONG_PRESS_DURATION = 10000;
   isMobileLayout = signal(false);
   mobileCommandPanelVisible = signal(false);
   captureMode = signal<'selected'>('selected');
@@ -634,6 +635,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   private mobileScrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private mobileScrollResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  private mobileGallerySelectorLongPressTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private assignNextGalleryToMobileCapture = false;
   private lastMobileScrollTop = 0;
 
@@ -911,6 +913,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       clearTimeout(this.mobileScrollResetTimeout);
       this.mobileScrollResetTimeout = null;
     }
+    this.clearMobileGallerySelectorLongPress();
   }
 
   // --- Lógica do Grid e Animação ---
@@ -1081,6 +1084,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private clearMobileGallerySelectorLongPress(): void {
+    if (this.mobileGallerySelectorLongPressTimeoutId) {
+      clearTimeout(this.mobileGallerySelectorLongPressTimeoutId);
+      this.mobileGallerySelectorLongPressTimeoutId = null;
+    }
+  }
+
   private scheduleMobilePanelReveal(delay: number = 600): void {
     if (!this.isMobileLayout()) {
       return;
@@ -1126,6 +1136,34 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.mobileCommandPanelVisible.set(false);
     this.scheduleMobilePanelReveal(700);
+  }
+
+  onMobileGallerySelectorPressStart(event: PointerEvent): void {
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+
+    if (this.canManageContent() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
+      return;
+    }
+
+    if (!this.isMobileLayout()) {
+      return;
+    }
+
+    this.clearMobileGallerySelectorLongPress();
+    this.mobileGallerySelectorLongPressTimeoutId = setTimeout(() => {
+      this.mobileGallerySelectorLongPressTimeoutId = null;
+      this.ngZone.run(() => this.openLoginDialog());
+    }, this.MOBILE_LOGIN_LONG_PRESS_DURATION);
+  }
+
+  onMobileGallerySelectorPressEnd(): void {
+    this.clearMobileGallerySelectorLongPress();
+  }
+
+  onMobileGallerySelectorPressCancel(): void {
+    this.clearMobileGallerySelectorLongPress();
   }
 
   onMobilePhotoClick(event: MouseEvent, imageUrl: string, index: number): void {
