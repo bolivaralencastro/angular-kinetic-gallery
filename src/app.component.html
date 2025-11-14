@@ -7,11 +7,20 @@
   [class.p-8]="!isMobileLayout()"
   (contextmenu)="onRightClick($event)">
 
-  <div class="pointer-events-none absolute right-4 top-4 z-40 flex flex-col items-end gap-2 sm:right-8 sm:top-8">
+  <div
+    class="pointer-events-none z-40 flex flex-col gap-2"
+    [ngClass]="
+      isMobileLayout()
+        ? 'fixed inset-x-0 bottom-0 items-stretch px-4 pb-4'
+        : 'absolute right-4 top-4 items-end sm:right-8 sm:top-8'
+    ">
     @if (canManageContent()) {
       <div
-        class="pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur"
-        [ngClass]="themeService.isDark() ? 'border-white/15 bg-black/60 text-white/85' : 'border-slate-300/70 bg-white/80 text-slate-800'">
+        class="pointer-events-auto flex w-full items-center gap-2 border px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur sm:w-auto"
+        [ngClass]="[
+          themeService.isDark() ? 'border-white/15 bg-black/60 text-white/85' : 'border-slate-300/70 bg-white/80 text-slate-800',
+          isMobileLayout() ? 'rounded-t-3xl rounded-b-none' : 'rounded-full'
+        ]">
         <span class="max-w-[10rem] truncate" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
         <span class="rounded-full bg-emerald-500/25 px-2 py-0.5 text-[9px] font-semibold text-emerald-100">Admin</span>
         <button
