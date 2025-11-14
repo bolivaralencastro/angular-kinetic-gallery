@@ -7,14 +7,14 @@
   [class.p-8]="!isMobileLayout()"
   (contextmenu)="onRightClick($event)">
 
-  <div
-    class="pointer-events-none z-40 flex flex-col gap-2"
-    [ngClass]="
-      isMobileLayout()
-        ? 'fixed inset-x-0 bottom-0 items-stretch px-4 pb-4'
-        : 'absolute right-4 top-4 items-end sm:right-8 sm:top-8'
-    ">
-    @if (canManageContent()) {
+  @if (canManageContent()) {
+    <div
+      class="pointer-events-none z-40 flex flex-col gap-2"
+      [ngClass]="
+        isMobileLayout()
+          ? 'fixed inset-x-0 bottom-0 items-stretch px-4 pb-4'
+          : 'absolute right-4 top-4 items-end sm:right-8 sm:top-8'
+      ">
       <div
         class="pointer-events-auto flex w-full items-center gap-2 border px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur sm:w-auto"
         [ngClass]="[
@@ -32,19 +32,19 @@
           Sair
         </button>
       </div>
-    } @else {
-      <div
-        class="pointer-events-auto flex w-full flex-col gap-2 border px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur sm:w-auto sm:flex-row sm:items-center"
-        [ngClass]="[
-          themeService.isDark() ? 'border-white/15 bg-black/60 text-white/80' : 'border-slate-300/70 bg-white/85 text-slate-700',
-          isMobileLayout() ? 'rounded-t-3xl rounded-b-none' : 'rounded-full'
-        ]">
-        <span class="tracking-[0.24em] text-[9px] opacity-80 sm:text-[10px]">
-          Área administrativa
-        </span>
-      </div>
-    }
-  </div>
+    </div>
+  } @else {
+    <div
+      class="pointer-events-auto flex w-full flex-col gap-2 border px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur sm:w-auto sm:flex-row sm:items-center"
+      [ngClass]="[
+        themeService.isDark() ? 'border-white/15 bg-black/60 text-white/80' : 'border-slate-300/70 bg-white/85 text-slate-700',
+        isMobileLayout() ? 'rounded-t-3xl rounded-b-none' : 'rounded-full'
+      ]">
+      <span class="tracking-[0.24em] text-[9px] opacity-80 sm:text-[10px]">
+        Área administrativa
+      </span>
+    </div>
+  }
 
   @if (isMobileLayout()) {
     @switch (mobileView()) {
