@@ -330,6 +330,9 @@ export class SupabaseService {
   }
 
   private detectExtension(contentType: string): string {
+    if (contentType.includes('avif')) {
+      return 'avif';
+    }
     if (contentType.includes('jpeg')) {
       return 'jpg';
     }
