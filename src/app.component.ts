@@ -833,7 +833,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     effect(() => {
-      if (this.canManageContent()) {
+      if (this.canManageContent() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
         return;
       }
 
