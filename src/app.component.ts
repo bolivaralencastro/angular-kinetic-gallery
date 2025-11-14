@@ -407,8 +407,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const key = event.key.toLowerCase();
-    if (event.ctrlKey && event.altKey && event.shiftKey && key === 'l') {
+    const keyCode = event.code;
+    if (event.ctrlKey && event.altKey && event.shiftKey && keyCode === 'KeyL') {
       event.preventDefault();
       this.openLoginDialog();
     }
