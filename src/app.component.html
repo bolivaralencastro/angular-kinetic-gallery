@@ -42,14 +42,9 @@
         <span class="tracking-[0.24em] text-[9px] opacity-80 sm:text-[10px]">
           Área administrativa
         </span>
-        <button
-          type="button"
-          data-cursor-pointer
-          class="rounded-full border border-white/20 px-3 py-1 text-[10px] tracking-[0.32em] transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 sm:ml-auto"
-          [ngClass]="themeService.isDark() ? 'text-white/85 hover:bg-white/10 focus:ring-white/40' : 'border-slate-400/70 text-slate-800/90 hover:bg-slate-200/60 focus:ring-slate-500/60'"
-          (click)="openLoginDialog()">
-          Entrar
-        </button>
+        <span class="hidden text-[9px] uppercase tracking-[0.24em] text-gray-400 sm:ml-auto sm:block">
+          Pressione a tecla <span class="font-semibold">N</span> para acessar
+        </span>
         <span class="text-[9px] font-normal uppercase tracking-[0.24em] text-gray-400 sm:hidden">
           Toque e segure na lista de galerias para acessar
         </span>
