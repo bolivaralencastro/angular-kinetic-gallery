@@ -47,6 +47,9 @@ type VisibleItem = PhotoItem | GalleryCardItem;
 const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
 type ArrowKey = (typeof ARROW_KEYS)[number];
 
+const FALLBACK_GALLERY_THUMBNAIL =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%236b7280' font-family='Arial, sans-serif' font-size='28'>Sem Imagem</text></svg>";
+
 function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
 }
@@ -1417,7 +1420,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             id: gallery.id,
             name: gallery.name,
             description: gallery.description,
-            thumbnailUrl: gallery.thumbnailUrl || 'https://via.placeholder.com/150?text=No+Image',
+            thumbnailUrl: gallery.thumbnailUrl || FALLBACK_GALLERY_THUMBNAIL,
             imageUrls: gallery.imageUrls,
             imageCount: gallery.imageUrls.length,
             createdAt: gallery.createdAt,

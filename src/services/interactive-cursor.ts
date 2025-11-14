@@ -31,13 +31,24 @@ export class InteractiveCursor {
     this.position.target.y = event.clientY;
   };
   private readonly pointerEnterHandler = (event: Event): void => {
-    const target = (event.target as HTMLElement | null)?.closest(CURSOR_POINTER_SELECTOR);
+    const eventTarget = event.target;
+    if (!(eventTarget instanceof Element)) {
+      return;
+    }
+
+    const target = eventTarget.closest(CURSOR_POINTER_SELECTOR);
     if (target instanceof HTMLElement) {
       this.cursorElement.classList.add('pointer-hover');
     }
   };
   private readonly pointerLeaveHandler = (event: Event): void => {
-    const target = (event.target as HTMLElement | null)?.closest(CURSOR_POINTER_SELECTOR);
+    const eventTarget = event.target;
+    if (!(eventTarget instanceof Element)) {
+      this.cursorElement.classList.remove('pointer-hover');
+      return;
+    }
+
+    const target = eventTarget.closest(CURSOR_POINTER_SELECTOR);
     if (target instanceof HTMLElement) {
       this.cursorElement.classList.remove('pointer-hover');
     }
