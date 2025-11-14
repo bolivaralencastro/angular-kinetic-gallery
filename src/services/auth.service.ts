@@ -235,7 +235,7 @@ export class AuthService {
     const secondsUntilExpiry = session.expiresAt - now;
     const refreshInSeconds = Math.max(secondsUntilExpiry - 60, 5);
 
-    this.refreshTimeoutId = window.setTimeout(() => {
+    this.refreshTimeoutId = setTimeout(() => {
       void this.refreshCurrentSession();
     }, refreshInSeconds * 1000);
   }

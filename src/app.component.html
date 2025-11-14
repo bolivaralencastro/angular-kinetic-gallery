@@ -560,7 +560,7 @@
             class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
             [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
             [value]="loginEmail()"
-            (input)="loginEmail.set(($event.target as HTMLInputElement).value)"
+            (input)="loginEmail.set($any($event.target).value)"
             [disabled]="isLoginInProgress()"
             required>
         </div>
@@ -573,7 +573,7 @@
             class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
             [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
             [value]="loginPassword()"
-            (input)="loginPassword.set(($event.target as HTMLInputElement).value)"
+            (input)="loginPassword.set($any($event.target).value)"
             [disabled]="isLoginInProgress()"
             required>
         </div>
