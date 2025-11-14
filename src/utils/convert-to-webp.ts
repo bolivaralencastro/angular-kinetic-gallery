@@ -1,4 +1,6 @@
-export async function convertToAvif(blob: Blob): Promise<{ blob: Blob; extension: string; mime: string }> {
+const WEBP_MIME = 'image/webp';
+
+export async function convertToWebp(blob: Blob): Promise<{ blob: Blob; extension: string; mime: string }> {
   const fallbackMime = blob.type || 'image/png';
   const fallback = {
     blob,
@@ -23,23 +25,23 @@ export async function convertToAvif(blob: Blob): Promise<{ blob: Blob; extension
 
     context.drawImage(image, 0, 0);
 
-    const avifBlob = await new Promise<Blob | null>(resolve => {
-      canvas.toBlob(resolve, 'image/avif', 0.8);
+    const webpBlob = await new Promise<Blob | null>(resolve => {
+      canvas.toBlob(result => resolve(result), WEBP_MIME, 0.8);
     });
 
-    if (avifBlob && avifBlob.size > 0 && avifBlob.type.includes('avif')) {
-      console.info('[convertToAvif] usando AVIF, tamanho:', avifBlob.size);
+    if (webpBlob && webpBlob.size > 0) {
+      console.info('[convertToWebp] usando WEBP, tamanho:', webpBlob.size);
       return {
-        blob: avifBlob,
-        extension: 'avif',
-        mime: 'image/avif',
+        blob: webpBlob,
+        extension: 'webp',
+        mime: WEBP_MIME,
       };
     }
   } catch (error) {
-    console.warn('Falha ao converter imagem para AVIF', error);
+    console.warn('Falha ao converter imagem para WEBP', error);
   }
 
-  console.warn('[convertToAvif] fallback ativado, mantendo formato original:', fallbackMime);
+  console.warn('[convertToWebp] fallback ativado, mantendo formato original:', fallbackMime);
   return fallback;
 }
 
@@ -59,6 +61,9 @@ async function loadImage(blob: Blob): Promise<HTMLImageElement> {
 }
 
 function detectExtension(mime: string): string {
+  if (mime.includes('webp')) {
+    return 'webp';
+  }
   if (mime.includes('avif')) {
     return 'avif';
   }
@@ -67,9 +72,6 @@ function detectExtension(mime: string): string {
   }
   if (mime.includes('png')) {
     return 'png';
-  }
-  if (mime.includes('webp')) {
-    return 'webp';
   }
   if (mime.includes('gif')) {
     return 'gif';

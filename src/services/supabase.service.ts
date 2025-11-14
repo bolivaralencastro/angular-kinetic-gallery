@@ -159,6 +159,11 @@ export class SupabaseService {
       const { blob, extension, contentType } = this.dataUrlToBlob(dataUrl);
       const fileName = `${galleryId}/${crypto.randomUUID()}.${extension}`;
 
+      console.log('[SupabaseService] preparando upload para o Storage', {
+        contentType,
+        fileName,
+      });
+
       const uploadResponse = await this.storageRequest(
         `object/${this.bucketName}/${fileName}`,
         {
