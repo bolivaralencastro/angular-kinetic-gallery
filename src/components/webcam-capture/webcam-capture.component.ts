@@ -61,6 +61,20 @@ import { ThemeService } from '../../services/theme.service';
           <div class="flex items-center justify-center gap-16">
             <button
               type="button"
+              (click)="reloadApp()"
+              class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+              title="Atualizar aplicativo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+              </svg>
+              <span class="sr-only">Atualizar aplicativo</span>
+            </button>
+
+            <button
+              type="button"
               (click)="cycleTimerSetting()"
               class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
               [disabled]="!isStreaming()"
@@ -304,6 +318,10 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     if (this.countdownIntervalId) {
       clearInterval(this.countdownIntervalId);
     }
+  }
+
+  reloadApp(): void {
+    window.location.reload();
   }
 
   toggleTimer(): void {
