@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
-import { convertToAvif } from '../../utils/convert-to-avif';
+import { convertToWebp } from '../../utils/convert-to-webp';
 
 @Component({
   selector: 'app-webcam-capture',
@@ -513,7 +513,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const { blob } = await convertToAvif(originalBlob);
+    const { blob } = await convertToWebp(originalBlob);
 
     try {
       const dataUrl = await this.blobToDataUrl(blob);
