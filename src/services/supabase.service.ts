@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { environment } from '../environments/environment';
 import { Gallery } from '../interfaces/gallery.interface';
 import type { SupabaseGalleryImageRecord, SupabaseGalleryRecord } from '../types/supabase';
+import { AuthService } from './auth.service';
 
 type RequestOptions = Omit<RequestInit, 'headers'> & { headers?: Record<string, string> };
 
@@ -12,6 +13,7 @@ export class SupabaseService {
   private readonly baseUrl = environment.supabaseUrl.replace(/\/+$/, '');
   private readonly anonKey = environment.supabaseAnonKey;
   private readonly bucketName = environment.supabaseBucket;
+  private readonly authService = inject(AuthService);
 
   isEnabled(): boolean {
     return Boolean(this.baseUrl && this.anonKey);
@@ -280,7 +282,7 @@ export class SupabaseService {
   private buildRestHeaders(): Record<string, string> {
     return {
       apikey: this.anonKey,
-      Authorization: `Bearer ${this.anonKey}`,
+      Authorization: this.resolveAuthorizationHeader(),
       'Content-Type': 'application/json',
     };
   }
@@ -288,7 +290,7 @@ export class SupabaseService {
   private buildStorageHeaders(contentType?: string): Record<string, string> {
     const headers: Record<string, string> = {
       apikey: this.anonKey,
-      Authorization: `Bearer ${this.anonKey}`,
+      Authorization: this.resolveAuthorizationHeader(),
     };
 
     if (contentType) {
@@ -296,6 +298,15 @@ export class SupabaseService {
     }
 
     return headers;
+  }
+
+  private resolveAuthorizationHeader(): string {
+    const session = this.authService.session();
+    if (session) {
+      return `${session.tokenType} ${session.accessToken}`;
+    }
+
+    return `Bearer ${this.anonKey}`;
   }
 
   private dataUrlToBlob(dataUrl: string): { blob: Blob; extension: string; contentType: string } {

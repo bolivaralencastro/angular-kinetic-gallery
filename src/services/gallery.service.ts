@@ -1,6 +1,7 @@
 import { Injectable, signal, effect, computed, inject } from '@angular/core';
 import { Gallery } from '../interfaces/gallery.interface';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 
 const STORAGE_KEY_GALLERIES = 'kinetic-galleries';
 const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
@@ -10,6 +11,7 @@ const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
 })
 export class GalleryService {
   private readonly supabaseService = inject(SupabaseService);
+  private readonly authService = inject(AuthService);
   private readonly ongoingUploads = new Set<string>();
 
   private initialGalleries: Gallery[] = this.loadGalleriesFromLocalStorage();
@@ -45,7 +47,11 @@ export class GalleryService {
 
   // --- Gallery Management ---
 
-  createGallery(name: string, description: string): string {
+  createGallery(name: string, description: string): string | null {
+    if (!this.canManage()) {
+      return null;
+    }
+
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
@@ -70,6 +76,10 @@ export class GalleryService {
   }
 
   updateGallery(id: string, name: string, description: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     this.galleries.update(currentGalleries =>
       currentGalleries.map(g =>
         g.id === id ? { ...g, name, description } : g
@@ -82,6 +92,10 @@ export class GalleryService {
   }
 
   deleteGallery(id: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     const galleryToDelete = this.getGallery(id);
     this.galleries.update(currentGalleries =>
       currentGalleries.filter(g => g.id !== id)
@@ -101,10 +115,16 @@ export class GalleryService {
   // --- Image Management within a Gallery ---
 
   addImage(imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     // If no gallery is selected, create a default gallery
     if (!this.selectedGalleryId()) {
       const newGalleryId = this.createGallery('Galeria Principal', 'Galeria padrão para fotos capturadas');
-      this.selectedGalleryId.set(newGalleryId);
+      if (newGalleryId) {
+        this.selectedGalleryId.set(newGalleryId);
+      }
     }
 
     const selectedGalleryId = this.selectedGalleryId();
@@ -114,19 +134,35 @@ export class GalleryService {
   }
 
   addPendingCapture(imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     this.pendingCaptures.update(current => [imageUrl, ...current]);
   }
 
   assignPendingCaptureToGallery(galleryId: string, imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
     this.addImageToGallery(galleryId, imageUrl);
   }
 
   removePendingCapture(imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
   }
 
   addImageToGallery(galleryId: string, imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     this.galleries.update(currentGalleries =>
       currentGalleries.map(g => {
         if (g.id === galleryId) {
@@ -145,6 +181,10 @@ export class GalleryService {
   }
 
   removeImageFromGallery(galleryId: string, imageUrl: string): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     let nextThumbnail: string | undefined;
     this.galleries.update(currentGalleries =>
       currentGalleries.map(g => {
@@ -297,6 +337,10 @@ export class GalleryService {
       return;
     }
 
+    if (!this.canManage()) {
+      return;
+    }
+
     imageUrls
       .filter(url => url.startsWith('data:'))
       .forEach(base64Url => {
@@ -351,6 +395,14 @@ export class GalleryService {
   }
 
   private persistGallery(gallery: Gallery): void {
+    if (!this.canManage()) {
+      return;
+    }
+
     void this.supabaseService.upsertGallery(gallery);
+  }
+
+  private canManage(): boolean {
+    return this.authService.canManageContent();
   }
 }
