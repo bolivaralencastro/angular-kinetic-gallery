@@ -140,7 +140,12 @@
                     </button>
                   }
                 } @else {
-                  <div class="rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-gray-300">
+                  <div
+                    class="rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-gray-300"
+                    (pointerdown)="onMobileGallerySelectorPressStart($event)"
+                    (pointerup)="onMobileGallerySelectorPressEnd()"
+                    (pointerleave)="onMobileGallerySelectorPressCancel()"
+                    (pointercancel)="onMobileGallerySelectorPressCancel()">
                     Entre com a conta administradora para escolher uma galeria e capturar fotos.
                   </div>
                 }
