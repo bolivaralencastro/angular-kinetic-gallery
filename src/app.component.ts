@@ -411,8 +411,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const key = event.key.toLowerCase();
 
-    // Atalho: apenas tecla "l" sem Ctrl/Alt/Shift/Meta
-    if (!event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && key === 'l') {
+  // Atalho: apenas tecla "n" sem Ctrl/Alt/Meta
+    if (!event.ctrlKey && !event.altKey && !event.metaKey && key === 'n') {
       event.preventDefault();
       this.openLoginDialog();
     }
