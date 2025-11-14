@@ -1504,7 +1504,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onWheel(event: WheelEvent): void {
     this.resetInactivityTimer();
-    if (!this.isInteractionEnabled()) return;
+    if (!this.isInteractionEnabled()) {
+      return;
+    }
+
+    if (this.isMobileLayout()) {
+      return;
+    }
+
     event.preventDefault();
 
     if (event.deltaY < 0) {

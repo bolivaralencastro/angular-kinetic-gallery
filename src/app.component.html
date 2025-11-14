@@ -125,7 +125,7 @@
         </div>
       }
       @case ('galleries') {
-        <div class="flex min-h-screen flex-col bg-black text-white">
+        <div class="flex min-h-screen h-screen flex-col bg-black text-white">
           <header class="flex items-center justify-between gap-4 px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
             <button
               type="button"
@@ -150,7 +150,7 @@
                 <p class="text-sm text-gray-400">Crie uma galeria para começar a capturar suas memórias.</p>
               </div>
             } @else {
-              <div class="space-y-4">
+              <div class="flex flex-col gap-6">
                 @for (gallery of galleries(); track gallery.id) {
                   <app-mobile-gallery-card
                     [gallery]="gallery"
@@ -166,7 +166,7 @@
         </div>
       }
       @case ('galleryDetail') {
-        <div class="flex min-h-screen flex-col bg-black text-white">
+        <div class="flex min-h-screen h-screen flex-col bg-black text-white">
           <header class="flex items-center justify-between px-6 pt-8 pb-4 text-xs uppercase tracking-[0.3em] text-gray-500">
             <button
               type="button"
@@ -199,7 +199,7 @@
               </button>
             </div>
           </header>
-          <div class="px-6 pb-16">
+          <div class="flex-1 overflow-y-auto px-6 pb-20">
             <div class="space-y-2">
               <h2 class="text-2xl font-semibold text-white">{{ activeGallery()?.name ?? 'Galeria' }}</h2>
               @if (activeGallery()?.description) {
@@ -221,7 +221,7 @@
                 <p class="text-sm text-gray-400">Capture novas imagens para começar seu diário.</p>
               </div>
             } @else {
-              <div class="mt-8 grid grid-cols-3 gap-3">
+              <div class="mt-8 grid grid-cols-3 gap-x-3 gap-y-5">
                 @for (image of images(); track trackMobileImage($index, image); let index = $index) {
                   <button
                     type="button"
