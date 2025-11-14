@@ -1,10 +1,7 @@
-import { Injectable, signal, effect, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Gallery } from '../interfaces/gallery.interface';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
-
-const STORAGE_KEY_GALLERIES = 'kinetic-galleries';
-const STORAGE_KEY_PENDING_CAPTURES = 'kinetic-pending-captures';
 
 @Injectable({
   providedIn: 'root'
@@ -14,12 +11,9 @@ export class GalleryService {
   private readonly authService = inject(AuthService);
   private readonly ongoingUploads = new Set<string>();
 
-  private initialGalleries: Gallery[] = this.loadGalleriesFromLocalStorage();
-  private initialPendingCaptures: string[] = this.loadPendingCapturesFromLocalStorage();
-
-  galleries = signal<Gallery[]>(this.initialGalleries);
+  galleries = signal<Gallery[]>([]);
   selectedGalleryId = signal<string | null>(null);
-  pendingCaptures = signal<string[]>(this.initialPendingCaptures);
+  pendingCaptures = signal<string[]>([]);
 
   // Computed signal for the images of the currently selected gallery
   images = computed(() => {
@@ -35,14 +29,6 @@ export class GalleryService {
     if (this.supabaseService.isEnabled()) {
       void this.loadRemoteGalleries();
     }
-
-    effect(() => {
-      this.saveGalleriesToLocalStorage(this.galleries());
-    });
-
-    effect(() => {
-      this.savePendingCapturesToLocalStorage(this.pendingCaptures());
-    });
   }
 
   // --- Gallery Management ---
@@ -207,128 +193,17 @@ export class GalleryService {
     }
   }
 
-  // --- Local Storage Handling ---
-
-  private saveGalleriesToLocalStorage(galleries: Gallery[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY_GALLERIES, JSON.stringify(galleries));
-    } catch (e) {
-      console.error('Error saving galleries to localStorage', e);
-    }
-  }
-
-  private savePendingCapturesToLocalStorage(pending: string[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEY_PENDING_CAPTURES, JSON.stringify(pending));
-    } catch (e) {
-      console.error('Error saving pending captures to localStorage', e);
-    }
-  }
-
-  private loadGalleriesFromLocalStorage(): Gallery[] {
-    try {
-      const storedGalleries = localStorage.getItem(STORAGE_KEY_GALLERIES);
-      const galleries: Gallery[] = storedGalleries ? JSON.parse(storedGalleries) : [];
-      
-      // Add createdAt field to galleries that don't have it (for backward compatibility)
-      return galleries.map(gallery => {
-        if (!gallery.createdAt) {
-          // Try to extract date from gallery name if it follows the timestamp format
-          const dateRegex = /Galeria\s+(\d{1,2}\/\d{1,2}\/\d{4})/;
-          const match = gallery.name.match(dateRegex);
-          if (match) {
-            return { ...gallery, createdAt: match[1] };
-          } else {
-            // For galleries without timestamp format, use current date as fallback
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = now.getFullYear();
-            const createdAt = `${day}/${month}/${year}`;
-            return { ...gallery, createdAt };
-          }
-        }
-        return gallery;
-      });
-    } catch (e) {
-      console.error('Error reading galleries from localStorage', e);
-      return [];
-    }
-  }
-
-  private loadPendingCapturesFromLocalStorage(): string[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_PENDING_CAPTURES);
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error('Error reading pending captures from localStorage', e);
-      return [];
-    }
-  }
-
   private async loadRemoteGalleries(): Promise<void> {
     const remoteGalleries = await this.supabaseService.fetchGalleries();
     if (remoteGalleries === null) {
       return;
     }
 
-    if (remoteGalleries.length === 0) {
-      this.galleries.set([]);
-      this.selectedGalleryId.set(null);
-      return;
-    }
-
-    const currentGalleries = this.galleries();
-    const remoteMap = new Map(remoteGalleries.map(gallery => [gallery.id, gallery] as const));
-    const galleriesToSync: Array<{ id: string; base64Urls: string[] }> = [];
-
-    const mergedGalleries = remoteGalleries.map(remote => {
-      const local = currentGalleries.find(gallery => gallery.id === remote.id);
-      if (!local) {
-        return remote;
-      }
-
-      const remoteImageSet = new Set(remote.imageUrls);
-      const base64Images = local.imageUrls.filter(url => url.startsWith('data:'));
-      const additionalLocalImages = local.imageUrls.filter(
-        url => !remoteImageSet.has(url) && !url.startsWith('data:'),
-      );
-
-      if (base64Images.length > 0) {
-        galleriesToSync.push({ id: remote.id, base64Urls: base64Images });
-      }
-
-      return {
-        ...remote,
-        imageUrls: [...remote.imageUrls, ...additionalLocalImages, ...base64Images],
-        thumbnailUrl: remote.thumbnailUrl ?? local.thumbnailUrl,
-        createdAt: remote.createdAt ?? local.createdAt,
-      };
-    });
-
-    for (const localGallery of currentGalleries) {
-      if (remoteMap.has(localGallery.id)) {
-        continue;
-      }
-
-      mergedGalleries.push(localGallery);
-      this.persistGallery(localGallery);
-
-      const base64Images = localGallery.imageUrls.filter(url => url.startsWith('data:'));
-      if (base64Images.length > 0) {
-        galleriesToSync.push({ id: localGallery.id, base64Urls: base64Images });
-      }
-    }
-
-    this.galleries.set(mergedGalleries);
+    this.galleries.set(remoteGalleries);
 
     const selectedId = this.selectedGalleryId();
-    if (selectedId && !mergedGalleries.some(gallery => gallery.id === selectedId)) {
+    if (selectedId && !remoteGalleries.some(gallery => gallery.id === selectedId)) {
       this.selectedGalleryId.set(null);
-    }
-
-    for (const { id, base64Urls } of galleriesToSync) {
-      this.syncGalleryBase64Images(id, base64Urls);
     }
   }
 
