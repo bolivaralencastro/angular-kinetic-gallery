@@ -58,60 +58,67 @@ import { convertToWebp } from '../../utils/convert-to-webp';
           </div>
         </div>
 
-        <div class="px-8 pb-10 pt-6">
-          <div class="flex items-center justify-center gap-16">
-            <button
-              type="button"
-              (click)="reloadApp()"
-              class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
-              title="Atualizar aplicativo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
-              </svg>
-              <span class="sr-only">Atualizar aplicativo</span>
-            </button>
-
+        <div class="px-8 pb-12 pt-6">
+          <div class="grid grid-cols-3 items-end gap-6 text-white">
             <button
               type="button"
               (click)="cycleTimerSetting()"
-              class="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+              class="group flex flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-white/70 transition hover:text-white focus:outline-none disabled:cursor-not-allowed"
               [disabled]="!isStreaming()"
               [class.opacity-50]="!isStreaming()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span class="absolute -bottom-5 text-[11px] font-medium uppercase tracking-[0.24em] text-gray-300">{{ timerLabel() }}</span>
+              <span
+                class="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-[inset_0_0_18px_rgba(255,255,255,0.05)] transition group-hover:border-white/40 group-hover:bg-white/20">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <polyline points="12 7 12 12 15 13.5"></polyline>
+                </svg>
+              </span>
+              <span class="tracking-[0.4em]">{{ timerLabel() | uppercase }}</span>
             </button>
 
-            <button
-              type="button"
-              (click)="captureImage()"
-              class="flex h-24 w-24 items-center justify-center rounded-full border-[6px] border-white bg-black/60 shadow-[0_0_0_10px_rgba(0,0,0,0.45)] transition active:scale-95"
-              [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
-              [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
-              <span class="sr-only">Capturar foto</span>
-            </button>
+            <div class="flex justify-center">
+              <button
+                type="button"
+                (click)="captureImage()"
+                class="group relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-b from-white/80 to-white/60 shadow-[0_12px_35px_rgba(0,0,0,0.45)] transition active:scale-95 disabled:cursor-not-allowed"
+                [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
+                [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
+                <span class="absolute inset-2 rounded-full border border-black/10 bg-white/95 shadow-[inset_0_4px_12px_rgba(0,0,0,0.08)] transition group-active:scale-95"></span>
+                <span class="absolute inset-[18px] rounded-full border border-black/40 bg-black/80"></span>
+                <span class="sr-only">Capturar foto</span>
+              </button>
+            </div>
 
             @if (availableCameras().length > 1) {
               <button
                 type="button"
                 (click)="cycleCamera()"
-                class="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 focus:outline-none"
+                class="group flex flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-white/70 transition hover:text-white focus:outline-none disabled:cursor-not-allowed"
                 [disabled]="!isStreaming()"
                 [class.opacity-50]="!isStreaming()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-6 w-6">
-                  <path d="M23 4v6h-6"></path>
-                  <path d="M1 20v-6h6"></path>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                  <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
-                </svg>
+                <span
+                  class="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-[inset_0_0_18px_rgba(255,255,255,0.05)] transition group-hover:border-white/40 group-hover:bg-white/20">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                    <path d="M21 16.92A5.5 5.5 0 0 1 18.36 19H8"></path>
+                    <path d="M3 12a5.5 5.5 0 0 1 5.5-5.5H16"></path>
+                    <path d="M8 5l3-3 3 3"></path>
+                    <path d="m16 19-3 3-3-3"></path>
+                  </svg>
+                </span>
+                <span class="tracking-[0.4em]">CÂMERA</span>
               </button>
+            } @else {
+              <div class="h-14"></div>
             }
           </div>
+
+          <button
+            type="button"
+            (click)="reloadApp()"
+            class="mt-8 w-full text-center text-sm font-semibold uppercase tracking-[0.35em] text-white/60 transition hover:text-white focus:outline-none"
+            title="Atualizar aplicativo">
+            Atualizar aplicativo
+          </button>
         </div>
 
         <canvas #canvasElement class="hidden"></canvas>
