@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, output, inject, signal, viewChild, ElementRef, AfterViewInit, OnDestroy, HostListener, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
+import { convertToAvif } from '../../utils/convert-to-avif';
 
 @Component({
   selector: 'app-webcam-capture',
@@ -430,7 +431,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     if (duration > 0) {
       this.startCountdown(duration);
     } else {
-      this.takePicture();
+      void this.takePicture();
     }
   }
 
@@ -440,7 +441,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       this.countdown.update(c => c! - 1);
       if (this.countdown() === 0) {
         clearInterval(this.countdownIntervalId);
-        this.takePicture();
+        void this.takePicture();
         this.countdown.set(null);
       }
     }, 1000);
@@ -465,7 +466,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private takePicture(): void {
+  private async takePicture(): Promise<void> {
     if (!this.isStreaming()) return;
 
     const video = this.videoElement().nativeElement;
@@ -487,30 +488,67 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
     const sourceY = (videoHeight - size) / 2;
     
     const context = canvas.getContext('2d');
-    if (context) {
-      // Draw only the central square portion of the video to the canvas
-      // This ensures a perfect 1:1 aspect ratio without distortion
-      context.drawImage(
-        video,
-        sourceX,      // source x (crop from center)
-        sourceY,      // source y (crop from center)
-        size,         // source width (square)
-        size,         // source height (square)
-        0,            // destination x
-        0,            // destination y
-        size,         // destination width
-        size          // destination height
-      );
+    if (!context) {
+      this.error.set('Não foi possível capturar a imagem.');
+      return;
+    }
 
-      // Get the processed image URL
-      const dataUrl = canvas.toDataURL('image/png');
+    // Draw only the central square portion of the video to the canvas
+    // This ensures a perfect 1:1 aspect ratio without distortion
+    context.drawImage(
+      video,
+      sourceX,      // source x (crop from center)
+      sourceY,      // source y (crop from center)
+      size,         // source width (square)
+      size,         // source height (square)
+      0,            // destination x
+      0,            // destination y
+      size,         // destination width
+      size          // destination height
+    );
+
+    const originalBlob = await this.canvasToBlob(canvas, 'image/png');
+    if (!originalBlob) {
+      this.error.set('Não foi possível capturar a imagem.');
+      return;
+    }
+
+    const { blob } = await convertToAvif(originalBlob);
+
+    try {
+      const dataUrl = await this.blobToDataUrl(blob);
       this.capture.emit(dataUrl);
       if (!this.isMobileVariant()) {
         this.close.emit();
       }
-    } else {
-      this.error.set('Não foi possível capturar a imagem.');
+    } catch (error) {
+      console.error('Erro ao gerar pré-visualização da captura', error);
+      this.error.set('Não foi possível processar a imagem capturada.');
     }
+  }
+
+  private canvasToBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
+    return new Promise(resolve => {
+      canvas.toBlob(resolve, type);
+    });
+  }
+
+  private blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result;
+        if (typeof result === 'string') {
+          resolve(result);
+        } else {
+          reject(new Error('Resultado inesperado ao converter blob em Data URL.'));
+        }
+      };
+      reader.onerror = () => {
+        reject(new Error('Falha ao converter blob em Data URL.'));
+      };
+      reader.readAsDataURL(blob);
+    });
   }
 
   toggleGridOverlay(): void {
