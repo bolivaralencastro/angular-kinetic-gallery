@@ -11,6 +11,7 @@ import { MobileGalleryCardComponent } from './components/mobile-gallery-card/mob
 import { Gallery } from './interfaces/gallery.interface';
 import { InteractiveCursor } from './services/interactive-cursor';
 import { ThemeService } from './services/theme.service';
+import { AuthService } from './services/auth.service';
 import { ContextMenuAction, ContextMenuGroup } from './types/context-menu';
 
 // Interfaces para tipagem dos dados
@@ -96,15 +97,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
       event.preventDefault();
     }
-    if (!this.isWebcamVisible() && !this.expandedItem() && !this.isGalleryEditorVisible() && !this.isGalleryCreationDialogVisible()) {
+    if (
+      !this.canManageContent() ||
+      this.isWebcamVisible() ||
+      this.expandedItem() ||
+      this.isGalleryEditorVisible() ||
+      this.isGalleryCreationDialogVisible()
+    ) {
+      return;
+    }
 
-      if (this.currentView() === 'galleries') {
-        // Create a new gallery when in gallery view
-        this.openGalleryCreationDialog();
-      } else {
-        // Open webcam when in photo view
-        this.openWebcamCapture();
-      }
+    if (this.currentView() === 'galleries') {
+      // Create a new gallery when in gallery view
+      this.openGalleryCreationDialog();
+    } else {
+      // Open webcam when in photo view
+      this.openWebcamCapture();
     }
   }
 
@@ -388,8 +396,81 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.toggleThemeMode();
   }
 
+  @HostListener('document:keydown', ['$event'])
+  handleAdminAccessShortcut(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+
+    if (this.isLoginDialogVisible() || this.canManageContent() || this.isTypingElement(target)) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    if (event.ctrlKey && event.altKey && event.shiftKey && key === 'l') {
+      event.preventDefault();
+      this.openLoginDialog();
+    }
+  }
+
   toggleThemeMode(): void {
     this.themeService.toggleTheme();
+  }
+
+  openLoginDialog(): void {
+    if (this.isLoginDialogVisible()) {
+      return;
+    }
+
+    this.loginError.set(null);
+    if (!this.loginEmail()) {
+      const email = this.authUserEmail();
+      if (email) {
+        this.loginEmail.set(email);
+      }
+    }
+
+    this.isLoginDialogVisible.set(true);
+  }
+
+  closeLoginDialog(): void {
+    if (this.isLoginInProgress()) {
+      return;
+    }
+
+    this.isLoginDialogVisible.set(false);
+  }
+
+  async submitLogin(): Promise<void> {
+    if (this.isLoginInProgress()) {
+      return;
+    }
+
+    this.isLoginInProgress.set(true);
+    this.loginError.set(null);
+
+    const result = await this.authService.signIn(this.loginEmail(), this.loginPassword());
+
+    if (result.error) {
+      this.loginError.set(result.error);
+      this.isLoginInProgress.set(false);
+      return;
+    }
+
+    if (!this.canManageContent()) {
+      this.loginError.set('Esta conta não possui acesso administrativo.');
+      await this.authService.signOut();
+      this.isLoginInProgress.set(false);
+      return;
+    }
+
+    this.isLoginDialogVisible.set(false);
+    this.loginPassword.set('');
+    this.isLoginInProgress.set(false);
+  }
+
+  async signOut(): Promise<void> {
+    await this.authService.signOut();
+    this.loginPassword.set('');
+    this.loginError.set(null);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -448,6 +529,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   galleryService = inject(GalleryService);
   themeService = inject(ThemeService);
+  authService = inject(AuthService);
+
+  canManageContent = computed(() => this.authService.canManageContent());
+  authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
+
+  isLoginDialogVisible = signal(false);
+  loginEmail = signal('');
+  loginPassword = signal('');
+  loginError = signal<string | null>(null);
+  isLoginInProgress = signal(false);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
 
@@ -729,6 +820,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(() => {
       if (!this.isGalleryCreationDialogVisible()) {
         this.assignNextGalleryToMobileCapture = false;
+      }
+    });
+
+    effect(() => {
+      if (this.canManageContent()) {
+        return;
+      }
+
+      if (this.isWebcamVisible()) {
+        this.isWebcamVisible.set(false);
+      }
+
+      if (this.isGalleryEditorVisible()) {
+        this.isGalleryEditorVisible.set(false);
+        this.editingGallery.set(null);
+      }
+
+      if (this.isGalleryCreationDialogVisible()) {
+        this.isGalleryCreationDialogVisible.set(false);
+      }
+
+      if (this.contextMenu().visible) {
+        this.contextMenu.set({ visible: false, x: 0, y: 0, groups: [] });
+        this.contextMenuGalleryId = null;
       }
     });
 
@@ -1073,6 +1188,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteActiveGalleryFromMobile(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     const activeGallery = this.activeGallery();
     if (!activeGallery) {
       return;
@@ -1127,6 +1246,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openGalleryCreationDialogForMobileCapture(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     this.assignNextGalleryToMobileCapture = true;
     this.openGalleryCreationDialog();
   }
@@ -1485,6 +1608,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGallery(id: string): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     this.deactivateAutoNavigation(true);
     const galleryToEdit = this.galleryService.getGallery(id);
     if (galleryToEdit) {
@@ -1563,7 +1690,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleGalleryCreate(event: { name: string; description: string }): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     const newGalleryId = this.galleryService.createGallery(event.name, event.description);
+    if (!newGalleryId) {
+      return;
+    }
+
     this.isGalleryCreationDialogVisible.set(false);
     if (this.assignNextGalleryToMobileCapture) {
       this.mobileCaptureGalleryId.set(newGalleryId);
@@ -1573,10 +1708,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleGallerySave(event: { id: string | null; name: string; description: string }): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     if (event.id) {
       this.galleryService.updateGallery(event.id, event.name, event.description);
     } else {
       const createdId = this.galleryService.createGallery(event.name, event.description);
+      if (!createdId) {
+        return;
+      }
+
       if (this.assignNextGalleryToMobileCapture) {
         this.mobileCaptureGalleryId.set(createdId);
         this.assignNextGalleryToMobileCapture = false;
@@ -1588,6 +1731,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   handleGalleryDelete(id: string): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     this.galleryService.deleteGallery(id);
     this.isGalleryEditorVisible.set(false);
     this.editingGallery.set(null);
@@ -1598,10 +1745,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     const groups: ContextMenuGroup[] = [this.createGeneralGroup()];
 
-    if (this.currentView() === 'galleries') {
-      groups.push({ label: 'Galerias', actions: ['createGallery'] });
-    } else {
-      groups.push({ label: 'Fotos', actions: ['capturePhoto'] });
+    if (this.canManageContent()) {
+      if (this.currentView() === 'galleries') {
+        groups.push({ label: 'Galerias', actions: ['createGallery'] });
+      } else {
+        groups.push({ label: 'Fotos', actions: ['capturePhoto'] });
+      }
     }
 
     this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
@@ -1611,11 +1760,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     if (this.currentView() === 'galleries') {
-      const groups: ContextMenuGroup[] = [
-        this.createGeneralGroup(false),
-        { label: 'Galerias', actions: ['createGallery'] },
-        { label: 'Galeria selecionada', actions: ['togglePlayback', 'editGallery', 'deleteGallery'] },
-      ];
+      const groups: ContextMenuGroup[] = [this.createGeneralGroup()];
+
+      if (this.canManageContent()) {
+        groups.push({ label: 'Galerias', actions: ['createGallery'] });
+        groups.push({ label: 'Galeria selecionada', actions: ['togglePlayback', 'editGallery', 'deleteGallery'] });
+      }
+
       this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
@@ -1635,6 +1786,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openWebcamCapture(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     if (this.isMobileLayout()) {
       this.captureMode.set('selected');
       const selectedId = this.galleryService.selectedGalleryId();
@@ -1685,6 +1840,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteGallery(id: string): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     const activeGallery = this.galleryService.selectedGalleryId();
     this.galleryService.deleteGallery(id);
 
@@ -1696,18 +1855,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGalleryContextMenu(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     if (this.contextMenuGalleryId) {
       this.editGallery(this.contextMenuGalleryId);
     }
   }
 
   deleteGalleryContextMenu(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     if (this.contextMenuGalleryId) {
       this.deleteGallery(this.contextMenuGalleryId);
     }
   }
 
   openGalleryCreationDialog(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     this.deactivateAutoNavigation(true);
     this.isGalleryCreationDialogVisible.set(true);
   }
@@ -1718,6 +1889,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   createGalleryWithTimestamp(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
     // Create a gallery with current timestamp as the name in the expected format
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
@@ -1730,7 +1905,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const timestamp = `${day}/${month}/${year} às ${hours}:${minutes}:${seconds}`;
     const galleryName = `Galeria ${timestamp}`;
 
-    this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
+    const createdId = this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
+    if (!createdId) {
+      return;
+    }
+
     this.updateVisibleItems(true); // Refresh the view
   }
 

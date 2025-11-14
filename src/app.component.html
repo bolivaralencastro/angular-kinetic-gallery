@@ -7,6 +7,25 @@
   [class.p-8]="!isMobileLayout()"
   (contextmenu)="onRightClick($event)">
 
+  <div class="pointer-events-none absolute right-4 top-4 z-40 flex flex-col items-end gap-2 sm:right-8 sm:top-8">
+    @if (canManageContent()) {
+      <div
+        class="pointer-events-auto flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur"
+        [ngClass]="themeService.isDark() ? 'border-white/15 bg-black/60 text-white/85' : 'border-slate-300/70 bg-white/80 text-slate-800'">
+        <span class="max-w-[10rem] truncate" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
+        <span class="rounded-full bg-emerald-500/25 px-2 py-0.5 text-[9px] font-semibold text-emerald-100">Admin</span>
+        <button
+          type="button"
+          data-cursor-pointer
+          class="rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold tracking-[0.32em] transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+          [ngClass]="themeService.isDark() ? 'text-white/85' : 'text-slate-800/90 hover:bg-slate-200/60 focus:ring-slate-500/60'"
+          (click)="signOut()">
+          Sair
+        </button>
+      </div>
+    }
+  </div>
+
   @if (isMobileLayout()) {
     @switch (mobileView()) {
       @case ('capture') {
@@ -15,109 +34,115 @@
             <app-webcam-capture
               class="h-full"
               [variant]="'mobile'"
-              [captureAllowed]="!!mobileCaptureGallery()"
+              [captureAllowed]="canManageContent() && !!mobileCaptureGallery()"
               (prepareCapture)="prepareMobileCapture()"
               (capture)="onCaptureComplete($event)">
               <ng-container ngProjectAs="[mobileGallerySelection]">
-                @if (galleries().length === 0) {
-                  <button
-                    type="button"
-                    class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                    (click)="openGalleryCreationDialogForMobileCapture()"
-                    data-cursor-pointer>
-                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                      <div class="flex h-full w-full items-center justify-center text-gray-500">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke-width="1.5"
+                @if (canManageContent()) {
+                  @if (galleries().length === 0) {
+                    <button
+                      type="button"
+                      class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                      (click)="openGalleryCreationDialogForMobileCapture()"
+                      data-cursor-pointer>
+                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                        <div class="flex h-full w-full items-center justify-center text-gray-500">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            class="h-6 w-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <h3 class="truncate text-base font-semibold text-white">Crie sua primeira galeria</h3>
+                        </div>
+                        <p class="mt-1 truncate text-xs text-gray-400">
+                          Você ainda não tem galerias. Toque para começar.
+                        </p>
+                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
+                          <span>Sem data</span>
+                          <span>0 fotos</span>
+                        </div>
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        class="h-5 w-5 text-gray-400">
+                        <path
                           stroke="currentColor"
-                          class="h-6 w-6">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                      </div>
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  } @else if (mobileCaptureGallery()) {
+                    <div class="space-y-3">
+                      <app-mobile-gallery-card
+                        [gallery]="mobileCaptureGallery()!"
+                        [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
+                        [active]="true"
+                        [showActiveIndicator]="false"
+                        (select)="openMobileGalleryPicker()"
+                        (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
+                      />
                     </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-white">Crie sua primeira galeria</h3>
+                  } @else {
+                    <button
+                      type="button"
+                      class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                      (click)="openMobileGalleryPicker()"
+                      data-cursor-pointer>
+                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                        <div class="flex h-full w-full items-center justify-center text-gray-500">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            class="h-6 w-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                        </div>
                       </div>
-                      <p class="mt-1 truncate text-xs text-gray-400">
-                        Você ainda não tem galerias. Toque para começar.
-                      </p>
-                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
-                        <span>Sem data</span>
-                        <span>0 fotos</span>
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <h3 class="truncate text-base font-semibold text-white">Selecionar galeria</h3>
+                        </div>
+                        <p class="mt-1 truncate text-xs text-gray-400">
+                          Escolha uma galeria para salvar suas capturas.
+                        </p>
+                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
+                          <span>Sem data</span>
+                          <span>0 fotos</span>
+                        </div>
                       </div>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      class="h-5 w-5 text-gray-400">
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                } @else if (mobileCaptureGallery()) {
-                  <div class="space-y-3">
-                    <app-mobile-gallery-card
-                      [gallery]="mobileCaptureGallery()!"
-                      [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
-                      [active]="true"
-                      [showActiveIndicator]="false"
-                      (select)="openMobileGalleryPicker()"
-                      (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
-                    />
-                  </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        class="h-5 w-5 text-gray-400">
+                        <path
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  }
                 } @else {
-                  <button
-                    type="button"
-                    class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                    (click)="openMobileGalleryPicker()"
-                    data-cursor-pointer>
-                    <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-                      <div class="flex h-full w-full items-center justify-center text-gray-500">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke-width="1.5"
-                          stroke="currentColor"
-                          class="h-6 w-6">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-white">Selecionar galeria</h3>
-                      </div>
-                      <p class="mt-1 truncate text-xs text-gray-400">
-                        Escolha uma galeria para salvar suas capturas.
-                      </p>
-                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
-                        <span>Sem data</span>
-                        <span>0 fotos</span>
-                      </div>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      class="h-5 w-5 text-gray-400">
-                      <path
-                        stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  <div class="rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-gray-300">
+                    Entre com a conta administradora para escolher uma galeria e capturar fotos.
+                  </div>
                 }
               </ng-container>
             </app-webcam-capture>
@@ -127,18 +152,26 @@
       @case ('galleries') {
         <div class="flex min-h-screen h-screen flex-col bg-black text-white">
           <header class="flex items-center justify-between gap-4 px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
-            <button
-              type="button"
-              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-              (click)="showMobileCapture()">
-              ← Captura
-            </button>
-            <button
-              type="button"
-              class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-              (click)="openGalleryCreationDialogForMobileCapture()">
-              Nova
-            </button>
+            <div>
+              @if (canManageContent()) {
+                <button
+                  type="button"
+                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  (click)="showMobileCapture()">
+                  ← Captura
+                </button>
+              }
+            </div>
+            <div>
+              @if (canManageContent()) {
+                <button
+                  type="button"
+                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  (click)="openGalleryCreationDialogForMobileCapture()">
+                  Nova
+                </button>
+              }
+            </div>
           </header>
           <div #mobileScrollContainer class="flex-1 overflow-y-auto px-6 pb-16">
             @if (galleries().length === 0) {
@@ -147,7 +180,11 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
                 <h3 class="text-lg font-medium">Nenhuma galeria ainda</h3>
-                <p class="text-sm text-gray-400">Crie uma galeria para começar a capturar suas memórias.</p>
+                @if (canManageContent()) {
+                  <p class="text-sm text-gray-400">Crie uma galeria para começar a capturar suas memórias.</p>
+                } @else {
+                  <p class="text-sm text-gray-400">Aguarde a publicação de galerias públicas.</p>
+                }
               </div>
             } @else {
               <div class="flex flex-col gap-6">
@@ -179,24 +216,28 @@
               </svg>
             </button>
             <div class="flex items-center gap-3">
-              <button
-                type="button"
-                class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="!activeGallery()"
-                (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)">
-                Usar esta galeria
-              </button>
-              <button
-                type="button"
-                class="rounded-full border border-white/20 p-2 text-white transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Excluir galeria"
-                [disabled]="!activeGallery()"
-                (click)="deleteActiveGalleryFromMobile()">
-                <span class="sr-only">Excluir galeria</span>
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                </svg>
-              </button>
+              @if (canManageContent()) {
+                <button
+                  type="button"
+                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="!activeGallery()"
+                  (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)">
+                  Usar esta galeria
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full border border-white/20 p-2 text-white transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Excluir galeria"
+                  [disabled]="!activeGallery()"
+                  (click)="deleteActiveGalleryFromMobile()">
+                  <span class="sr-only">Excluir galeria</span>
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673A2.25 2.25 0 0 1 15.916 21.75H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                </button>
+              } @else {
+                <span class="text-[10px] uppercase tracking-[0.32em] text-gray-500">Somente visualização</span>
+              }
             </div>
           </header>
           <div class="flex-1 overflow-y-auto px-6 pb-20">
@@ -218,7 +259,11 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
                 <h3 class="text-lg font-medium">Esta galeria está vazia</h3>
-                <p class="text-sm text-gray-400">Capture novas imagens para começar seu diário.</p>
+                @if (canManageContent()) {
+                  <p class="text-sm text-gray-400">Capture novas imagens para começar seu diário.</p>
+                } @else {
+                  <p class="text-sm text-gray-400">Nenhuma foto foi enviada para esta galeria.</p>
+                }
               </div>
             } @else {
               <div class="mt-8 grid grid-cols-3 gap-x-3 gap-y-5">
@@ -250,19 +295,23 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
           <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Nenhuma galeria criada</h2>
-          <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para criar uma nova galeria.</p>
-          <div class="pointer-events-auto mt-4 flex flex-col items-center">
-            <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
-            <div class="flex gap-2">
-              <button
-                data-cursor-pointer
-                (click)="openGalleryCreationDialog(); $event.stopPropagation();"
-                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Nova Galeria
-              </button>
+          @if (canManageContent()) {
+            <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para criar uma nova galeria.</p>
+            <div class="pointer-events-auto mt-4 flex flex-col items-center">
+              <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
+              <div class="flex gap-2">
+                <button
+                  data-cursor-pointer
+                  (click)="openGalleryCreationDialog(); $event.stopPropagation();"
+                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Nova Galeria
+                </button>
+              </div>
             </div>
-          </div>
+          } @else {
+            <p class="mt-1 text-sm tracking-wider text-gray-500">Aguarde o administrador publicar novas galerias.</p>
+          }
         </div>
       } @else {
         <!-- Gallery List Canvas -->
@@ -322,26 +371,30 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
           <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Esta galeria está vazia</h2>
-          <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para adicionar fotos.</p>
-          <div class="mt-4 flex flex-col items-center">
-            <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
-            <div class="flex gap-2">
-              <button
-                data-cursor-pointer
-                (click)="openWebcamCapture(); $event.stopPropagation();"
-                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Usar Câmera
-              </button>
-              <button
-                data-cursor-pointer
-                (click)="handleSpacebar($event)"
-                class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Atalho: Espaço
-              </button>
+          @if (canManageContent()) {
+            <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para adicionar fotos.</p>
+            <div class="mt-4 flex flex-col items-center">
+              <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
+              <div class="flex gap-2">
+                <button
+                  data-cursor-pointer
+                  (click)="openWebcamCapture(); $event.stopPropagation();"
+                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Usar Câmera
+                </button>
+                <button
+                  data-cursor-pointer
+                  (click)="handleSpacebar($event)"
+                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Atalho: Espaço
+                </button>
+              </div>
             </div>
-          </div>
+          } @else {
+            <p class="mt-1 text-sm tracking-wider text-gray-500">Nenhuma foto disponível nesta galeria.</p>
+          }
         </div>
       }
       <div #canvas class="absolute will-change-transform">
@@ -470,6 +523,76 @@
 }
 
 <!-- Componentes de UI flutuantes -->
+@if (isLoginDialogVisible()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" (click)="closeLoginDialog()" data-cursor-pointer>
+    <div
+      class="w-full max-w-sm rounded-3xl border px-6 py-8 shadow-2xl backdrop-blur"
+      [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/85 text-white' : 'border-slate-200 bg-white text-slate-900'"
+      (click)="$event.stopPropagation()">
+      <div class="mb-6 flex items-start justify-between">
+        <div>
+          <h2 class="text-lg font-semibold tracking-[0.2em] uppercase">Entrar como administrador</h2>
+          <p class="mt-2 text-xs text-gray-400">Use suas credenciais do Supabase para habilitar as ferramentas de criação.</p>
+        </div>
+        <button
+          type="button"
+          data-cursor-pointer
+          class="text-xl"
+          [class.opacity-50]="isLoginInProgress()"
+          [disabled]="isLoginInProgress()"
+          (click)="closeLoginDialog()">
+          &times;
+        </button>
+      </div>
+
+      @if (loginError()) {
+        <div class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          {{ loginError() }}
+        </div>
+      }
+
+      <form (submit)="submitLogin(); $event.preventDefault();" class="space-y-4">
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">Email</label>
+          <input
+            type="email"
+            autocomplete="email"
+            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+            [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
+            [value]="loginEmail()"
+            (input)="loginEmail.set(($event.target as HTMLInputElement).value)"
+            [disabled]="isLoginInProgress()"
+            required>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">Senha</label>
+          <input
+            type="password"
+            autocomplete="current-password"
+            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+            [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
+            [value]="loginPassword()"
+            (input)="loginPassword.set(($event.target as HTMLInputElement).value)"
+            [disabled]="isLoginInProgress()"
+            required>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <button
+            type="submit"
+            data-cursor-pointer
+            class="w-full rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="isLoginInProgress()">
+            @if (isLoginInProgress()) { Entrando... } @else { Entrar }
+          </button>
+          <p class="text-[10px] uppercase tracking-[0.28em] text-gray-500">Apenas contas autorizadas podem gerenciar galerias.</p>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
 @if (contextMenu().visible) {
   <app-context-menu
     [x]="contextMenu().x"
@@ -492,15 +615,16 @@
   </app-context-menu>
 }
 
-@if (isWebcamVisible()) {
+@if (isWebcamVisible() && canManageContent()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture
+      [captureAllowed]="canManageContent()"
       (capture)="onCaptureComplete($event)"
       (close)="isWebcamVisible.set(false)"></app-webcam-capture>
   </div>
 }
 
-@if (isGalleryEditorVisible()) {
+@if (isGalleryEditorVisible() && canManageContent()) {
   <app-gallery-editor
     [gallery]="editingGallery()"
     (close)="isGalleryEditorVisible.set(false); editingGallery.set(null)"
@@ -509,7 +633,7 @@
   </app-gallery-editor>
 }
 
-@if (isGalleryCreationDialogVisible()) {
+@if (isGalleryCreationDialogVisible() && canManageContent()) {
   <app-gallery-creation-dialog
     (close)="isGalleryCreationDialogVisible.set(false)"
     (save)="handleGalleryCreate($event)">
