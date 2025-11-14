@@ -27,7 +27,8 @@ export async function convertToAvif(blob: Blob): Promise<{ blob: Blob; extension
       canvas.toBlob(resolve, 'image/avif', 0.8);
     });
 
-    if (avifBlob && avifBlob.size > 0) {
+    if (avifBlob && avifBlob.size > 0 && avifBlob.type.includes('avif')) {
+      console.info('[convertToAvif] usando AVIF, tamanho:', avifBlob.size);
       return {
         blob: avifBlob,
         extension: 'avif',
@@ -38,6 +39,7 @@ export async function convertToAvif(blob: Blob): Promise<{ blob: Blob; extension
     console.warn('Falha ao converter imagem para AVIF', error);
   }
 
+  console.warn('[convertToAvif] fallback ativado, mantendo formato original:', fallbackMime);
   return fallback;
 }
 
