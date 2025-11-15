@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Adjust if your default branch is named differently
+      - main  # Ajuste se sua branch principal tiver outro nome
 
 jobs:
   deploy:
@@ -16,7 +16,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22' # Use the Node.js version specified in your project
+        node-version: '22' # Use a versão do Node.js especificada no seu projeto
 
     - name: Install dependencies
       run: npm ci
@@ -24,9 +24,9 @@ jobs:
     - name: Build project
       run: npm run build
 
-    # A CORREÇÃO ESTÁ AQUI: Este bloco foi indentado corretamente
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist/angular-kinetic-gallery
+        # O log do build confirmou que a pasta de saída é apenas 'dist'
+        publish_dir: ./dist
