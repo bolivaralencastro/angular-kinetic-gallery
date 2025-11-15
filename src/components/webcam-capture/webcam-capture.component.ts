@@ -8,94 +8,75 @@ import { convertToWebp } from '../../utils/convert-to-webp';
   imports: [CommonModule],
   template: `
     @if (isMobileVariant()) {
-      <div class="flex h-full flex-col">
-        <div class="flex-1 px-4 pt-8">
-          <div class="mx-auto flex h-full w-full max-w-[26rem] flex-col items-center">
-            <div class="w-full select-none" data-cursor-pointer (click)="toggleGridOverlay()">
-              <div
-                class="relative aspect-square w-full overflow-hidden rounded-3xl border border-white/10 bg-black shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
-                <video
-                  #videoElement
-                  class="h-full w-full object-cover"
-                  [class.opacity-0]="!isStreaming()"
-                  autoplay
-                  playsinline>
-                </video>
+      <div
+        class="capture capture--mobile"
+        [class.capture--active]="isCaptureActive()"
+        [class.capture--grid]="showGrid()"
+        [class.capture--countdown]="countdown() !== null && countdown()! > 0">
+        <div class="capture__stage">
+          <div class="capture__stage-inner">
+            <div class="capture__viewport" data-cursor-pointer (click)="toggleGridOverlay()">
+              <video
+                #videoElement
+                class="capture__video"
+                [class.capture__video--hidden]="!isStreaming()"
+                autoplay
+                playsinline>
+              </video>
 
-                @if (!isStreaming() && !error()) {
-                  <div class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-                    Preparando câmera...
-                  </div>
-                }
-
-                @if (error()) {
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/80 px-6 text-center text-sm font-medium text-red-200">
-                    {{ error() }}
-                  </div>
-                }
-
-                <div
-                  class="pointer-events-none absolute inset-0 transition-opacity duration-300"
-                  [class.opacity-0]="!showGrid()"
-                  [class.opacity-100]="showGrid()">
-                  <div class="absolute inset-x-0 top-[33.333%] h-px bg-white/25"></div>
-                  <div class="absolute inset-x-0 top-[66.666%] h-px bg-white/25"></div>
-                  <div class="absolute inset-y-0 left-[33.333%] w-px bg-white/25"></div>
-                  <div class="absolute inset-y-0 left-[66.666%] w-px bg-white/25"></div>
+              @if (!isStreaming() && !error()) {
+                <div class="capture__status capture__status--loading">
+                  Preparando câmera...
                 </div>
+              }
 
-                @if (countdown() !== null && countdown()! > 0) {
-                  <div class="absolute inset-0 flex items-center justify-center text-6xl font-semibold text-white">
-                    {{ countdown() }}
-                  </div>
-                }
-              </div>
+              @if (error()) {
+                <div class="capture__status capture__status--error">
+                  {{ error() }}
+                </div>
+              }
+
+              <div class="capture__grid-overlay" aria-hidden="true"></div>
+
+              @if (countdown() !== null && countdown()! > 0) {
+                <div class="capture__countdown capture__countdown--mobile">
+                  {{ countdown() }}
+                </div>
+              }
             </div>
 
-            <div class="mt-3 w-full">
+            <div class="capture__gallery-slot">
               <ng-content select="[mobileGallerySelection]"></ng-content>
             </div>
           </div>
         </div>
 
-        <div class="px-8 pb-12 pt-6">
-          <div class="grid grid-cols-3 items-end gap-6 text-white">
+        <div class="capture__panel">
+          <div class="capture__control-grid">
             <button
               type="button"
               (click)="cycleTimerSetting()"
-              class="group flex flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-white/70 transition hover:text-white focus:outline-none disabled:cursor-not-allowed"
-              [disabled]="!isStreaming()"
-              [class.opacity-50]="!isStreaming()">
-              <span
-                class="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-[inset_0_0_18px_rgba(255,255,255,0.05)] transition group-hover:border-white/40 group-hover:bg-white/20">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+              class="btn btn--ghost capture__chip"
+              [disabled]="!isStreaming()">
+              <span class="capture__chip-face">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="capture__chip-icon">
                   <circle cx="12" cy="12" r="9"></circle>
                   <polyline points="12 7 12 12 15 13.5"></polyline>
                 </svg>
               </span>
-              <span class="tracking-[0.4em]">{{ timerLabel() | uppercase }}</span>
+              <span class="capture__chip-label">{{ timerLabel() | uppercase }}</span>
             </button>
 
-            <div class="flex justify-center">
+            <div class="capture__shutter-wrapper">
               <button
                 type="button"
                 (click)="captureImage()"
-                class="group relative flex aspect-square w-24 items-center justify-center rounded-[26px] bg-gradient-to-b from-[#1f1f1f] via-[#111111] to-[#050505] text-white shadow-[0_18px_35px_rgba(0,0,0,0.45)] transition-all duration-200 active:translate-y-1 disabled:cursor-not-allowed"
-                [disabled]="!isStreaming() || !captureAllowed() || isCaptureActive()"
-                [class.opacity-50]="!isStreaming() || !captureAllowed()"
-                [ngClass]="isCaptureActive() ? ['translate-y-1', '!shadow-[0_12px_24px_rgba(0,0,0,0.35)]'] : []">
-                <span
-                  class="absolute inset-0 rounded-[26px] border border-white/40 transition-all duration-200 group-hover:brightness-105 group-active:brightness-110"
-                  [ngClass]="{ 'brightness-110': isCaptureActive() }"></span>
-                <span
-                  class="absolute inset-1 rounded-[22px] bg-gradient-to-b from-[#2f2f2f] via-[#1a1a1a] to-[#090909] shadow-[inset_0_-8px_0_rgba(0,0,0,0.18)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"
-                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]'] : []"></span>
-                <span
-                  class="absolute inset-[22%] rounded-[18px] bg-gradient-to-b from-[#e5e5e5] via-[#a3a3a3] to-[#3f3f3f] shadow-[0_6px_15px_rgba(0,0,0,0.25)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"
-                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]'] : []"></span>
-                <span
-                  class="absolute inset-[46%] rounded-full bg-neutral-300/80 transition-all duration-200 group-active:translate-y-0.5"
-                  [ngClass]="{ 'translate-y-0.5': isCaptureActive() }"></span>
+                class="capture__shutter"
+                [disabled]="!isStreaming() || !captureAllowed() || isCaptureActive()">
+                <span class="capture__shutter-layer capture__shutter-layer--frame"></span>
+                <span class="capture__shutter-layer capture__shutter-layer--body"></span>
+                <span class="capture__shutter-layer capture__shutter-layer--inner"></span>
+                <span class="capture__shutter-layer capture__shutter-layer--core"></span>
                 <span class="sr-only">Capturar foto</span>
               </button>
             </div>
@@ -104,30 +85,28 @@ import { convertToWebp } from '../../utils/convert-to-webp';
               <button
                 type="button"
                 (click)="cycleCamera()"
-                class="group flex flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-white/70 transition hover:text-white focus:outline-none disabled:cursor-not-allowed"
-                [disabled]="!isStreaming()"
-                [class.opacity-50]="!isStreaming()">
-                <span
-                  class="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white shadow-[inset_0_0_18px_rgba(255,255,255,0.05)] transition group-hover:border-white/40 group-hover:bg-white/20">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5">
+                class="btn btn--ghost capture__chip"
+                [disabled]="!isStreaming()">
+                <span class="capture__chip-face">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="capture__chip-icon">
                     <path d="M21 16.92A5.5 5.5 0 0 1 18.36 19H8"></path>
                     <path d="M3 12a5.5 5.5 0 0 1 5.5-5.5H16"></path>
                     <path d="M8 5l3-3 3 3"></path>
                     <path d="m16 19-3 3-3-3"></path>
                   </svg>
                 </span>
-                <span class="tracking-[0.4em]">CÂMERA</span>
+                <span class="capture__chip-label">CÂMERA</span>
               </button>
             } @else {
-              <div class="h-14"></div>
+              <div class="capture__control-placeholder" aria-hidden="true"></div>
             }
           </div>
 
-          <div class="mt-6 flex justify-center">
+          <div class="capture__panel-refresh">
             <button
               type="button"
               (click)="reloadApp()"
-              class="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.3em] text-white/40 transition hover:border-white/20 hover:text-white/70 focus:outline-none"
+              class="btn btn--ghost capture__refresh"
               title="Atualizar aplicativo">
               Atualizar aplicativo
             </button>
@@ -138,7 +117,10 @@ import { convertToWebp } from '../../utils/convert-to-webp';
       </div>
     } @else {
       <div
-      class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+      class="capture capture--dialog backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
+      [class.capture--active]="isCaptureActive()"
+      [class.capture--countdown]="countdown() !== null && countdown()! > 0"
+      [class.capture--grid]="showGrid()"
       [style.backgroundColor]="themeService.dialogPalette().surface"
       [style.border]="'1px solid ' + themeService.dialogPalette().border"
       [style.color]="themeService.dialogPalette().text"
@@ -196,7 +178,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
 
           @if (countdown() !== null && countdown()! > 0) {
             <div
-              class="absolute inset-0 flex items-center justify-center text-9xl font-bold z-20"
+              class="capture__countdown capture__countdown--dialog"
               [style.color]="themeService.isDark() ? '#ffffff' : '#0f172a'">
               {{ countdown() }}
             </div>
