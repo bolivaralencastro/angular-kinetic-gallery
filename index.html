@@ -12,7 +12,6 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
   <script type="text/javascript">
     (function () {
       var clarityOptOut = false;
@@ -52,68 +51,6 @@
       })(window, document, "clarity", "script", "tzisvdqjwu");
     })();
   </script>
-  <style>
-    body {
-      background-color: #000000;
-      color: #ffffff;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Animated noise effect */
-    body::before {
-      content: "";
-      position: fixed;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: transparent
-        url("https://assets.iceable.com/img/noise-transparent.png") repeat 0 0;
-      background-size: 300px 300px;
-      animation: noise-animation 0.3s steps(5) infinite;
-      opacity: 0.9;
-      will-change: transform;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    @keyframes noise-animation {
-      0% {
-        transform: translate(0, 0);
-      }
-      10% {
-        transform: translate(-2%, -3%);
-      }
-      20% {
-        transform: translate(-4%, 2%);
-      }
-      30% {
-        transform: translate(2%, -4%);
-      }
-      40% {
-        transform: translate(-2%, 5%);
-      }
-      50% {
-        transform: translate(-4%, 2%);
-      }
-      60% {
-        transform: translate(3%, 0);
-      }
-      70% {
-        transform: translate(0, 3%);
-      }
-      80% {
-        transform: translate(-3%, 0);
-      }
-      90% {
-        transform: translate(2%, 2%);
-      }
-      100% {
-        transform: translate(1%, 0);
-      }
-    }
-  </style>
 <script type="importmap">
 {
   "imports": {
@@ -134,7 +71,7 @@
 }
 </script>
 </head>
-<body class="antialiased font-sans bg-black text-gray-300">
+<body class="app-shell">
   <div class="custom-cursor" aria-hidden="true"></div>
   <app-root></app-root>
 </body>

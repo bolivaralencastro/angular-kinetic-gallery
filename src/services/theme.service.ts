@@ -163,10 +163,19 @@ export class ThemeService {
   private applyToDocument(theme: ThemeMode): void {
     const body = this.documentRef.body;
     body.dataset.theme = theme;
+    this.documentRef.documentElement.dataset.theme = theme;
+
     const palette = this.palettes[theme];
+    const computedStyles = this.documentRef.defaultView?.getComputedStyle(body) ?? null;
+    const themeColorFromTokens = computedStyles
+      ?.getPropertyValue('--color-bg-canvas')
+      .trim();
     const metaTheme = this.documentRef.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', palette.metaThemeColor);
+      const themeColor = themeColorFromTokens && themeColorFromTokens.length > 0
+        ? themeColorFromTokens
+        : palette.metaThemeColor;
+      metaTheme.setAttribute('content', themeColor);
     }
   }
 

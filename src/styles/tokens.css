@@ -2,6 +2,13 @@
   /* Base layout tokens */
   --surface-body: #000000;
   --text-body: #e5e7eb;
+  --color-bg-canvas: var(--surface-body);
+  --color-fg-canvas: var(--text-body);
+  --texture-noise-image: url('https://assets.iceable.com/img/noise-transparent.png');
+  --texture-noise-size: 300px 300px;
+  --texture-noise-opacity: 0.9;
+  --texture-noise-speed: 0.3s;
+  --texture-noise-blend-mode: normal;
   --overlay-scrim: rgba(0, 0, 0, 0.7);
 
   /* Context menu tokens */
@@ -59,12 +66,16 @@
   --border-overlay-10: rgba(255, 255, 255, 0.1);
   --shadow-strong: rgba(0, 0, 0, 0.4);
   --cursor-accent: #ffffff;
-  --meta-theme-color: #000000;
+  --meta-theme-color: var(--color-bg-canvas);
 }
 
 [data-theme='light'] {
   --surface-body: #f8fafc;
   --text-body: #0f172a;
+  --color-bg-canvas: var(--surface-body);
+  --color-fg-canvas: var(--text-body);
+  --texture-noise-opacity: 0.35;
+  --texture-noise-blend-mode: soft-light;
   --overlay-scrim: rgba(15, 23, 42, 0.45);
 
   --context-menu-background: rgba(255, 255, 255, 0.98);
@@ -117,5 +128,5 @@
   --border-overlay-10: rgba(148, 163, 184, 0.3);
   --shadow-strong: rgba(148, 163, 184, 0.35);
   --cursor-accent: #0f172a;
-  --meta-theme-color: #f8fafc;
+  --meta-theme-color: var(--color-bg-canvas);
 }
