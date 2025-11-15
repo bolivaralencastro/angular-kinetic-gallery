@@ -80,11 +80,25 @@ import { convertToWebp } from '../../utils/convert-to-webp';
               <button
                 type="button"
                 (click)="captureImage()"
-                class="group relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-b from-white/80 to-white/60 shadow-[0_12px_35px_rgba(0,0,0,0.45)] transition active:scale-95 disabled:cursor-not-allowed"
-                [disabled]="!isStreaming() || (countdown() !== null) || !captureAllowed()"
-                [class.opacity-50]="!isStreaming() || (countdown() !== null) || !captureAllowed()">
-                <span class="absolute inset-2 rounded-full border border-black/10 bg-white/95 shadow-[inset_0_4px_12px_rgba(0,0,0,0.08)] transition group-active:scale-95"></span>
-                <span class="absolute inset-[18px] rounded-full border border-black/40 bg-black/80"></span>
+                class="group relative flex aspect-square w-24 items-center justify-center rounded-[26px] bg-gradient-to-b from-[#cafe94] via-[#9bef60] to-[#4dcc28] text-black shadow-[0_18px_35px_rgba(0,0,0,0.45)] transition-all duration-200 active:translate-y-1 disabled:cursor-not-allowed"
+                [disabled]="!isStreaming() || !captureAllowed() || isCaptureActive()"
+                [class.opacity-50]="!isStreaming() || !captureAllowed()"
+                [ngClass]="isCaptureActive() ? ['translate-y-1', '!shadow-[0_12px_24px_rgba(0,0,0,0.35)]'] : []">
+                <span
+                  class="absolute inset-0 rounded-[26px] border border-white/40 transition-all duration-200 group-hover:brightness-105 group-active:brightness-110"
+                  [ngClass]="{ 'brightness-110': isCaptureActive() }"></span>
+                <span
+                  class="absolute inset-1 rounded-[22px] bg-gradient-to-b from-[#f4ffe0] via-[#d7ffad] to-[#8fe84d] shadow-[inset_0_-8px_0_rgba(0,0,0,0.18)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"
+                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]'] : []"></span>
+                <span
+                  class="absolute inset-[22%] rounded-[18px] bg-white shadow-[0_6px_15px_rgba(0,0,0,0.25)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"
+                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]'] : []"></span>
+                <span
+                  class="absolute inset-[34%] rounded-full border border-black/40 bg-black/80 shadow-[0_4px_10px_rgba(0,0,0,0.35)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_6px_rgba(0,0,0,0.4)]"
+                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_4px_6px_rgba(0,0,0,0.4)]'] : []"></span>
+                <span
+                  class="absolute inset-[46%] rounded-full bg-white/80 transition-all duration-200 group-active:translate-y-0.5"
+                  [ngClass]="{ 'translate-y-0.5': isCaptureActive() }"></span>
                 <span class="sr-only">Capturar foto</span>
               </button>
             </div>
@@ -297,6 +311,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   capture = output<string>();
   prepareCapture = output<void>();
   captureAllowed = input(true);
+  private capturing = signal(false);
   isStreaming = signal(false);
   error = signal<string | null>(null);
   isTimerEnabled = signal(false);
@@ -309,6 +324,7 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   selectedCameraId = signal<string | null>(null);
   isMobileVariant = computed(() => this.variant() === 'mobile');
   showGrid = signal(false);
+  isCaptureActive = computed(() => this.capturing() || this.countdown() !== null);
 
   videoElement = viewChild.required<ElementRef<HTMLVideoElement>>('videoElement');
   canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
@@ -428,10 +444,11 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   captureImage(): void {
-    if (!this.isStreaming() || this.countdown() !== null || !this.captureAllowed()) {
+    if (!this.isStreaming() || !this.captureAllowed() || this.isCaptureActive()) {
       return;
     }
 
+    this.capturing.set(true);
     this.prepareCapture.emit();
 
     const duration = this.isTimerEnabled() ? this.timerDuration() : 0;
@@ -474,63 +491,75 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   }
 
   private async takePicture(): Promise<void> {
-    if (!this.isStreaming()) return;
-
-    const video = this.videoElement().nativeElement;
-    const canvas = this.canvasElement().nativeElement;
-
-    // Get video dimensions
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
-
-    // Calculate the size for 1:1 aspect ratio (use the smaller dimension)
-    const size = Math.min(videoWidth, videoHeight);
-
-    // Set canvas to 1:1 aspect ratio
-    canvas.width = size;
-    canvas.height = size;
-
-    // Calculate source crop position (center the crop)
-    const sourceX = (videoWidth - size) / 2;
-    const sourceY = (videoHeight - size) / 2;
-    
-    const context = canvas.getContext('2d');
-    if (!context) {
-      this.error.set('Não foi possível capturar a imagem.');
+    if (!this.isStreaming()) {
+      this.capturing.set(false);
       return;
     }
-
-    // Draw only the central square portion of the video to the canvas
-    // This ensures a perfect 1:1 aspect ratio without distortion
-    context.drawImage(
-      video,
-      sourceX,      // source x (crop from center)
-      sourceY,      // source y (crop from center)
-      size,         // source width (square)
-      size,         // source height (square)
-      0,            // destination x
-      0,            // destination y
-      size,         // destination width
-      size          // destination height
-    );
-
-    const originalBlob = await this.canvasToBlob(canvas, 'image/png');
-    if (!originalBlob) {
-      this.error.set('Não foi possível capturar a imagem.');
-      return;
-    }
-
-    const { blob } = await convertToWebp(originalBlob);
 
     try {
-      const dataUrl = await this.blobToDataUrl(blob);
-      this.capture.emit(dataUrl);
-      if (!this.isMobileVariant()) {
-        this.close.emit();
+      const video = this.videoElement().nativeElement;
+      const canvas = this.canvasElement().nativeElement;
+
+      // Get video dimensions
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+
+      // Calculate the size for 1:1 aspect ratio (use the smaller dimension)
+      const size = Math.min(videoWidth, videoHeight);
+
+      // Set canvas to 1:1 aspect ratio
+      canvas.width = size;
+      canvas.height = size;
+
+      // Calculate source crop position (center the crop)
+      const sourceX = (videoWidth - size) / 2;
+      const sourceY = (videoHeight - size) / 2;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        this.error.set('Não foi possível capturar a imagem.');
+        return;
+      }
+
+      // Draw only the central square portion of the video to the canvas
+      // This ensures a perfect 1:1 aspect ratio without distortion
+      context.drawImage(
+        video,
+        sourceX,      // source x (crop from center)
+        sourceY,      // source y (crop from center)
+        size,         // source width (square)
+        size,         // source height (square)
+        0,            // destination x
+        0,            // destination y
+        size,         // destination width
+        size          // destination height
+      );
+
+      const originalBlob = await this.canvasToBlob(canvas, 'image/png');
+      if (!originalBlob) {
+        this.error.set('Não foi possível capturar a imagem.');
+        return;
+      }
+
+      const { blob } = await convertToWebp(originalBlob);
+
+      try {
+        const dataUrl = await this.blobToDataUrl(blob);
+        this.capture.emit(dataUrl);
+        if (!this.isMobileVariant()) {
+          this.close.emit();
+        }
+      } catch (error) {
+        console.error('Erro ao gerar pré-visualização da captura', error);
+        this.error.set('Não foi possível processar a imagem capturada.');
       }
     } catch (error) {
-      console.error('Erro ao gerar pré-visualização da captura', error);
-      this.error.set('Não foi possível processar a imagem capturada.');
+      console.error('Erro durante a captura da imagem', error);
+      if (!this.error()) {
+        this.error.set('Não foi possível capturar a imagem.');
+      }
+    } finally {
+      this.capturing.set(false);
     }
   }
 
