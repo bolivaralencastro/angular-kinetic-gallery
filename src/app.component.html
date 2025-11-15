@@ -22,7 +22,12 @@
           isMobileLayout() ? 'rounded-t-3xl rounded-b-none' : 'rounded-full'
         ]">
         <span class="max-w-[10rem] truncate" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
-        <span class="rounded-full bg-emerald-500/25 px-2 py-0.5 text-[9px] font-semibold text-emerald-100">Admin</span>
+        <span
+          class="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.24em]"
+          [ngClass]="themeService.isDark() ? 'bg-white/15 text-white/85' : 'bg-slate-200 text-slate-700'"
+        >
+          Admin
+        </span>
         <button
           type="button"
           data-cursor-pointer

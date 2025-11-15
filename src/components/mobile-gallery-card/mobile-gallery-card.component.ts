@@ -13,10 +13,13 @@ import { ThemeService } from '../../services/theme.service';
       class="group relative flex w-full items-center gap-4 rounded-3xl border bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
       [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
       [class.cursor-default]="!selectable()"
-      [class.border-emerald-400/80]="showActiveIndicator() && active()"
+      [class.border-white/80]="showActiveIndicator() && active() && themeService.isDark()"
+      [class.border-slate-500/70]="showActiveIndicator() && active() && themeService.isLight()"
       [class.ring-2]="showActiveIndicator() && active()"
-      [class.ring-emerald-400/40]="showActiveIndicator() && active()"
-      [class.bg-emerald-400/5]="showActiveIndicator() && active()"
+      [class.ring-white/40]="showActiveIndicator() && active() && themeService.isDark()"
+      [class.ring-slate-500/30]="showActiveIndicator() && active() && themeService.isLight()"
+      [class.bg-white/10]="showActiveIndicator() && active() && themeService.isDark()"
+      [class.bg-slate-300/20]="showActiveIndicator() && active() && themeService.isLight()"
       [attr.data-cursor-pointer]="selectable() ? '' : null"
       (click)="handleSelect($event)">
       <div
