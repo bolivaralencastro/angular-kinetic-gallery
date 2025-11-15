@@ -113,7 +113,10 @@ import { convertToWebp } from '../../utils/convert-to-webp';
           </div>
         </div>
 
-        <canvas #canvasElement class="hidden"></canvas>
+        <canvas
+          #canvasElement
+          class="capture__canvas"
+          aria-hidden="true"></canvas>
       </div>
     } @else {
       <div
@@ -249,7 +252,10 @@ import { convertToWebp } from '../../utils/convert-to-webp';
           </div>
         </div>
 
-        <canvas #canvasElement class="hidden"></canvas>
+        <canvas
+          #canvasElement
+          class="capture__canvas"
+          aria-hidden="true"></canvas>
       </div>
     }
   `,
@@ -274,6 +280,10 @@ import { convertToWebp } from '../../utils/convert-to-webp';
 
     button:not(:disabled):hover {
       filter: brightness(1.05);
+    }
+
+    .capture__canvas {
+      display: none;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
