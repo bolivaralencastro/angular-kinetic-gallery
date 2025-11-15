@@ -80,7 +80,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
               <button
                 type="button"
                 (click)="captureImage()"
-                class="group relative flex aspect-square w-24 items-center justify-center rounded-[26px] bg-gradient-to-b from-[#cafe94] via-[#9bef60] to-[#4dcc28] text-black shadow-[0_18px_35px_rgba(0,0,0,0.45)] transition-all duration-200 active:translate-y-1 disabled:cursor-not-allowed"
+                class="group relative flex aspect-square w-24 items-center justify-center rounded-[26px] bg-gradient-to-b from-[#4b5563] via-[#1f2937] to-[#0f172a] text-white shadow-[0_18px_35px_rgba(0,0,0,0.45)] transition-all duration-200 active:translate-y-1 disabled:cursor-not-allowed"
                 [disabled]="!isStreaming() || !captureAllowed() || isCaptureActive()"
                 [class.opacity-50]="!isStreaming() || !captureAllowed()"
                 [ngClass]="isCaptureActive() ? ['translate-y-1', '!shadow-[0_12px_24px_rgba(0,0,0,0.35)]'] : []">
@@ -88,16 +88,13 @@ import { convertToWebp } from '../../utils/convert-to-webp';
                   class="absolute inset-0 rounded-[26px] border border-white/40 transition-all duration-200 group-hover:brightness-105 group-active:brightness-110"
                   [ngClass]="{ 'brightness-110': isCaptureActive() }"></span>
                 <span
-                  class="absolute inset-1 rounded-[22px] bg-gradient-to-b from-[#f4ffe0] via-[#d7ffad] to-[#8fe84d] shadow-[inset_0_-8px_0_rgba(0,0,0,0.18)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"
+                  class="absolute inset-1 rounded-[22px] bg-gradient-to-b from-[#6b7280] via-[#374151] to-[#111827] shadow-[inset_0_-8px_0_rgba(0,0,0,0.18)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"
                   [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]'] : []"></span>
                 <span
-                  class="absolute inset-[22%] rounded-[18px] bg-white shadow-[0_6px_15px_rgba(0,0,0,0.25)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"
+                  class="absolute inset-[22%] rounded-[18px] bg-gradient-to-b from-[#d1d5db] via-[#9ca3af] to-[#4b5563] shadow-[0_6px_15px_rgba(0,0,0,0.25)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"
                   [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]'] : []"></span>
                 <span
-                  class="absolute inset-[34%] rounded-full border border-black/40 bg-black/80 shadow-[0_4px_10px_rgba(0,0,0,0.35)] transition-all duration-200 group-active:translate-y-0.5 group-active:shadow-[inset_0_4px_6px_rgba(0,0,0,0.4)]"
-                  [ngClass]="isCaptureActive() ? ['translate-y-0.5', 'shadow-[inset_0_4px_6px_rgba(0,0,0,0.4)]'] : []"></span>
-                <span
-                  class="absolute inset-[46%] rounded-full bg-white/80 transition-all duration-200 group-active:translate-y-0.5"
+                  class="absolute inset-[46%] rounded-full bg-slate-200/80 transition-all duration-200 group-active:translate-y-0.5"
                   [ngClass]="{ 'translate-y-0.5': isCaptureActive() }"></span>
                 <span class="sr-only">Capturar foto</span>
               </button>
