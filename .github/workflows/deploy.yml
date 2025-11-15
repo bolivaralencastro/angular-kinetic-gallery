@@ -28,5 +28,5 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        # O log do build confirmou que a pasta de saída é apenas 'dist'
-        publish_dir: ./dist
+        publish_dir: ./dist/browser
+
