@@ -1,5 +1,7 @@
 @import './tokens.css';
 @import './components/modal.css';
+@import './components/card.css';
+@import './components/menu.css';
 
 *, *::before, *::after {
   box-sizing: border-box;
