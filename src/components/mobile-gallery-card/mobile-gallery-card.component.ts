@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { Gallery } from '../../interfaces/gallery.interface';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-mobile-gallery-card',
@@ -9,7 +10,8 @@ import { Gallery } from '../../interfaces/gallery.interface';
   imports: [CommonModule],
   template: `
     <div
-      class="group relative flex w-full items-center gap-4 rounded-3xl border border-slate-500/40 bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
+      class="group relative flex w-full items-center gap-4 rounded-3xl border bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
+      [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
       [class.cursor-default]="!selectable()"
       [class.border-emerald-400/80]="showActiveIndicator() && active()"
       [class.ring-2]="showActiveIndicator() && active()"
@@ -17,7 +19,9 @@ import { Gallery } from '../../interfaces/gallery.interface';
       [class.bg-emerald-400/5]="showActiveIndicator() && active()"
       [attr.data-cursor-pointer]="selectable() ? '' : null"
       (click)="handleSelect($event)">
-      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-500/40 bg-black/40">
+      <div
+        class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border bg-black/40"
+        [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'">
         <img
           [src]="coverUrl()"
           class="h-full w-full object-cover"
@@ -75,6 +79,8 @@ export class MobileGalleryCardComponent {
 
   select = output<void>();
   open = output<void>();
+
+  readonly themeService = inject(ThemeService);
 
   handleSelect(event: MouseEvent): void {
     if (!this.selectable()) {
