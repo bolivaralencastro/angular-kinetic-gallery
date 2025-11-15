@@ -56,6 +56,7 @@ body,
     transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
     opacity: 1;
     will-change: transform, width, height;
+    transform: translate(-50%, -50%);
   }
 
   .custom-cursor.pointer-hover {

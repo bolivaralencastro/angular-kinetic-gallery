@@ -25,6 +25,7 @@ export class InteractiveCursor {
     current: createVec2(window.innerWidth / 2, window.innerHeight / 2),
     lerpAmount: 0.15,
   };
+  private animationFrameId: number | null = null;
   private readonly updateCallback = (): void => this.update();
   private readonly pointerMoveHandler = (event: PointerEvent): void => {
     this.position.target.x = event.clientX;
@@ -65,8 +66,8 @@ export class InteractiveCursor {
   }
 
   private init(): void {
-    gsap.set(this.cursorElement, { xPercent: -50, yPercent: -50 });
-    gsap.ticker.add(this.updateCallback);
+    this.cursorElement.style.transform = 'translate(-50%, -50%)';
+    this.animationFrameId = window.requestAnimationFrame(this.updateCallback);
     document.addEventListener('pointermove', this.pointerMoveHandler);
     document.addEventListener('pointerenter', this.pointerEnterHandler, true);
     document.addEventListener('pointerleave', this.pointerLeaveHandler, true);
@@ -76,14 +77,16 @@ export class InteractiveCursor {
     document.removeEventListener('pointermove', this.pointerMoveHandler);
     document.removeEventListener('pointerenter', this.pointerEnterHandler, true);
     document.removeEventListener('pointerleave', this.pointerLeaveHandler, true);
-    gsap.ticker.remove(this.updateCallback);
+    if (this.animationFrameId !== null) {
+      window.cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   private update(): void {
     this.position.current.lerp(this.position.target, this.position.lerpAmount);
-    gsap.set(this.cursorElement, {
-      x: this.position.current.x,
-      y: this.position.current.y,
-    });
+    const { x, y } = this.position.current;
+    this.cursorElement.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    this.animationFrameId = window.requestAnimationFrame(this.updateCallback);
   }
 }
