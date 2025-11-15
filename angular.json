@@ -30,7 +30,9 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles/tokens.css",
+              "src/styles/base.css",
+              "src/styles/utilities.css"
             ],
             "scripts": [],
             "browser": "./src/main.ts"

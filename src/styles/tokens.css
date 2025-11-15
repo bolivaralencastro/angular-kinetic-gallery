@@ -1,0 +1,121 @@
+:root {
+  /* Base layout tokens */
+  --surface-body: #000000;
+  --text-body: #e5e7eb;
+  --overlay-scrim: rgba(0, 0, 0, 0.7);
+
+  /* Context menu tokens */
+  --context-menu-background: rgba(30, 30, 30, 0.95);
+  --context-menu-border: rgb(50, 50, 50);
+  --context-menu-item-hover: rgb(60, 60, 60);
+  --context-menu-heading: #9ca3af;
+  --context-menu-divider: rgba(255, 255, 255, 0.08);
+  --context-menu-text: #e5e7eb;
+  --context-menu-icon: #9ca3af;
+
+  /* Dialog tokens */
+  --dialog-surface: rgba(30, 30, 30, 0.95);
+  --dialog-border: rgb(50, 50, 50);
+  --dialog-title: #e5e7eb;
+  --dialog-text: #d1d5db;
+  --dialog-muted: #9ca3af;
+  --dialog-icon: #b4b4b4;
+  --dialog-input-background: rgb(38, 38, 38);
+  --dialog-input-text: #e5e7eb;
+  --dialog-input-border: rgb(60, 60, 60);
+  --dialog-focus-ring: rgba(148, 163, 184, 0.35);
+  --dialog-button-primary-bg: rgb(60, 60, 60);
+  --dialog-button-primary-text: #ffffff;
+  --dialog-button-secondary-bg: rgb(60, 60, 60);
+  --dialog-button-secondary-text: #ffffff;
+  --dialog-disabled-bg: rgb(38, 38, 38);
+  --dialog-disabled-text: rgb(150, 150, 150);
+  --dialog-timer-active-bg: rgb(80, 80, 80);
+  --dialog-timer-inactive-bg: rgb(38, 38, 38);
+  --dialog-timer-inactive-text: rgb(180, 180, 180);
+
+  /* Frequently reused background tokens */
+  --surface-neutral-strong: #000000;
+  --surface-neutral-60: rgba(0, 0, 0, 0.6);
+  --surface-neutral-50: rgba(0, 0, 0, 0.5);
+  --surface-neutral-40: rgba(0, 0, 0, 0.4);
+  --surface-zinc-900-60: rgba(24, 24, 27, 0.6);
+  --surface-muted: #1a1a1a;
+  --surface-overlay-10: rgba(255, 255, 255, 0.1);
+  --surface-overlay-20: rgba(255, 255, 255, 0.2);
+  --surface-slate-700: #374151;
+  --surface-slate-700-text: inherit;
+
+  /* Frequently reused text tokens */
+  --text-inverse: #ffffff;
+  --text-inverse-90: rgba(255, 255, 255, 0.9);
+  --text-gray-200: #e5e7eb;
+  --text-gray-300: #d1d5db;
+  --text-gray-400: #9ca3af;
+  --text-gray-500: #6b7280;
+  --text-inverse-70: rgba(255, 255, 255, 0.7);
+
+  /* Borders and effects */
+  --border-overlay-10: rgba(255, 255, 255, 0.1);
+  --shadow-strong: rgba(0, 0, 0, 0.4);
+  --cursor-accent: #ffffff;
+  --meta-theme-color: #000000;
+}
+
+[data-theme='light'] {
+  --surface-body: #f8fafc;
+  --text-body: #0f172a;
+  --overlay-scrim: rgba(15, 23, 42, 0.45);
+
+  --context-menu-background: rgba(255, 255, 255, 0.98);
+  --context-menu-border: rgba(148, 163, 184, 0.5);
+  --context-menu-item-hover: rgba(226, 232, 240, 0.9);
+  --context-menu-heading: #475569;
+  --context-menu-divider: rgba(148, 163, 184, 0.35);
+  --context-menu-text: #0f172a;
+  --context-menu-icon: #475569;
+
+  --dialog-surface: rgba(255, 255, 255, 0.98);
+  --dialog-border: rgba(148, 163, 184, 0.5);
+  --dialog-title: #0f172a;
+  --dialog-text: #1e293b;
+  --dialog-muted: #475569;
+  --dialog-icon: #475569;
+  --dialog-input-background: rgba(241, 245, 249, 0.9);
+  --dialog-input-text: #0f172a;
+  --dialog-input-border: rgba(148, 163, 184, 0.6);
+  --dialog-focus-ring: rgba(148, 163, 184, 0.35);
+  --dialog-button-primary-bg: #0f172a;
+  --dialog-button-primary-text: #f8fafc;
+  --dialog-button-secondary-bg: rgba(148, 163, 184, 0.25);
+  --dialog-button-secondary-text: #0f172a;
+  --dialog-disabled-bg: rgba(226, 232, 240, 0.9);
+  --dialog-disabled-text: rgba(148, 163, 184, 0.9);
+  --dialog-timer-active-bg: #0f172a;
+  --dialog-timer-inactive-bg: rgba(148, 163, 184, 0.25);
+  --dialog-timer-inactive-text: #475569;
+
+  --surface-neutral-strong: #f8fafc;
+  --surface-neutral-60: rgba(15, 23, 42, 0.12);
+  --surface-neutral-50: rgba(15, 23, 42, 0.16);
+  --surface-neutral-40: rgba(15, 23, 42, 0.2);
+  --surface-zinc-900-60: rgba(226, 232, 240, 0.6);
+  --surface-muted: #e2e8f0;
+  --surface-overlay-10: rgba(15, 23, 42, 0.08);
+  --surface-overlay-20: rgba(15, 23, 42, 0.14);
+  --surface-slate-700: rgba(148, 163, 184, 0.35);
+  --surface-slate-700-text: #0f172a;
+
+  --text-inverse: #0f172a;
+  --text-inverse-90: rgba(15, 23, 42, 0.88);
+  --text-gray-200: #1e293b;
+  --text-gray-300: #334155;
+  --text-gray-400: #475569;
+  --text-gray-500: #64748b;
+  --text-inverse-70: rgba(15, 23, 42, 0.7);
+
+  --border-overlay-10: rgba(148, 163, 184, 0.3);
+  --shadow-strong: rgba(148, 163, 184, 0.35);
+  --cursor-accent: #0f172a;
+  --meta-theme-color: #f8fafc;
+}

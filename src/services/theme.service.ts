@@ -161,22 +161,9 @@ export class ThemeService {
   }
 
   private applyToDocument(theme: ThemeMode): void {
-    const palette = this.palettes[theme];
     const body = this.documentRef.body;
     body.dataset.theme = theme;
-    body.classList.remove('theme-dark', 'theme-light');
-    body.classList.add(`theme-${theme}`);
-
-    body.classList.remove('bg-black', 'text-gray-300', 'bg-zinc-50', 'text-slate-900');
-    if (theme === 'dark') {
-      body.classList.add('bg-black', 'text-gray-300');
-    } else {
-      body.classList.add('bg-zinc-50', 'text-slate-900');
-    }
-
-    body.style.backgroundColor = palette.bodyBackground;
-    body.style.color = palette.bodyText;
-
+    const palette = this.palettes[theme];
     const metaTheme = this.documentRef.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
       metaTheme.setAttribute('content', palette.metaThemeColor);
