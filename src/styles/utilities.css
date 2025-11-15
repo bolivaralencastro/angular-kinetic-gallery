@@ -1,0 +1,62 @@
+@import './tokens.css';
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--stack-gap, 0.5rem);
+}
+
+.stack-xs > * + * {
+  margin-top: 0.25rem;
+}
+
+.stack-sm > * + * {
+  margin-top: 0.5rem;
+}
+
+.stack-md > * + * {
+  margin-top: 1rem;
+}
+
+.stack-lg > * + * {
+  margin-top: 1.5rem;
+}
+
+.stack-xl > * + * {
+  margin-top: 2rem;
+}
+
+.sr-only,
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus-ring {
+  outline: 2px solid var(--dialog-focus-ring);
+  outline-offset: 2px;
+}
+
+.bg-surface {
+  background-color: var(--surface-body);
+}
+
+.text-subtle {
+  color: var(--text-gray-400);
+}
+
+.text-muted {
+  color: var(--text-gray-500);
+}
+
+.scrim-backdrop {
+  background-color: var(--overlay-scrim);
+}
