@@ -54,7 +54,7 @@
                       class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                       (click)="openGalleryCreationDialogForMobileCapture()"
                       data-cursor-pointer>
-                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-500/40 bg-black/40">
                         <div class="flex h-full w-full items-center justify-center text-gray-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -109,7 +109,7 @@
                       class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                       (click)="openMobileGalleryPicker()"
                       data-cursor-pointer>
-                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+                      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-500/40 bg-black/40">
                         <div class="flex h-full w-full items-center justify-center text-gray-500">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -291,7 +291,7 @@
                       loading="lazy"
                       class="h-full w-full object-cover transition-transform duration-500 group-active:scale-95 group-hover:scale-[1.03]"
                       alt="Imagem da galeria">
-                    <span class="pointer-events-none absolute inset-0 border border-white/10 mix-blend-screen"></span>
+                    <span class="pointer-events-none absolute inset-0 border border-slate-500/40 mix-blend-screen"></span>
                   </button>
                 }
               </div>
@@ -335,8 +335,8 @@
               <div
                 class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
                 [class.rounded-[2.5rem]]="themeService.isLight()"
-                [class.border-white\/10]="themeService.isDark()"
-                [class.border-slate-300\/60]="themeService.isLight()"
+                [class.border-slate-500\/40]="themeService.isDark()"
+                [class.border-slate-300\/40]="themeService.isLight()"
                 [class.pointer-events-none]="!isInteractionEnabled()"
                 [class.bg-slate-100]="themeService.isLight()"
                 [style.width.px]="item.width"
@@ -416,8 +416,8 @@
           <div
             class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
             [class.rounded-[2.5rem]]="themeService.isLight()"
-            [class.border-white\/10]="themeService.isDark()"
-            [class.border-slate-300\/60]="themeService.isLight()"
+            [class.border-slate-500\/40]="themeService.isDark()"
+            [class.border-slate-300\/40]="themeService.isLight()"
             [class.pointer-events-none]="!isInteractionEnabled()"
             [class.bg-slate-100]="themeService.isLight()"
             [style.width.px]="item.width"
