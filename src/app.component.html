@@ -333,10 +333,10 @@
           @for (item of visibleItems(); track trackById($index, item)) {
             @if (item.type === 'gallery') {
               <div
-                class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] ring-1 transition-[background-color,box-shadow,border-radius] duration-500"
+                class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
                 [class.rounded-[2.5rem]]="themeService.isLight()"
-                [class.ring-white\/10]="themeService.isDark()"
-                [class.ring-slate-300\/60]="themeService.isLight()"
+                [class.border-white\/10]="themeService.isDark()"
+                [class.border-slate-300\/60]="themeService.isLight()"
                 [class.pointer-events-none]="!isInteractionEnabled()"
                 [class.bg-slate-100]="themeService.isLight()"
                 [style.width.px]="item.width"
@@ -414,10 +414,10 @@
       <div #canvas class="absolute will-change-transform">
         @for (item of visibleItems(); track trackById($index, item)) {
           <div
-            class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] ring-1 transition-[background-color,box-shadow,border-radius] duration-500"
+            class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
             [class.rounded-[2.5rem]]="themeService.isLight()"
-            [class.ring-white\/10]="themeService.isDark()"
-            [class.ring-slate-300\/60]="themeService.isLight()"
+            [class.border-white\/10]="themeService.isDark()"
+            [class.border-slate-300\/60]="themeService.isLight()"
             [class.pointer-events-none]="!isInteractionEnabled()"
             [class.bg-slate-100]="themeService.isLight()"
             [style.width.px]="item.width"
