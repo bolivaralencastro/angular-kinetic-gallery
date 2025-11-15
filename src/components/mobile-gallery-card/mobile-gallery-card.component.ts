@@ -28,9 +28,9 @@ import { Gallery } from '../../interfaces/gallery.interface';
         </p>
         <div class="card__meta">
           @if (gallery().createdAt) {
-            <span class="badge badge--mono card__badge">{{ gallery().createdAt }}</span>
+            <span class="badge badge--mono card__badge">{{ formatCreatedAt(gallery().createdAt) }}</span>
           }
-          <span class="badge badge--mono card__badge">{{ gallery().imageUrls.length }} fotos</span>
+          <span class="badge badge--mono card__badge">{{ gallery().imageUrls.length }}</span>
         </div>
       </div>
       <button
@@ -88,5 +88,19 @@ export class MobileGalleryCardComponent {
   handleOpen(event: MouseEvent): void {
     event.stopPropagation();
     this.open.emit();
+  }
+
+  formatCreatedAt(value?: string): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    const [day, month, year] = value.split('/');
+    if (!day || !month || !year) {
+      return value;
+    }
+
+    const shortYear = year.slice(-2);
+    return `${day}/${month}/${shortYear}`;
   }
 }
