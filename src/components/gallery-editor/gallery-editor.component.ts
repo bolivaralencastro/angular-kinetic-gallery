@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, input, output, OnInit, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, OnInit, inject, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Gallery } from '../../interfaces/gallery.interface';
 import { ThemeService } from '../../services/theme.service';
+import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
 
 @Component({
   selector: 'app-gallery-editor',
@@ -10,140 +11,119 @@ import { ThemeService } from '../../services/theme.service';
   imports: [CommonModule, FormsModule],
   template: `
     <div
-      class="fixed inset-0 flex justify-center items-center z-[10000]"
+      class="modal"
+      tabindex="-1"
       data-cursor-pointer
       [style.backgroundColor]="themeService.scrimColor()"
-      (click)="close.emit()">
-      <div
-        class="backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
-        [style.backgroundColor]="themeService.dialogPalette().surface"
-        [style.border]="'1px solid ' + themeService.dialogPalette().border"
-        [style.color]="themeService.dialogPalette().text"
-        [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
-        (click)="$event.stopPropagation()">
-
-        <div class="flex justify-between items-center mb-4">
-          <h2
-            class="text-xl font-medium tracking-wider"
-            [style.color]="themeService.dialogPalette().title">
+      (click)="close.emit()"
+    >
+      <article
+        #panel
+        class="modal__panel modal__panel--medium animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gallery-editor-title"
+        [style.--modal-surface]="themeService.dialogPalette().surface"
+        [style.--modal-border]="themeService.dialogPalette().border"
+        [style.--modal-text]="themeService.dialogPalette().text"
+        [style.--modal-title]="themeService.dialogPalette().title"
+        [style.--modal-muted]="themeService.dialogPalette().muted"
+        [style.--modal-icon]="themeService.dialogPalette().icon"
+        [style.--input-background]="themeService.dialogPalette().inputBackground"
+        [style.--input-text]="themeService.dialogPalette().inputText"
+        [style.--input-border]="themeService.dialogPalette().inputBorder"
+        [style.--input-focus-ring]="themeService.dialogPalette().focusRing"
+        [style.--btn-primary-bg]="themeService.dialogPalette().buttonPrimaryBg"
+        [style.--btn-primary-text]="themeService.dialogPalette().buttonPrimaryText"
+        [style.--btn-secondary-bg]="themeService.dialogPalette().buttonSecondaryBg"
+        [style.--btn-secondary-text]="themeService.dialogPalette().buttonSecondaryText"
+        (click)="$event.stopPropagation()"
+        (keydown)="handleKeydown($event)"
+      >
+        <header class="modal__header">
+          <h2 id="gallery-editor-title" class="modal__title">
             {{ gallery() ? 'Editar Galeria' : 'Criar Galeria' }}
           </h2>
           <button
-            (click)="close.emit()"
+            #closeButton
+            type="button"
+            class="btn btn--ghost btn--icon modal__close"
+            aria-label="Fechar"
             data-cursor-pointer
-            class="text-2xl leading-none rounded-sm focus:outline-none"
-            [style.color]="themeService.dialogPalette().icon"
-            style="background: none; border: none; padding: 0; cursor: pointer;">
+            (click)="close.emit()"
+          >
             &times;
           </button>
-        </div>
+        </header>
 
         <form (ngSubmit)="onSubmit()">
-          <div class="mb-4">
-            <label
-              for="name"
-              class="block text-sm font-medium mb-2 tracking-wider"
-              [style.color]="themeService.dialogPalette().muted">Nome</label>
-            <input
-              id="name"
-              type="text"
-              [(ngModel)]="name"
-              name="name"
-              class="w-full rounded-md py-3 px-4 focus:outline-none"
-              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
-              [style.color]="themeService.dialogPalette().inputText"
-              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-              style="outline: none;"
-              placeholder="Digite o nome da galeria"
-              required>
-          </div>
+          <section class="modal__body">
+            <div class="form-field">
+              <label for="name" class="form-label">Nome</label>
+              <input
+                #nameField
+                id="name"
+                type="text"
+                [(ngModel)]="name"
+                name="name"
+                class="input"
+                placeholder="Digite o nome da galeria"
+                required
+              />
+            </div>
 
-          <div class="mb-6">
-            <label
-              for="description"
-              class="block text-sm font-medium mb-2 tracking-wider"
-              [style.color]="themeService.dialogPalette().muted">Descrição</label>
-            <textarea
-              id="description"
-              [(ngModel)]="description"
-              name="description"
-              rows="3"
-              class="w-full rounded-md py-3 px-4 focus:outline-none"
-              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
-              [style.color]="themeService.dialogPalette().inputText"
-              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-              style="outline: none;"
-              placeholder="Digite a descrição da galeria"
-              required>
-            </textarea>
-          </div>
+            <div class="form-field">
+              <label for="description" class="form-label">Descrição</label>
+              <textarea
+                id="description"
+                [(ngModel)]="description"
+                name="description"
+                rows="3"
+                class="textarea"
+                placeholder="Digite a descrição da galeria"
+                required
+              ></textarea>
+            </div>
+          </section>
 
-          <div class="flex justify-between items-center">
+          <footer class="modal__footer modal__footer--split">
             @if (gallery()) {
               <button
                 type="button"
                 (click)="onDelete()"
                 data-cursor-pointer
-                class="px-4 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-                style="background-color: rgb(150, 40, 40); border: none; color: #fff;">
+                class="btn btn--danger"
+              >
                 Excluir
               </button>
             }
 
-            <div class="flex gap-3 ml-auto">
+            <div class="modal__footer-group">
               <button
                 type="button"
                 (click)="close.emit()"
                 data-cursor-pointer
-                class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-                [style.backgroundColor]="themeService.dialogPalette().buttonSecondaryBg"
-                [style.color]="themeService.dialogPalette().buttonSecondaryText"
-                style="border: none;">
+                class="btn btn--secondary"
+              >
                 Cancelar
               </button>
 
               <button
                 type="submit"
                 data-cursor-pointer
-                class="px-6 py-2 font-bold rounded-md transition-all duration-300 tracking-wider text-sm focus:outline-none"
-                [style.backgroundColor]="themeService.dialogPalette().buttonPrimaryBg"
-                [style.color]="themeService.dialogPalette().buttonPrimaryText"
-                style="border: none;">
+                class="btn btn--primary"
+              >
                 {{ gallery() ? 'Atualizar' : 'Criar' }}
               </button>
             </div>
-          </div>
+          </footer>
         </form>
-      </div>
+      </article>
     </div>
   `,
-  styles: [`
-    .animate-slide-up {
-      animation: slideUp 0.3s ease-out;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    button:not(:disabled):hover {
-      filter: brightness(1.05);
-    }
-
-    button[style*="rgb(150, 40, 40)"]:hover {
-      filter: brightness(1.1);
-    }
-
-    input:focus,
-    textarea:focus {
-      border-color: var(--dialog-focus-ring) !important;
-      box-shadow: 0 0 0 2px var(--dialog-focus-ring) !important;
-    }
-  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GalleryEditorComponent implements OnInit {
+export class GalleryEditorComponent implements OnInit, AfterViewInit {
   gallery = input<Gallery | null>(null);
   save = output<{ id: string | null; name: string; description: string }>();
   delete = output<string>();
@@ -154,10 +134,34 @@ export class GalleryEditorComponent implements OnInit {
 
   themeService = inject(ThemeService);
 
+  @ViewChild('panel') panel?: ElementRef<HTMLElement>;
+  @ViewChild('nameField') nameField?: ElementRef<HTMLInputElement>;
+  @ViewChild('closeButton') closeButton?: ElementRef<HTMLButtonElement>;
+
   ngOnInit() {
     if (this.gallery()) {
       this.name = this.gallery()!.name;
       this.description = this.gallery()!.description;
+    }
+  }
+
+  ngAfterViewInit(): void {
+    const container = this.panel?.nativeElement;
+    if (!container) {
+      return;
+    }
+
+    focusFirstElement(container, this.nameField?.nativeElement ?? this.closeButton?.nativeElement ?? null);
+  }
+
+  handleKeydown(event: KeyboardEvent): void {
+    const container = this.panel?.nativeElement;
+    if (!container) {
+      return;
+    }
+
+    if (cycleFocus(event, container)) {
+      event.preventDefault();
     }
   }
 

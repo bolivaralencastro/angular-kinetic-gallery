@@ -41,6 +41,22 @@
   --dialog-timer-inactive-bg: rgb(38, 38, 38);
   --dialog-timer-inactive-text: rgb(180, 180, 180);
 
+  /* Dialog state tokens */
+  --color-button-primary-bg: var(--dialog-button-primary-bg);
+  --color-button-primary-text: var(--dialog-button-primary-text);
+  --color-button-secondary-bg: var(--dialog-button-secondary-bg);
+  --color-button-secondary-text: var(--dialog-button-secondary-text);
+  --color-button-danger-bg: #962828;
+  --color-button-danger-text: #ffffff;
+  --color-button-disabled-bg: var(--dialog-disabled-bg);
+  --color-button-disabled-text: var(--dialog-disabled-text);
+  --color-input-error-border: #ff6b6b;
+  --color-badge-bg: var(--dialog-input-background);
+  --color-badge-text: var(--dialog-input-text);
+  --color-timer-active-bg: var(--dialog-timer-active-bg);
+  --color-timer-inactive-bg: var(--dialog-timer-inactive-bg);
+  --color-timer-inactive-text: var(--dialog-timer-inactive-text);
+
   /* Frequently reused background tokens */
   --surface-neutral-strong: #000000;
   --surface-neutral-60: rgba(0, 0, 0, 0.6);
@@ -105,6 +121,21 @@
   --dialog-timer-active-bg: #0f172a;
   --dialog-timer-inactive-bg: rgba(148, 163, 184, 0.25);
   --dialog-timer-inactive-text: #475569;
+
+  --color-button-primary-bg: var(--dialog-button-primary-bg);
+  --color-button-primary-text: var(--dialog-button-primary-text);
+  --color-button-secondary-bg: var(--dialog-button-secondary-bg);
+  --color-button-secondary-text: var(--dialog-button-secondary-text);
+  --color-button-danger-bg: #b91c1c;
+  --color-button-danger-text: #f8fafc;
+  --color-button-disabled-bg: var(--dialog-disabled-bg);
+  --color-button-disabled-text: var(--dialog-disabled-text);
+  --color-input-error-border: #f87171;
+  --color-badge-bg: var(--dialog-input-background);
+  --color-badge-text: var(--dialog-input-text);
+  --color-timer-active-bg: var(--dialog-timer-active-bg);
+  --color-timer-inactive-bg: var(--dialog-timer-inactive-bg);
+  --color-timer-inactive-text: var(--dialog-timer-inactive-text);
 
   --surface-neutral-strong: #f8fafc;
   --surface-neutral-60: rgba(15, 23, 42, 0.12);
