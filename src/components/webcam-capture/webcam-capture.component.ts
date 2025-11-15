@@ -174,7 +174,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
 
             <video #videoElement
               class="capture-dialog__video"
-              [class.hidden]="!isStreaming()"
+              [class.capture-dialog__video--hidden]="!isStreaming()"
               autoplay
               playsinline>
             </video>

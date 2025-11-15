@@ -414,6 +414,10 @@
   object-fit: cover;
 }
 
+.capture-dialog__video--hidden {
+  display: none;
+}
+
 .capture-dialog__footer {
   margin-top: 1rem;
 }
