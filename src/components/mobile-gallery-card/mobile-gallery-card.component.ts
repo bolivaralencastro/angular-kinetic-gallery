@@ -1,51 +1,42 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { Gallery } from '../../interfaces/gallery.interface';
-import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-mobile-gallery-card',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div
-      class="group relative flex w-full items-center gap-4 rounded-3xl border bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
-      [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
-      [class.cursor-default]="!selectable()"
-      [class.border-white/80]="showActiveIndicator() && active() && themeService.isDark()"
-      [class.border-slate-500/70]="showActiveIndicator() && active() && themeService.isLight()"
-      [class.ring-2]="showActiveIndicator() && active()"
-      [class.ring-white/40]="showActiveIndicator() && active() && themeService.isDark()"
-      [class.ring-slate-500/30]="showActiveIndicator() && active() && themeService.isLight()"
-      [class.bg-white/10]="showActiveIndicator() && active() && themeService.isDark()"
-      [class.bg-slate-300/20]="showActiveIndicator() && active() && themeService.isLight()"
+    <article
+      class="card card--gallery"
+      [class.is-selectable]="selectable()"
+      [class.is-active]="showActiveIndicator() && active()"
       [attr.data-cursor-pointer]="selectable() ? '' : null"
       (click)="handleSelect($event)">
-      <div
-        class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border bg-black/40"
-        [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'">
+      <div class="card__avatar">
         <img
           [src]="coverUrl()"
-          class="h-full w-full object-cover"
+          class="card__image"
           loading="lazy"
           [attr.alt]="'Prévia da galeria ' + gallery().name" />
       </div>
-      <div class="min-w-0 flex-1">
-        <h3 class="truncate text-base font-semibold text-white">{{ gallery().name }}</h3>
-        <p class="mt-1 truncate text-xs text-gray-400">
+      <div class="card__content">
+        <h3 class="card__title">{{ gallery().name }}</h3>
+        <p class="card__description">
           {{ gallery().description || 'Sem descrição' }}
         </p>
-        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
+        <div class="card__meta">
           @if (gallery().createdAt) {
-            <span>{{ gallery().createdAt }}</span>
+            <span class="badge badge--mono card__badge">{{ gallery().createdAt }}</span>
           }
-          <span>{{ gallery().imageUrls.length }} fotos</span>
+          <span class="badge badge--mono card__badge">{{ gallery().imageUrls.length }} fotos</span>
         </div>
       </div>
       <button
         type="button"
-        class="rounded-full border border-white/20 p-3 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+        class="card__action"
+        data-cursor-pointer
         [attr.aria-label]="viewLabel()"
         (click)="handleOpen($event)">
         <svg
@@ -53,7 +44,9 @@ import { ThemeService } from '../../services/theme.service';
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           fill="none"
-          class="h-5 w-5">
+          class="card__action-icon"
+          role="img"
+        >
           <path
             stroke="currentColor"
             stroke-linecap="round"
@@ -68,7 +61,7 @@ import { ThemeService } from '../../services/theme.service';
             d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
         </svg>
       </button>
-    </div>
+    </article>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -82,8 +75,6 @@ export class MobileGalleryCardComponent {
 
   select = output<void>();
   open = output<void>();
-
-  readonly themeService = inject(ThemeService);
 
   handleSelect(event: MouseEvent): void {
     if (!this.selectable()) {

@@ -1,0 +1,125 @@
+@import '../tokens.css';
+
+.card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  border-radius: 1.5rem;
+  border: 1px solid var(--card-border);
+  background-color: var(--card-background);
+  color: var(--card-text, inherit);
+  transition:
+    background-color var(--card-transition),
+    border-color var(--card-transition),
+    box-shadow var(--card-transition),
+    transform var(--card-transition);
+}
+
+.card--gallery {
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.card.is-selectable {
+  cursor: pointer;
+}
+
+.card.is-selectable:active {
+  transform: scale(0.995);
+}
+
+.card:hover {
+  background-color: var(--card-hover-background);
+}
+
+.card:focus-within {
+  box-shadow: 0 0 0 2px var(--card-focus-ring);
+}
+
+.card.is-active {
+  border-color: var(--card-active-border);
+  background-color: var(--card-active-background);
+  box-shadow: 0 0 0 2px var(--card-active-ring);
+}
+
+.card__avatar {
+  width: 4rem;
+  height: 4rem;
+  flex-shrink: 0;
+  border-radius: 1.25rem;
+  border: 1px solid var(--card-avatar-border);
+  background-color: var(--card-avatar-background);
+  overflow: hidden;
+}
+
+.card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card__content {
+  min-width: 0;
+  flex: 1;
+}
+
+.card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--card-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__description {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--card-muted-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card__meta {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.card__badge {
+  letter-spacing: 0.2em;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+}
+
+.card__action {
+  border-radius: 999px;
+  border: 1px solid var(--card-action-border);
+  padding: 0.65rem;
+  background-color: var(--card-action-background);
+  color: var(--card-action-icon);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--card-transition),
+    border-color var(--card-transition),
+    color var(--card-transition);
+}
+
+.card__action:hover,
+.card__action:focus-visible {
+  background-color: var(--card-action-hover-background);
+  outline: none;
+}
+
+.card__action-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}

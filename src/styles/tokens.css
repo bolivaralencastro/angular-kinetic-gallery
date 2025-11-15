@@ -15,10 +15,31 @@
   --context-menu-background: rgba(30, 30, 30, 0.95);
   --context-menu-border: rgb(50, 50, 50);
   --context-menu-item-hover: rgb(60, 60, 60);
+  --context-menu-transition: background-color 150ms ease, color 150ms ease;
   --context-menu-heading: #9ca3af;
   --context-menu-divider: rgba(255, 255, 255, 0.08);
   --context-menu-text: #e5e7eb;
   --context-menu-icon: #9ca3af;
+  --context-menu-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
+
+  /* Card tokens */
+  --card-background: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --card-hover-background: rgba(255, 255, 255, 0.08);
+  --card-active-border: rgba(255, 255, 255, 0.45);
+  --card-active-ring: rgba(255, 255, 255, 0.35);
+  --card-active-background: rgba(255, 255, 255, 0.12);
+  --card-focus-ring: rgba(255, 255, 255, 0.35);
+  --card-text: var(--text-inverse);
+  --card-muted-text: var(--text-gray-400);
+  --card-meta-text: var(--text-gray-500);
+  --card-avatar-border: rgba(255, 255, 255, 0.2);
+  --card-avatar-background: rgba(0, 0, 0, 0.45);
+  --card-action-border: rgba(255, 255, 255, 0.2);
+  --card-action-background: transparent;
+  --card-action-hover-background: rgba(255, 255, 255, 0.08);
+  --card-action-icon: var(--text-inverse);
+  --card-transition: 200ms ease;
 
   /* Dialog tokens */
   --dialog-surface: rgba(30, 30, 30, 0.95);
@@ -97,10 +118,30 @@
   --context-menu-background: rgba(255, 255, 255, 0.98);
   --context-menu-border: rgba(148, 163, 184, 0.5);
   --context-menu-item-hover: rgba(226, 232, 240, 0.9);
+  --context-menu-transition: background-color 150ms ease, color 150ms ease;
   --context-menu-heading: #475569;
   --context-menu-divider: rgba(148, 163, 184, 0.35);
   --context-menu-text: #0f172a;
   --context-menu-icon: #475569;
+  --context-menu-shadow: 0 15px 50px rgba(15, 23, 42, 0.2);
+
+  --card-background: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(148, 163, 184, 0.5);
+  --card-hover-background: rgba(226, 232, 240, 0.7);
+  --card-active-border: rgba(15, 23, 42, 0.55);
+  --card-active-ring: rgba(148, 163, 184, 0.5);
+  --card-active-background: rgba(226, 232, 240, 0.85);
+  --card-focus-ring: rgba(148, 163, 184, 0.4);
+  --card-text: #0f172a;
+  --card-muted-text: #475569;
+  --card-meta-text: #64748b;
+  --card-avatar-border: rgba(148, 163, 184, 0.4);
+  --card-avatar-background: rgba(148, 163, 184, 0.2);
+  --card-action-border: rgba(148, 163, 184, 0.45);
+  --card-action-background: rgba(255, 255, 255, 0.85);
+  --card-action-hover-background: rgba(15, 23, 42, 0.08);
+  --card-action-icon: #0f172a;
+  --card-transition: 200ms ease;
 
   --dialog-surface: rgba(255, 255, 255, 0.98);
   --dialog-border: rgba(148, 163, 184, 0.5);
