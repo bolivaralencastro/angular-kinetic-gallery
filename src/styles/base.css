@@ -3,6 +3,7 @@
 @import './components/card.css';
 @import './components/menu.css';
 @import './components/app-shell.css';
+@import './components/capture.css';
 
 *, *::before, *::after {
   box-sizing: border-box;

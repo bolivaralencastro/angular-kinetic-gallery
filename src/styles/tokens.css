@@ -89,6 +89,11 @@
   --surface-overlay-20: rgba(255, 255, 255, 0.2);
   --surface-slate-700: #374151;
   --surface-slate-700-text: inherit;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.625rem;
+  --radius-3xl: 1.875rem;
+  --shadow-soft: 0 18px 35px rgba(0, 0, 0, 0.45);
+  --shadow-soft-inner: inset 0 -8px 0 rgba(0, 0, 0, 0.18);
 
   /* Frequently reused text tokens */
   --text-inverse: #ffffff;
@@ -188,6 +193,11 @@
   --surface-overlay-20: rgba(15, 23, 42, 0.14);
   --surface-slate-700: rgba(148, 163, 184, 0.35);
   --surface-slate-700-text: #0f172a;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.625rem;
+  --radius-3xl: 1.875rem;
+  --shadow-soft: 0 18px 35px rgba(15, 23, 42, 0.18);
+  --shadow-soft-inner: inset 0 -8px 0 rgba(15, 23, 42, 0.12);
 
   --text-inverse: #0f172a;
   --text-inverse-90: rgba(15, 23, 42, 0.88);
