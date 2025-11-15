@@ -50,6 +50,8 @@ type ArrowKey = (typeof ARROW_KEYS)[number];
 const FALLBACK_GALLERY_THUMBNAIL =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23111111'/></svg>";
 
+const HOP_EASING = 'cubic-bezier(0.9, 0, 0.1, 1)';
+
 function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
 }
@@ -751,9 +753,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly supportsFinePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
 
   constructor() {
-    gsap.registerPlugin(CustomEase);
-    CustomEase.create("hop", "0.9, 0, 0.1, 1");
-
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
@@ -1637,20 +1636,44 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private runExpandAnimation(element: HTMLElement, item: ExpandedItem): void {
     const side = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+    const startX = item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2;
+    const startY = item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2;
 
-    gsap.fromTo(element, {
-      width: item.originalWidth,
-      height: item.originalHeight,
-      x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
-      y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
-    }, {
-      width: side,
-      height: side,
-      x: 0,
-      y: 0,
-      duration: this.settings.zoomDuration,
-      ease: "hop",
-    });
+    element.getAnimations().forEach(animation => animation.cancel());
+
+    element.style.width = `${item.originalWidth}px`;
+    element.style.height = `${item.originalHeight}px`;
+    element.style.transform = `translate(${startX}px, ${startY}px)`;
+
+    const animation = element.animate(
+      [
+        {
+          width: `${item.originalWidth}px`,
+          height: `${item.originalHeight}px`,
+          transform: `translate(${startX}px, ${startY}px)`,
+        },
+        {
+          width: `${side}px`,
+          height: `${side}px`,
+          transform: 'translate(0px, 0px)',
+        },
+      ],
+      {
+        duration: this.settings.zoomDuration * 1000,
+        easing: HOP_EASING,
+        fill: 'forwards',
+      }
+    );
+
+    animation.finished
+      .then(() => {
+        element.style.width = `${side}px`;
+        element.style.height = `${side}px`;
+        element.style.transform = 'translate(0px, 0px)';
+      })
+      .catch(() => {
+        // A animação pode ser cancelada se uma nova começar imediatamente.
+      });
   }
 
   editGallery(id: string): void {
@@ -1971,17 +1994,57 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const element = this.expandedItemElement();
     if (element && this.expandedItem()) {
       const item = this.expandedItem()!;
-      gsap.to(element.nativeElement, {
-        width: item.originalWidth,
-        height: item.originalHeight,
-        x: item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2,
-        y: item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2,
-        duration: 0.6,
-        ease: "hop",
-        onComplete: () => {
-          this.expandedItem.set(null);
+      const nativeElement = element.nativeElement;
+      const computedStyle = getComputedStyle(nativeElement);
+      const matrix =
+        computedStyle.transform && computedStyle.transform !== 'none'
+          ? new DOMMatrixReadOnly(computedStyle.transform)
+          : new DOMMatrixReadOnly();
+      const currentWidth = parseFloat(computedStyle.width);
+      const currentHeight = parseFloat(computedStyle.height);
+      const currentX = matrix.m41;
+      const currentY = matrix.m42;
+      const targetX = item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2;
+      const targetY = item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2;
+
+      nativeElement.getAnimations().forEach(animation => animation.cancel());
+
+      nativeElement.style.width = `${currentWidth}px`;
+      nativeElement.style.height = `${currentHeight}px`;
+      nativeElement.style.transform = `translate(${currentX}px, ${currentY}px)`;
+
+      const animation = nativeElement.animate(
+        [
+          {
+            width: `${currentWidth}px`,
+            height: `${currentHeight}px`,
+            transform: `translate(${currentX}px, ${currentY}px)`,
+          },
+          {
+            width: `${item.originalWidth}px`,
+            height: `${item.originalHeight}px`,
+            transform: `translate(${targetX}px, ${targetY}px)`,
+          },
+        ],
+        {
+          duration: 600,
+          easing: HOP_EASING,
+          fill: 'forwards',
         }
-      });
+      );
+
+      animation.finished
+        .then(() => {
+          nativeElement.style.width = `${item.originalWidth}px`;
+          nativeElement.style.height = `${item.originalHeight}px`;
+          nativeElement.style.transform = `translate(${targetX}px, ${targetY}px)`;
+        })
+        .catch(() => {
+          // A animação pode ser cancelada se uma nova começar imediatamente.
+        })
+        .finally(() => {
+          this.expandedItem.set(null);
+        });
     } else {
       this.expandedItem.set(null);
     }
