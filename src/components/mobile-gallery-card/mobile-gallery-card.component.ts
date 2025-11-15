@@ -9,7 +9,7 @@ import { Gallery } from '../../interfaces/gallery.interface';
   imports: [CommonModule],
   template: `
     <div
-      class="group relative flex w-full items-center gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
+      class="group relative flex w-full items-center gap-4 rounded-3xl border border-slate-500/40 bg-white/5 p-4 transition hover:bg-white/10 focus-within:ring-2 focus-within:ring-white/30"
       [class.cursor-default]="!selectable()"
       [class.border-emerald-400/80]="showActiveIndicator() && active()"
       [class.ring-2]="showActiveIndicator() && active()"
@@ -17,7 +17,7 @@ import { Gallery } from '../../interfaces/gallery.interface';
       [class.bg-emerald-400/5]="showActiveIndicator() && active()"
       [attr.data-cursor-pointer]="selectable() ? '' : null"
       (click)="handleSelect($event)">
-      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+      <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-500/40 bg-black/40">
         <img
           [src]="coverUrl()"
           class="h-full w-full object-cover"
