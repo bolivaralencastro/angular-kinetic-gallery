@@ -11,7 +11,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
       <div
         class="capture capture--mobile"
         [class.capture--active]="isCaptureActive()"
-        [class.capture--grid]="showGrid()"
+        [class.capture--framed]="showGrid()"
         [class.capture--countdown]="countdown() !== null && countdown()! > 0">
         <div class="capture__stage">
           <div class="capture__stage-inner">
@@ -36,7 +36,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
                 </div>
               }
 
-              <div class="capture__grid-overlay" aria-hidden="true"></div>
+              <div class="capture__overlay-frame" aria-hidden="true"></div>
 
               @if (countdown() !== null && countdown()! > 0) {
                 <div class="capture__countdown capture__countdown--mobile">
@@ -52,7 +52,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
         </div>
 
         <div class="capture__panel">
-          <div class="capture__control-grid">
+          <div class="capture__control-board">
             <button
               type="button"
               (click)="cycleTimerSetting()"
@@ -117,136 +117,140 @@ import { convertToWebp } from '../../utils/convert-to-webp';
       </div>
     } @else {
       <div
-      class="capture capture--dialog backdrop-blur-sm rounded-lg p-6 shadow-2xl w-full max-w-lg animate-slide-up relative"
-      [class.capture--active]="isCaptureActive()"
-      [class.capture--countdown]="countdown() !== null && countdown()! > 0"
-      [class.capture--grid]="showGrid()"
-      [style.backgroundColor]="themeService.dialogPalette().surface"
-      [style.border]="'1px solid ' + themeService.dialogPalette().border"
-      [style.color]="themeService.dialogPalette().text"
-      [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
-      [style.--vignette-color]="themeService.isDark() ? 'rgba(0, 0, 0, 0.8)' : 'rgba(15, 23, 42, 0.35)'"
-      (click)="$event.stopPropagation()">
+        class="capture capture--dialog capture-dialog animate-slide-up"
+        [class.capture--active]="isCaptureActive()"
+        [class.capture--countdown]="countdown() !== null && countdown()! > 0"
+        [class.capture--framed]="showGrid()"
+        [style.backgroundColor]="themeService.dialogPalette().surface"
+        [style.border]="'1px solid ' + themeService.dialogPalette().border"
+        [style.color]="themeService.dialogPalette().text"
+        [style.--dialog-focus-ring]="themeService.dialogPalette().focusRing"
+        [style.--vignette-color]="themeService.isDark() ? 'rgba(0, 0, 0, 0.8)' : 'rgba(15, 23, 42, 0.35)'"
+        (click)="$event.stopPropagation()">
 
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-medium tracking-wider" [style.color]="themeService.dialogPalette().title">Capturar Foto</h2>
-        <button
-          (click)="close.emit()"
-          data-cursor-pointer
-          class="text-2xl leading-none rounded-sm focus:outline-none"
-          [style.color]="themeService.dialogPalette().icon"
-          style="background: none; border: none; padding: 0; cursor: pointer;">
-          &times;
-        </button>
-      </div>
-
-      @if (error()) {
-        <div
-          class="px-3 py-2 rounded-lg text-sm mb-4"
-          [style.backgroundColor]="themeService.dialogPalette().inputBackground"
-          [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-          [style.color]="themeService.dialogPalette().text">
-          <p class="font-semibold">Erro ao acessar a câmera:</p>
-          <p class="tracking-wider" [style.color]="themeService.dialogPalette().muted">{{ error() }}</p>
-        </div>
-      }
-
-      <div
-        class="relative w-full aspect-square rounded-md overflow-hidden mb-4 vignette-effect"
-        [style.backgroundColor]="themeService.isDark() ? '#000000' : '#e2e8f0'">
-        <div class="w-full h-full flex items-center justify-center">
-          @if (!isStreaming() && !error()) {
-            <div class="absolute inset-0 flex items-center justify-center">
-              <svg
-                class="animate-spin h-10 w-10"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                [attr.stroke]="themeService.dialogPalette().icon">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          }
-
-          <video #videoElement
-            class="w-full h-full object-cover"
-            [class.hidden]="!isStreaming()"
-            autoplay
-            playsinline>
-          </video>
-
-          @if (countdown() !== null && countdown()! > 0) {
-            <div
-              class="capture__countdown capture__countdown--dialog"
-              [style.color]="themeService.isDark() ? '#ffffff' : '#0f172a'">
-              {{ countdown() }}
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-4">
+        <div class="capture-dialog__header">
+          <h2 class="capture-dialog__title" [style.color]="themeService.dialogPalette().title">Capturar Foto</h2>
           <button
-            (click)="captureImage()"
-            [disabled]="!isStreaming() || (countdown() !== null)"
+            type="button"
+            (click)="close.emit()"
             data-cursor-pointer
-            class="w-full font-bold py-3 px-4 rounded-md transition-all duration-300 flex items-center justify-center h-12 tracking-wider text-sm focus:outline-none"
-            [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
-            [style.color]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
-            [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
-            style="border: none;">
-            <span>{{ isTimerEnabled() ? 'Iniciar Timer (' + timerDuration() + 's)' : 'Tirar Foto' }}</span>
+            class="capture-dialog__close"
+            [style.color]="themeService.dialogPalette().icon">
+            &times;
           </button>
+        </div>
 
-          <div class="flex items-center gap-2">
-            <button
-              (click)="toggleTimer()"
-              data-cursor-pointer
-              class="p-3 rounded-md focus:outline-none"
-              [style.backgroundColor]="isTimerEnabled() ? themeService.dialogPalette().timerActiveBg : themeService.dialogPalette().timerInactiveBg"
-              [style.color]="isTimerEnabled() ? themeService.dialogPalette().buttonPrimaryText : themeService.dialogPalette().timerInactiveText"
-              style="border: none;"
-              title="Ativar/Desativar timer">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+        @if (error()) {
+          <div
+            class="capture-dialog__notice"
+            [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+            [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+            [style.color]="themeService.dialogPalette().text">
+            <p class="capture-dialog__notice-title">Erro ao acessar a câmera:</p>
+            <p class="capture-dialog__notice-text" [style.color]="themeService.dialogPalette().muted">{{ error() }}</p>
+          </div>
+        }
 
-            <button
-              (click)="cycleTimerDuration()"
-              data-cursor-pointer
-              class="px-3 py-2 rounded-md text-sm font-semibold focus:outline-none transition-colors duration-200"
-              [style.backgroundColor]="themeService.dialogPalette().inputBackground"
-              [style.color]="themeService.dialogPalette().text"
-              [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-              title="Alternar duração do timer">
-              {{ timerDuration() }}s
-            </button>
-
-            @if (availableCameras().length > 1) {
-              <button
-                (click)="cycleCamera()"
-                [disabled]="!isStreaming()"
-                data-cursor-pointer
-                class="p-3 rounded-md focus:outline-none transition-colors duration-200"
-                [style.backgroundColor]="isStreaming() ? themeService.dialogPalette().inputBackground : themeService.dialogPalette().disabledBg"
-                [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
-                [style.color]="isStreaming() ? themeService.dialogPalette().text : themeService.dialogPalette().disabledText"
-                [style.cursor]="isStreaming() ? 'pointer' : 'not-allowed'"
-                title="Alternar câmera">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 8h.01M4.13 7.21a2 2 0 011.74-1.21h2.17l1.12-1.68A2 2 0 0111.86 3h.28a2 2 0 011.7 1l1.12 2h2.18a2 2 0 011.74 1.21l1.73 3.99a2 2 0 01-.08 1.77l-1.1 1.9M7 16l-2 3m0 0l-2-3m2 3v-5m5.22 5a4 4 0 007.18-2" />
+        <div
+          class="capture-dialog__preview vignette-effect"
+          [style.backgroundColor]="themeService.isDark() ? '#000000' : '#e2e8f0'">
+          <div class="capture-dialog__preview-stage">
+            @if (!isStreaming() && !error()) {
+              <div class="capture-dialog__loading">
+                <svg
+                  class="capture-dialog__spinner"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  [attr.stroke]="themeService.dialogPalette().icon">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-              </button>
+              </div>
+            }
+
+            <video #videoElement
+              class="capture-dialog__video"
+              [class.hidden]="!isStreaming()"
+              autoplay
+              playsinline>
+            </video>
+
+            @if (countdown() !== null && countdown()! > 0) {
+              <div
+                class="capture__countdown capture__countdown--dialog"
+                [style.color]="themeService.isDark() ? '#ffffff' : '#0f172a'">
+                {{ countdown() }}
+              </div>
             }
           </div>
         </div>
-      </div>
 
-      <canvas #canvasElement class="hidden"></canvas>
-    </div>
+        <div class="capture-dialog__footer stack stack--loose">
+          <div class="capture-dialog__primary-actions">
+            <button
+              type="button"
+              (click)="captureImage()"
+              [disabled]="!isStreaming() || (countdown() !== null)"
+              data-cursor-pointer
+              class="capture-dialog__primary-button button button--block"
+              [style.backgroundColor]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledBg : themeService.dialogPalette().buttonPrimaryBg"
+              [style.color]="(!isStreaming() || countdown() !== null) ? themeService.dialogPalette().disabledText : themeService.dialogPalette().buttonPrimaryText"
+              [style.cursor]="(!isStreaming() || countdown() !== null) ? 'not-allowed' : 'pointer'"
+              style="border: none;">
+              <span>{{ isTimerEnabled() ? 'Iniciar Timer (' + timerDuration() + 's)' : 'Tirar Foto' }}</span>
+            </button>
+
+            <div class="capture-dialog__toggles">
+              <button
+                type="button"
+                (click)="toggleTimer()"
+                data-cursor-pointer
+                class="capture-dialog__icon-button"
+                [style.backgroundColor]="isTimerEnabled() ? themeService.dialogPalette().timerActiveBg : themeService.dialogPalette().timerInactiveBg"
+                [style.color]="isTimerEnabled() ? themeService.dialogPalette().buttonPrimaryText : themeService.dialogPalette().timerInactiveText"
+                style="border: none;"
+                title="Ativar/Desativar timer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="capture-dialog__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                (click)="cycleTimerDuration()"
+                data-cursor-pointer
+                class="capture-dialog__secondary-button"
+                [style.backgroundColor]="themeService.dialogPalette().inputBackground"
+                [style.color]="themeService.dialogPalette().text"
+                [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+                title="Alternar duração do timer">
+                {{ timerDuration() }}s
+              </button>
+
+              @if (availableCameras().length > 1) {
+                <button
+                  type="button"
+                  (click)="cycleCamera()"
+                  [disabled]="!isStreaming()"
+                  data-cursor-pointer
+                  class="capture-dialog__icon-button"
+                  [style.backgroundColor]="isStreaming() ? themeService.dialogPalette().inputBackground : themeService.dialogPalette().disabledBg"
+                  [style.border]="'1px solid ' + themeService.dialogPalette().inputBorder"
+                  [style.color]="isStreaming() ? themeService.dialogPalette().text : themeService.dialogPalette().disabledText"
+                  [style.cursor]="isStreaming() ? 'pointer' : 'not-allowed'"
+                  title="Alternar câmera">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="capture-dialog__icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 8h.01M4.13 7.21a2 2 0 011.74-1.21h2.17l1.12-1.68A2 2 0 0111.86 3h.28a2 2 0 011.7 1l1.12 2h2.18a2 2 0 011.74 1.21l1.73 3.99a2 2 0 01-.08 1.77l-1.1 1.9M7 16l-2 3m0 0l-2-3m2 3v-5m5.22 5a4 4 0 007.18-2" />
+                  </svg>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <canvas #canvasElement class="hidden"></canvas>
+      </div>
     }
   `,
   styles: [`

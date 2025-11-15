@@ -30,8 +30,8 @@
   @if (isMobileLayout()) {
     @switch (mobileView()) {
       @case ('capture') {
-        <div class="flex min-h-screen flex-col bg-black text-white">
-          <div class="flex-1 px-6 pt-8 pb-10">
+        <div class="mobile-shell mobile-shell--capture">
+          <div class="mobile-shell__content mobile-shell__content--capture">
             <app-webcam-capture
               class="h-full"
               [variant]="'mobile'"
@@ -43,13 +43,12 @@
                   @if (galleries().length === 0) {
                     <button
                       type="button"
-                      class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                      class="mobile-card mobile-card--action"
                       (click)="openGalleryCreationDialogForMobileCapture()"
                       data-cursor-pointer>
                       <div
-                        class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border bg-black/40"
-                        [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'">
-                        <div class="flex h-full w-full items-center justify-center text-gray-500">
+                        class="mobile-card__media">
+                        <div class="mobile-card__placeholder">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
@@ -61,14 +60,14 @@
                           </svg>
                         </div>
                       </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2">
-                          <h3 class="truncate text-base font-semibold text-white">Crie sua primeira galeria</h3>
+                      <div class="mobile-card__content">
+                        <div class="mobile-card__heading">
+                          <h3 class="mobile-card__title">Crie sua primeira galeria</h3>
                         </div>
-                        <p class="mt-1 truncate text-xs text-gray-400">
+                        <p class="mobile-card__description">
                           Você ainda não tem galerias. Toque para começar.
                         </p>
-                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
+                        <div class="mobile-card__meta">
                           <span>Sem data</span>
                           <span>0 fotos</span>
                         </div>
@@ -77,7 +76,7 @@
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
                         fill="none"
-                        class="h-5 w-5 text-gray-400">
+                        class="mobile-card__chevron">
                         <path
                           stroke="currentColor"
                           stroke-linecap="round"
@@ -87,7 +86,7 @@
                       </svg>
                     </button>
                   } @else if (mobileCaptureGallery()) {
-                    <div class="space-y-3">
+                    <div class="stack stack--tight">
                       <app-mobile-gallery-card
                         [gallery]="mobileCaptureGallery()!"
                         [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
@@ -100,13 +99,12 @@
                   } @else {
                     <button
                       type="button"
-                      class="flex w-full items-center gap-4 rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-left transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                      class="mobile-card mobile-card--action"
                       (click)="openMobileGalleryPicker()"
                       data-cursor-pointer>
                       <div
-                        class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border bg-black/40"
-                        [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'">
-                        <div class="flex h-full w-full items-center justify-center text-gray-500">
+                        class="mobile-card__media">
+                        <div class="mobile-card__placeholder">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
@@ -118,14 +116,14 @@
                           </svg>
                         </div>
                       </div>
-                      <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2">
-                          <h3 class="truncate text-base font-semibold text-white">Selecionar galeria</h3>
+                      <div class="mobile-card__content">
+                        <div class="mobile-card__heading">
+                          <h3 class="mobile-card__title">Selecionar galeria</h3>
                         </div>
-                        <p class="mt-1 truncate text-xs text-gray-400">
+                        <p class="mobile-card__description">
                           Escolha uma galeria para salvar suas capturas.
                         </p>
-                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.24em] text-gray-500">
+                        <div class="mobile-card__meta">
                           <span>Sem data</span>
                           <span>0 fotos</span>
                         </div>
@@ -134,7 +132,7 @@
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
                         fill="none"
-                        class="h-5 w-5 text-gray-400">
+                        class="mobile-card__chevron">
                         <path
                           stroke="currentColor"
                           stroke-linecap="round"
@@ -146,7 +144,7 @@
                   }
                 } @else {
                   <div
-                    class="rounded-3xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-gray-300"
+                    class="mobile-card mobile-card--locked"
                     (pointerdown)="onMobileGallerySelectorPressStart($event)"
                     (pointerup)="onMobileGallerySelectorPressEnd()"
                     (pointerleave)="onMobileGallerySelectorPressCancel()"
@@ -160,13 +158,13 @@
         </div>
       }
       @case ('galleries') {
-        <div class="flex min-h-screen h-screen flex-col bg-black text-white">
-          <header class="flex items-center justify-between gap-4 px-6 pt-8 pb-4 text-xs uppercase tracking-[0.32em] text-gray-500">
+        <div class="mobile-shell mobile-shell--galleries">
+          <header class="mobile-shell__header">
             <div>
               @if (canManageContent()) {
                 <button
                   type="button"
-                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  class="button button--ghost"
                   (click)="showMobileCapture()">
                   ← Captura
                 </button>
@@ -176,28 +174,28 @@
               @if (canManageContent()) {
                 <button
                   type="button"
-                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  class="button button--ghost"
                   (click)="openGalleryCreationDialogForMobileCapture()">
                   Nova
                 </button>
               }
             </div>
           </header>
-          <div #mobileScrollContainer class="flex-1 overflow-y-auto px-6 pb-16">
+          <div #mobileScrollContainer class="mobile-shell__content">
             @if (galleries().length === 0) {
-              <div class="mt-24 flex flex-col items-center justify-center gap-3 text-center text-gray-300">
-                <svg class="h-12 w-12 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+              <div class="empty-state empty-state--spaced">
+                <svg class="empty-state__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
-                <h3 class="text-lg font-medium">Nenhuma galeria ainda</h3>
+                <h3 class="empty-state__title">Nenhuma galeria ainda</h3>
                 @if (canManageContent()) {
-                  <p class="text-sm text-gray-400">Crie uma galeria para começar a capturar suas memórias.</p>
+                  <p class="empty-state__text">Crie uma galeria para começar a capturar suas memórias.</p>
                 } @else {
-                  <p class="text-sm text-gray-400">Aguarde a publicação de galerias públicas.</p>
+                  <p class="empty-state__text">Aguarde a publicação de galerias públicas.</p>
                 }
               </div>
             } @else {
-              <div class="flex flex-col gap-6">
+              <div class="stack stack--loose">
                 @for (gallery of galleries(); track gallery.id) {
                   <app-mobile-gallery-card
                     [gallery]="gallery"
@@ -213,11 +211,11 @@
         </div>
       }
       @case ('galleryDetail') {
-        <div class="flex min-h-screen h-screen flex-col bg-black text-white">
-          <header class="flex items-center justify-between px-6 pt-8 pb-4 text-xs uppercase tracking-[0.3em] text-gray-500">
+        <div class="mobile-shell mobile-shell--detail">
+          <header class="mobile-shell__header mobile-shell__header--detail">
             <button
               type="button"
-              class="rounded-full border border-white/20 p-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
+              class="button button--ghost button--icon"
               aria-label="Voltar para galerias"
               (click)="returnToMobileGalleries()">
               <span class="sr-only">Voltar para galerias</span>
@@ -225,18 +223,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12l7.5-7.5M3 12h18" />
               </svg>
             </button>
-            <div class="flex items-center gap-3">
+            <div class="mobile-shell__actions">
               @if (canManageContent()) {
                 <button
                   type="button"
-                  class="rounded-full border border-white/20 px-4 py-2 text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="button button--ghost"
                   [disabled]="!activeGallery()"
                   (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)">
                   Usar esta galeria
                 </button>
                 <button
                   type="button"
-                  class="rounded-full border border-white/20 p-2 text-white transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="button button--danger button--icon"
                   aria-label="Excluir galeria"
                   [disabled]="!activeGallery()"
                   (click)="deleteActiveGalleryFromMobile()">
@@ -246,17 +244,17 @@
                   </svg>
                 </button>
               } @else {
-                <span class="text-[10px] uppercase tracking-[0.32em] text-gray-500">Somente visualização</span>
+                <span class="badge badge--mono badge--muted">Somente visualização</span>
               }
             </div>
           </header>
-          <div class="flex-1 overflow-y-auto px-6 pb-20">
-            <div class="space-y-2">
-              <h2 class="text-2xl font-semibold text-white">{{ activeGallery()?.name ?? 'Galeria' }}</h2>
+          <div class="mobile-shell__content mobile-shell__content--detail">
+            <div class="stack stack--tight">
+              <h2 class="section-title">{{ activeGallery()?.name ?? 'Galeria' }}</h2>
               @if (activeGallery()?.description) {
-                <p class="text-xs text-gray-400">{{ activeGallery()?.description }}</p>
+                <p class="section-description">{{ activeGallery()?.description }}</p>
               }
-              <div class="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.24em] text-gray-500">
+              <div class="meta-list">
                 @if (activeGallery()?.createdAt) {
                   <span>{{ activeGallery()?.createdAt }}</span>
                 }
@@ -264,32 +262,32 @@
               </div>
             </div>
             @if (images().length === 0) {
-              <div class="mt-12 flex flex-col items-center justify-center gap-3 text-center text-gray-300">
-                <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+              <div class="empty-state empty-state--spaced">
+                <svg class="empty-state__icon empty-state__icon--sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
-                <h3 class="text-lg font-medium">Esta galeria está vazia</h3>
+                <h3 class="empty-state__title">Esta galeria está vazia</h3>
                 @if (canManageContent()) {
-                  <p class="text-sm text-gray-400">Capture novas imagens para começar seu diário.</p>
+                  <p class="empty-state__text">Capture novas imagens para começar seu diário.</p>
                 } @else {
-                  <p class="text-sm text-gray-400">Nenhuma foto foi enviada para esta galeria.</p>
+                  <p class="empty-state__text">Nenhuma foto foi enviada para esta galeria.</p>
                 }
               </div>
             } @else {
-              <div class="mobile-gallery-grid grid-gallery grid-gallery--tight">
+              <div class="mobile-gallery-collection gallery-mosaic gallery-mosaic--dense">
                 @for (image of images(); track trackMobileImage($index, image); let index = $index) {
                   <button
                     type="button"
-                    class="group relative aspect-square overflow-hidden rounded-3xl bg-zinc-900/60"
+                    class="photo-mosaic__item"
                     (click)="onMobilePhotoClick($event, image, index)">
                     <img
                       [src]="image"
                       loading="lazy"
-                      class="h-full w-full object-cover transition-transform duration-500 group-active:scale-95 group-hover:scale-[1.03]"
+                      class="photo-mosaic__image"
                       alt="Imagem da galeria">
                     <span
-                      class="pointer-events-none absolute inset-0 border mix-blend-screen"
-                      [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
+                      class="photo-mosaic__border"
+                      
                     ></span>
                   </button>
                 }
@@ -303,27 +301,27 @@
     @if (currentView() === 'galleries') {
       @if (galleryService.galleries().length === 0) {
         <!-- Empty state for galleries -->
-        <div class="fixed inset-0 z-10 flex flex-col items-center justify-center p-4 text-center pointer-events-none">
-          <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+        <div class="empty-overlay">
+          <svg class="empty-state__icon empty-state__icon--sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
-          <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Nenhuma galeria criada</h2>
+          <h2 class="empty-overlay__title">Nenhuma galeria criada</h2>
           @if (canManageContent()) {
-            <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para criar uma nova galeria.</p>
-            <div class="pointer-events-auto mt-4 flex flex-col items-center">
-              <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
+            <p class="empty-overlay__text">Clique com o botão direito para criar uma nova galeria.</p>
+            <div class="empty-overlay__actions">
+              <p class="empty-overlay__note">Como tirar uma foto:</p>
               <div class="flow">
                 <button
                   data-cursor-pointer
                   (click)="openGalleryCreationDialog(); $event.stopPropagation();"
-                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  class="button button--primary"
                 >
                   Nova Galeria
                 </button>
               </div>
             </div>
           } @else {
-            <p class="mt-1 text-sm tracking-wider text-gray-500">Aguarde o administrador publicar novas galerias.</p>
+            <p class="empty-overlay__text">Aguarde o administrador publicar novas galerias.</p>
           }
         </div>
       } @else {
@@ -361,8 +359,8 @@
                   {{ item.creationOrder }}
                 </span>
                 <div class="gallery-card__meta stack stack--tight">
-                  <div class="text-meta">{{ item.createdAt }}</div>
-                  <div class="text-title">{{ item.name }}</div>
+                  <div class="meta-label">{{ item.createdAt }}</div>
+                  <div class="meta-title">{{ item.name }}</div>
                 </div>
               </div>
             }
@@ -373,34 +371,34 @@
       <!-- Photo Grid Canvas -->
       @if (images().length === 0) {
         <!-- Empty state for photos in a gallery -->
-        <div class="fixed inset-0 z-10 flex flex-col items-center justify-center p-4 text-center">
-          <svg class="h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
+        <div class="empty-overlay empty-overlay--interactive">
+          <svg class="empty-state__icon empty-state__icon--sm" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
-          <h2 class="mt-4 text-xl font-medium tracking-wider text-gray-400">Esta galeria está vazia</h2>
+          <h2 class="empty-overlay__title">Esta galeria está vazia</h2>
           @if (canManageContent()) {
-            <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para adicionar fotos.</p>
-            <div class="mt-4 flex flex-col items-center">
-              <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
+            <p class="empty-overlay__text">Clique com o botão direito para adicionar fotos.</p>
+            <div class="empty-overlay__actions">
+              <p class="empty-overlay__note">Como tirar uma foto:</p>
               <div class="flow">
                 <button
                   data-cursor-pointer
                   (click)="openWebcamCapture(); $event.stopPropagation();"
-                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  class="button button--primary"
                 >
                   Usar Câmera
                 </button>
                 <button
                   data-cursor-pointer
                   (click)="handleSpacebar($event)"
-                  class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  class="button button--primary"
                 >
                   Atalho: Espaço
                 </button>
               </div>
             </div>
           } @else {
-            <p class="mt-1 text-sm tracking-wider text-gray-500">Nenhuma foto disponível nesta galeria.</p>
+            <p class="empty-overlay__text">Nenhuma foto disponível nesta galeria.</p>
           }
         </div>
       }
@@ -491,32 +489,30 @@
     <div #expandedItemElement
       class="screen-overlay__media"
       style="transform: translate(-50%, -50%); will-change: width, height, transform;">
-      <img [src]="item.url" class="h-full w-full object-contain pointer-events-none" alt="Imagem expandida">
+      <img [src]="item.url" class="screen-overlay__image" alt="Imagem expandida">
       @if (isMobileLayout()) {
-        <div class="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/40 to-transparent"></div>
-        <div class="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/40 to-transparent"></div>
+        <div class="screen-overlay__gradient screen-overlay__gradient--left"></div>
+        <div class="screen-overlay__gradient screen-overlay__gradient--right"></div>
       }
     </div>
   }
 </div>
 
 @if (autoNavigationOverlayVisible()) {
-  <div class="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-4">
+  <div class="auto-navigation-overlay">
     <div
-      class="pointer-events-auto w-full max-w-xl rounded-3xl border px-8 py-6 text-center backdrop-blur-md transition-colors duration-300"
-      [ngClass]="themeService.isDark()
-        ? 'bg-black/80 text-white/90 border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.55)]'
-        : 'bg-white/85 text-slate-900/90 border-slate-200/80 shadow-[0_30px_90px_rgba(15,23,42,0.18)]'"
+      class="auto-navigation-card"
+      
     >
       @if (autoNavigationCountdown() !== null) {
-        <p class="text-[11px] font-semibold uppercase tracking-[0.32em] opacity-80">
+        <p class="auto-navigation-card__eyebrow">
           Navegação automática começa em
         </p>
-        <p class="mt-3 text-4xl font-bold tracking-[0.4em]">
+        <p class="auto-navigation-card__countdown">
           {{ autoNavigationCountdown() }}s
         </p>
       }
-      <p class="mt-4 text-sm font-medium leading-relaxed opacity-90">
+      <p class="auto-navigation-card__description">
         Pressione <span class="font-semibold">P</span> ou use o menu de contexto (botão direito) para parar a navegação automática.
       </p>
     </div>

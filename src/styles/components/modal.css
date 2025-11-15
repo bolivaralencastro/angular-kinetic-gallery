@@ -241,6 +241,11 @@
   letter-spacing: 0.15em;
 }
 
+.badge--muted {
+  color: var(--text-gray-500);
+  opacity: 0.8;
+}
+
 .animate-slide-up {
   animation: modal-slide-up 0.3s ease-out;
 }

@@ -47,10 +47,10 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
         </header>
 
         <main class="modal__body modal__body--padded info-dialog__body">
-          <div class="info-dialog__grid">
+          <div class="info-dialog__layout">
             <section class="info-dialog__column">
               <h2 class="info-dialog__section-title">Apresentação</h2>
-              <div class="info-dialog__text">
+              <div class="info-dialog__copy">
                 <p>
                   O Angular Kinetic Gallery é uma galeria de fotos interativa desenvolvida com Angular,
                   oferecendo uma experiência única de navegação e visualização de imagens.
@@ -109,7 +109,7 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
 
             <section class="info-dialog__column">
               <h2 class="info-dialog__section-title">Autor</h2>
-              <div class="info-dialog__text info-dialog__text--stacked">
+              <div class="info-dialog__copy info-dialog__copy--stacked">
                 <div>
                   <p class="info-dialog__highlight">Bolívar Alencastro</p>
                   <p class="info-dialog__muted">Product Designer</p>
@@ -165,7 +165,7 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
       color: var(--modal-text, var(--dialog-text));
     }
 
-    .info-dialog__grid {
+    .info-dialog__layout {
       display: grid;
       gap: 3rem;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -189,7 +189,7 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
       color: var(--modal-title, var(--dialog-title));
     }
 
-    .info-dialog__text {
+    .info-dialog__copy {
       display: flex;
       flex-direction: column;
       gap: 1rem;
@@ -197,7 +197,7 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
       font-size: 0.95rem;
     }
 
-    .info-dialog__text--stacked {
+    .info-dialog__copy--stacked {
       gap: 1.5rem;
     }
 
@@ -273,7 +273,7 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
     }
 
     @media (max-width: 768px) {
-      .info-dialog__grid {
+      .info-dialog__layout {
         gap: 2.25rem;
       }
 
