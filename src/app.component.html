@@ -33,7 +33,7 @@
         <div class="mobile-shell mobile-shell--capture">
           <div class="mobile-shell__content mobile-shell__content--capture">
             <app-webcam-capture
-              class="h-full"
+              class="app-shell__capture full-area"
               [variant]="'mobile'"
               [captureAllowed]="canManageContent() && !!mobileCaptureGallery()"
               (prepareCapture)="prepareMobileCapture()"
@@ -55,7 +55,7 @@
                             viewBox="0 0 24 24"
                             stroke-width="1.5"
                             stroke="currentColor"
-                            class="h-6 w-6">
+                            class="icon icon--md">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                           </svg>
                         </div>
@@ -111,7 +111,7 @@
                             viewBox="0 0 24 24"
                             stroke-width="1.5"
                             stroke="currentColor"
-                            class="h-6 w-6">
+                            class="icon icon--md">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                           </svg>
                         </div>
@@ -464,7 +464,7 @@
               data-cursor-pointer
               class="app-shell__back-button button button--icon"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--md" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
       </button>
