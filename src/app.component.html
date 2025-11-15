@@ -1,38 +1,25 @@
 <!-- Container principal da galeria com listeners para interação -->
 <div
-  class="relative h-full w-full overflow-hidden select-none transition-colors duration-500"
-  [class.cursor-none]="isIdle() || isAutoNavigationActive()"
-  [class.bg-black]="themeService.isDark()"
-  [class.bg-slate-100]="themeService.isLight()"
-  [class.p-8]="!isMobileLayout()"
+  class="app-shell"
+  [class.is-mobile]="isMobileLayout()"
+  [class.is-idle]="isIdle() || isAutoNavigationActive()"
+  [class.is-fullscreen]="isFullscreen()"
   (contextmenu)="onRightClick($event)">
 
+  <div class="app-shell__viewport">
   @if (canManageContent()) {
     <div
-      class="pointer-events-none z-40 flex flex-col gap-2"
-      [ngClass]="
-        isMobileLayout()
-          ? 'fixed inset-x-0 bottom-0 items-stretch px-4 pb-4'
-          : 'absolute right-4 top-4 items-end sm:right-8 sm:top-8'
-      ">
+      class="app-shell__admin-panel"
+      [class.app-shell__admin-panel--mobile]="isMobileLayout()">
       <div
-        class="pointer-events-auto flex w-full items-center gap-2 border px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.3em] shadow-lg backdrop-blur sm:w-auto"
-        [ngClass]="[
-          themeService.isDark() ? 'border-white/15 bg-black/60 text-white/85' : 'border-slate-300/70 bg-white/80 text-slate-800',
-          isMobileLayout() ? 'rounded-t-3xl rounded-b-none' : 'rounded-full'
-        ]">
-        <span class="max-w-[10rem] truncate" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
-        <span
-          class="rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.24em]"
-          [ngClass]="themeService.isDark() ? 'bg-white/15 text-white/85' : 'bg-slate-200 text-slate-700'"
-        >
-          Admin
-        </span>
+        class="identity-card"
+        [class.identity-card--mobile]="isMobileLayout()">
+        <span class="identity-card__name" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
+        <span class="identity-card__role">Admin</span>
         <button
           type="button"
           data-cursor-pointer
-          class="rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold tracking-[0.32em] transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-          [ngClass]="themeService.isDark() ? 'text-white/85' : 'text-slate-800/90 hover:bg-slate-200/60 focus:ring-slate-500/60'"
+          class="identity-card__action"
           (click)="signOut()">
           Sair
         </button>
@@ -289,7 +276,7 @@
                 }
               </div>
             } @else {
-              <div class="mt-8 grid grid-cols-3 gap-x-3 gap-y-5">
+              <div class="mobile-gallery-grid grid-gallery grid-gallery--tight">
                 @for (image of images(); track trackMobileImage($index, image); let index = $index) {
                   <button
                     type="button"
@@ -325,7 +312,7 @@
             <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para criar uma nova galeria.</p>
             <div class="pointer-events-auto mt-4 flex flex-col items-center">
               <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
-              <div class="flex gap-2">
+              <div class="flow">
                 <button
                   data-cursor-pointer
                   (click)="openGalleryCreationDialog(); $event.stopPropagation();"
@@ -345,42 +332,37 @@
           @for (item of visibleItems(); track trackById($index, item)) {
             @if (item.type === 'gallery') {
               <div
-                class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
-                [class.rounded-[2.5rem]]="themeService.isLight()"
-                [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
-                [class.pointer-events-none]="!isInteractionEnabled()"
-                [class.bg-slate-100]="themeService.isLight()"
+                class="gallery-card"
+                [class.gallery-card--light]="themeService.isLight()"
+                [class.is-disabled]="!isInteractionEnabled()"
+                [class.is-interactive]="isInteractionEnabled()"
                 [style.width.px]="item.width"
                 [style.height.px]="item.height"
                 [style.left.px]="item.x"
                 [style.top.px]="item.y"
-                [class.cursor-pointer]="isInteractionEnabled()"
                 [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
                 (click)="selectGallery(item.id)"
                 (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
                 (mouseleave)="onGalleryHoverEnd(item.previewKey)"
                 (contextmenu)="onGalleryRightClick($event, item.id)"
               >
-                <div class="item-image-container relative h-full w-full overflow-hidden">
+                <div class="gallery-card__media">
                   <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
-                       class="h-full w-full object-cover pointer-events-none opacity-0 transition-opacity duration-400"
-                       (load)="$event.target.classList.add('opacity-100')"
-                       [class.group-hover:scale-105]="isInteractionEnabled()"
+                       class="gallery-card__image"
+                       (load)="$event.target.classList.add('is-visible')"
                        alt="Capa da Galeria: {{ item.name }}">
                   <div
-                    class="pointer-events-none absolute inset-0 z-10 transition-[box-shadow] duration-500"
-                    [class.shadow-\[inset_0_0_40px_20px_rgba\(0,0,0,0\.8\)\]]="themeService.isDark()"
-                    [class.shadow-\[inset_0_0_28px_18px_rgba\(15,23,42,0\.22\)\]]="themeService.isLight()"
+                    class="gallery-card__overlay"
+                    [class.gallery-card__overlay--dark]="themeService.isDark()"
+                    [class.gallery-card__overlay--light]="themeService.isLight()"
                   ></div>
                 </div>
-                <span
-                  class="pointer-events-none absolute right-2 top-2 z-30 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                >
+                <span class="gallery-card__badge">
                   {{ item.creationOrder }}
                 </span>
-                <div class="absolute bottom-0 left-0 pl-8 pb-8 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <div class="mb-0.5 text-xs text-gray-300">{{ item.createdAt }}</div>
-                  <div class="text-sm font-medium">{{ item.name }}</div>
+                <div class="gallery-card__meta stack stack--tight">
+                  <div class="text-meta">{{ item.createdAt }}</div>
+                  <div class="text-title">{{ item.name }}</div>
                 </div>
               </div>
             }
@@ -400,7 +382,7 @@
             <p class="mt-1 text-sm tracking-wider text-gray-500">Clique com o botão direito para adicionar fotos.</p>
             <div class="mt-4 flex flex-col items-center">
               <p class="mb-3 text-sm text-gray-500">Como tirar uma foto:</p>
-              <div class="flex gap-2">
+              <div class="flow">
                 <button
                   data-cursor-pointer
                   (click)="openWebcamCapture(); $event.stopPropagation();"
@@ -425,36 +407,31 @@
       <div #canvas class="absolute will-change-transform">
         @for (item of visibleItems(); track trackById($index, item)) {
           <div
-            class="item group absolute overflow-hidden rounded-2xl bg-[#1a1a1a] border transition-[background-color,box-shadow,border-radius] duration-500"
-            [class.rounded-[2.5rem]]="themeService.isLight()"
-            [ngClass]="themeService.isDark() ? 'border-black/80' : 'border-white/80'"
-            [class.pointer-events-none]="!isInteractionEnabled()"
-            [class.bg-slate-100]="themeService.isLight()"
+            class="photo-card"
+            [class.photo-card--light]="themeService.isLight()"
+            [class.is-disabled]="!isInteractionEnabled()"
+            [class.is-interactive]="isInteractionEnabled()"
             [style.width.px]="item.width"
             [style.height.px]="item.height"
             [style.left.px]="item.x"
             [style.top.px]="item.y"
-            [class.cursor-pointer]="isInteractionEnabled()"
             [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
             (click)="onImageClick($event, item)"
           >
-            <div class="item-image-container relative h-full w-full overflow-hidden">
+            <div class="photo-card__media">
               @if (item.type === 'photo') {
                 <img [src]="item.url"
-                     class="h-full w-full object-cover pointer-events-none opacity-0 transition-opacity duration-400"
-                     (load)="$event.target.classList.add('opacity-100')"
-                     [class.group-hover:scale-1.05]="isInteractionEnabled()"
+                     class="photo-card__image"
+                     (load)="$event.target.classList.add('is-visible')"
                      alt="Imagem da galeria capturada pela webcam">
               }
               <div
-                class="pointer-events-none absolute inset-0 z-10 transition-[box-shadow] duration-500"
-                [class.shadow-\[inset_0_0_40px_20px_rgba\(0,0,0,0\.8\)\]]="themeService.isDark()"
-                [class.shadow-\[inset_0_0_28px_18px_rgba\(15,23,42,0\.22\)\]]="themeService.isLight()"
+                class="photo-card__overlay"
+                [class.photo-card__overlay--dark]="themeService.isDark()"
+                [class.photo-card__overlay--light]="themeService.isLight()"
               ></div>
             </div>
-            <span
-              class="pointer-events-none absolute right-2 top-2 z-30 rounded-full bg-black/50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-200 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-            >
+            <span class="photo-card__badge">
               {{ item.creationOrder }}
             </span>
           </div>
@@ -463,15 +440,15 @@
     }
 
     <!-- Relógio e Data -->
-    <div class="pointer-events-none absolute bottom-4 left-4 z-20 text-sm font-mono tracking-widest text-gray-700">
+    <div class="clock">
       {{ currentTime() }}
     </div>
-    <div class="pointer-events-none absolute bottom-4 right-4 z-20 text-sm font-mono tracking-widest text-gray-700">
+    <div class="date-indicator">
       {{ currentDate() }}
     </div>
 
     <!-- Contador de Galerias ou Fotos -->
-    <div class="pointer-events-none absolute top-4 right-4 z-20 text-sm font-mono tracking-widest text-gray-700">
+    <div class="counter">
       @if (currentView() === 'galleries') {
         {{ galleryCounterLabel() }} {{ galleryCount() }}
       } @else {
@@ -483,7 +460,8 @@
       <!-- Botão Voltar para Galerias -->
       <button (click)="backToGalleries()"
               data-cursor-pointer
-              class="absolute left-4 top-4 z-20 rounded-full bg-black/40 p-2 text-white transition hover:bg-black/60 hover:text-gray-300 focus:outline-none">
+              class="app-shell__back-button button button--icon"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -493,7 +471,7 @@
 
   @if (isAutoNavigationActive()) {
     <div
-      class="fixed inset-0 z-30 cursor-default pointer-events-auto"
+      class="auto-navigation-shield"
       aria-hidden="true"
       data-auto-navigation-shield
     ></div>
@@ -501,10 +479,9 @@
 
   <!-- Overlay para o modo de visualização expandida -->
   <div
-    class="overlay pointer-events-none fixed inset-0 z-[9999] bg-black/90 transition-opacity duration-500"
-    [class.opacity-100]="!!expandedItem()"
-    [class.opacity-0]="!expandedItem()"
-    [class.pointer-events-auto]="!!expandedItem()"
+    class="screen-overlay"
+    [class.is-visible]="!!expandedItem()"
+    [class.is-hidden]="!expandedItem()"
     data-cursor-pointer
     (click)="closeExpandedItem()"
   ></div>
@@ -512,7 +489,7 @@
   <!-- Elemento para a imagem expandida, renderizado condicionalmente -->
   @if (expandedItem(); as item) {
     <div #expandedItemElement
-      class="fixed top-1/2 left-1/2 z-[10000] flex items-center justify-center overflow-hidden rounded-lg bg-black shadow-2xl"
+      class="screen-overlay__media"
       style="transform: translate(-50%, -50%); will-change: width, height, transform;">
       <img [src]="item.url" class="h-full w-full object-contain pointer-events-none" alt="Imagem expandida">
       @if (isMobileLayout()) {
@@ -548,20 +525,19 @@
 
 <!-- Componentes de UI flutuantes -->
 @if (isLoginDialogVisible()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" (click)="closeLoginDialog()" data-cursor-pointer>
+  <div class="login-dialog" (click)="closeLoginDialog()" data-cursor-pointer>
     <div
-      class="w-full max-w-sm rounded-3xl border px-6 py-8 shadow-2xl backdrop-blur"
-      [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/85 text-white' : 'border-slate-200 bg-white text-slate-900'"
+      class="login-dialog__card"
       (click)="$event.stopPropagation()">
-      <div class="mb-6 flex items-start justify-between">
-        <div>
-          <h2 class="text-lg font-semibold tracking-[0.2em] uppercase">Entrar como administrador</h2>
-          <p class="mt-2 text-xs text-gray-400">Use suas credenciais do Supabase para habilitar as ferramentas de criação.</p>
+      <div class="login-dialog__header">
+        <div class="stack stack--tight">
+          <h2 class="login-dialog__title">Entrar como administrador</h2>
+          <p class="login-dialog__description">Use suas credenciais do Supabase para habilitar as ferramentas de criação.</p>
         </div>
         <button
           type="button"
           data-cursor-pointer
-          class="text-xl"
+          class="button-reset"
           [class.opacity-50]="isLoginInProgress()"
           [disabled]="isLoginInProgress()"
           (click)="closeLoginDialog()">
@@ -570,47 +546,45 @@
       </div>
 
       @if (loginError()) {
-        <div class="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+        <div class="alert alert--danger">
           {{ loginError() }}
         </div>
       }
 
-      <form (submit)="submitLogin(); $event.preventDefault();" class="space-y-4">
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">Email</label>
+      <form (submit)="submitLogin(); $event.preventDefault();" class="stack">
+        <div class="form-field">
+          <label class="form-field__label">Email</label>
           <input
             type="email"
             autocomplete="email"
-            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-            [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
+            class="form-field__input"
             [value]="loginEmail()"
             (input)="loginEmail.set($any($event.target).value)"
             [disabled]="isLoginInProgress()"
             required>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">Senha</label>
+        <div class="form-field">
+          <label class="form-field__label">Senha</label>
           <input
             type="password"
             autocomplete="current-password"
-            class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-            [ngClass]="themeService.isDark() ? 'border-white/10 bg-black/40 focus:ring-white/30' : 'border-slate-200 bg-white focus:ring-slate-400'"
+            class="form-field__input"
             [value]="loginPassword()"
             (input)="loginPassword.set($any($event.target).value)"
             [disabled]="isLoginInProgress()"
             required>
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div class="stack stack--tight">
           <button
             type="submit"
             data-cursor-pointer
-            class="w-full rounded-lg bg-indigo-500 px-4 py-2 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-60"
+            class="button button--primary button--block"
             [disabled]="isLoginInProgress()">
             @if (isLoginInProgress()) { Entrando... } @else { Entrar }
           </button>
-          <p class="text-[10px] uppercase tracking-[0.28em] text-gray-500">Apenas contas autorizadas podem gerenciar galerias.</p>
+          <p class="form-hint">Apenas contas autorizadas podem gerenciar galerias.</p>
         </div>
       </form>
     </div>
@@ -639,7 +613,7 @@
 }
 
 @if (isWebcamVisible() && canManageContent()) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
+  <div class="overlay-panel" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture
       [captureAllowed]="canManageContent()"
       (capture)="onCaptureComplete($event)"
@@ -668,3 +642,4 @@
     (close)="isInfoDialogVisible.set(false)">
   </app-info-dialog>
 }
+</div>
