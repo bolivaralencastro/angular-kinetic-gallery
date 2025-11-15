@@ -123,13 +123,15 @@ import { convertToWebp } from '../../utils/convert-to-webp';
             }
           </div>
 
-          <button
-            type="button"
-            (click)="reloadApp()"
-            class="mt-8 w-full text-center text-sm font-semibold uppercase tracking-[0.35em] text-white/60 transition hover:text-white focus:outline-none"
-            title="Atualizar aplicativo">
-            Atualizar aplicativo
-          </button>
+          <div class="mt-6 flex justify-center">
+            <button
+              type="button"
+              (click)="reloadApp()"
+              class="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.3em] text-white/40 transition hover:border-white/20 hover:text-white/70 focus:outline-none"
+              title="Atualizar aplicativo">
+              Atualizar aplicativo
+            </button>
+          </div>
         </div>
 
         <canvas #canvasElement class="hidden"></canvas>
