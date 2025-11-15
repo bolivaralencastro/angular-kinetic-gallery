@@ -1,8 +1,106 @@
+@config "../tailwind.config.js";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Add your global styles here */
+
+/* Fallback utilities for Tailwind classes not emitted in v4 builds */
+[class~="bg-black/40"] { background-color: rgba(0, 0, 0, 0.4); }
+[class~="bg-black/50"] { background-color: rgba(0, 0, 0, 0.5); }
+[class~="bg-black/60"] { background-color: rgba(0, 0, 0, 0.6); }
+[class~="bg-black/70"] { background-color: rgba(0, 0, 0, 0.7); }
+[class~="bg-black/80"] { background-color: rgba(0, 0, 0, 0.8); }
+[class~="bg-black/85"] { background-color: rgba(0, 0, 0, 0.85); }
+[class~="bg-black/90"] { background-color: rgba(0, 0, 0, 0.9); }
+[class~="bg-white/5"] { background-color: rgba(255, 255, 255, 0.05); }
+[class~="bg-white/10"] { background-color: rgba(255, 255, 255, 0.1); }
+[class~="bg-white/25"] { background-color: rgba(255, 255, 255, 0.25); }
+[class~="bg-white/80"] { background-color: rgba(255, 255, 255, 0.8); }
+[class~="bg-white/85"] { background-color: rgba(255, 255, 255, 0.85); }
+[class~="bg-emerald-500/25"] { background-color: rgba(16, 185, 129, 0.25); }
+[class~="bg-red-500/10"] { background-color: rgba(239, 68, 68, 0.1); }
+[class~="bg-slate-200/80"] { background-color: rgba(226, 232, 240, 0.8); }
+[class~="bg-zinc-900/60"] { background-color: rgba(24, 24, 27, 0.6); }
+[class~="border-white/10"] { border-color: rgba(255, 255, 255, 0.1); }
+[class~="border-white/15"] { border-color: rgba(255, 255, 255, 0.15); }
+[class~="border-white/20"] { border-color: rgba(255, 255, 255, 0.2); }
+[class~="border-white/40"] { border-color: rgba(255, 255, 255, 0.4); }
+[class~="border-slate-200/80"] { border-color: rgba(226, 232, 240, 0.8); }
+[class~="border-slate-300/70"] { border-color: rgba(203, 213, 225, 0.7); }
+[class~="border-red-500/40"] { border-color: rgba(239, 68, 68, 0.4); }
+[class~="text-white/40"] { color: rgba(255, 255, 255, 0.4); }
+[class~="text-white/70"] { color: rgba(255, 255, 255, 0.7); }
+[class~="text-white/85"] { color: rgba(255, 255, 255, 0.85); }
+[class~="text-white/90"] { color: rgba(255, 255, 255, 0.9); }
+[class~="text-slate-800/90"] { color: rgba(30, 41, 59, 0.9); }
+[class~="text-slate-900/90"] { color: rgba(15, 23, 42, 0.9); }
+[class~="hover:bg-white/10"]:hover { background-color: rgba(255, 255, 255, 0.1); }
+[class~="hover:bg-black/60"]:hover { background-color: rgba(0, 0, 0, 0.6); }
+[class~="hover:bg-red-500/20"]:hover { background-color: rgba(239, 68, 68, 0.2); }
+[class~="hover:bg-slate-200/60"]:hover { background-color: rgba(226, 232, 240, 0.6); }
+[class~="hover:border-white/20"]:hover { border-color: rgba(255, 255, 255, 0.2); }
+[class~="hover:text-white/70"]:hover { color: rgba(255, 255, 255, 0.7); }
+.group:hover [class~="group-hover:bg-white/20"] { background-color: rgba(255, 255, 255, 0.2); }
+.group:hover [class~="group-hover:border-white/40"] { border-color: rgba(255, 255, 255, 0.4); }
+[class~="focus:ring-white/30"]:focus { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }
+[class~="focus:ring-white/40"]:focus { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+[class~="focus:ring-slate-500/60"]:focus { box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.6); }
+[class~="focus-within:ring-white/30"]:focus-within { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }
+[class~="left-1/2"] { left: 50%; }
+[class~="top-1/2"] { top: 50%; }
+[class~="inset-[22%]"] { inset: 22%; }
+[class~="inset-[46%]"] { inset: 46%; }
+[class~="left-[33.333%]"] { left: 33.333%; }
+[class~="left-[66.666%]"] { left: 66.666%; }
+[class~="top-[33.333%]"] { top: 33.333%; }
+[class~="top-[66.666%]"] { top: 66.666%; }
+[class~="z-[9999]"] { z-index: 9999; }
+[class~="z-[10000]"] { z-index: 10000; }
+[class~="z-[10001]"] { z-index: 10001; }
+[class~="max-w-[10rem]"] { max-width: 10rem; }
+[class~="max-w-[26rem]"] { max-width: 26rem; }
+[class~="min-w-[220px]"] { min-width: 220px; }
+[class~="rounded-[18px]"] { border-radius: 18px; }
+[class~="rounded-[22px]"] { border-radius: 22px; }
+[class~="rounded-[26px]"] { border-radius: 26px; }
+[class~="text-[9px]"] { font-size: 9px; }
+[class~="text-[10px]"] { font-size: 10px; }
+[class~="text-[11px]"] { font-size: 11px; }
+[class~="tracking-[0.2em]"] { letter-spacing: 0.2em; }
+[class~="tracking-[0.24em]"] { letter-spacing: 0.24em; }
+[class~="tracking-[0.28em]"] { letter-spacing: 0.28em; }
+[class~="tracking-[0.3em]"] { letter-spacing: 0.3em; }
+[class~="tracking-[0.32em]"] { letter-spacing: 0.32em; }
+[class~="tracking-[0.4em]"] { letter-spacing: 0.4em; }
+[class~="bg-[#1a1a1a]"] { background-color: #1a1a1a; }
+[class~="from-[#4b5563]"] { --tw-gradient-from: #4b5563; --tw-gradient-stops: var(--tw-gradient-from), rgba(75, 85, 99, 0); }
+[class~="via-[#1f2937]"] { --tw-gradient-stops: var(--tw-gradient-from), #1f2937, rgba(31, 41, 55, 0); }
+[class~="to-[#0f172a]"] { --tw-gradient-to: #0f172a; }
+[class~="from-[#6b7280]"] { --tw-gradient-from: #6b7280; --tw-gradient-stops: var(--tw-gradient-from), rgba(107, 114, 128, 0); }
+[class~="via-[#374151]"] { --tw-gradient-stops: var(--tw-gradient-from), #374151, rgba(55, 65, 81, 0); }
+[class~="to-[#111827]"] { --tw-gradient-to: #111827; }
+[class~="from-[#d1d5db]"] { --tw-gradient-from: #d1d5db; --tw-gradient-stops: var(--tw-gradient-from), rgba(209, 213, 219, 0); }
+[class~="via-[#9ca3af]"] { --tw-gradient-stops: var(--tw-gradient-from), #9ca3af, rgba(156, 163, 175, 0); }
+[class~="to-[#4b5563]"] { --tw-gradient-to: #4b5563; }
+[class~="shadow-[0_10px_40px_rgba(0,0,0,0.6)]"] { box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+[class~="shadow-[0_18px_35px_rgba(0,0,0,0.45)]"] { box-shadow: 0 18px 35px rgba(0, 0, 0, 0.45); }
+[class~="shadow-[0_30px_90px_rgba(0,0,0,0.55)]"] { box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55); }
+[class~="shadow-[0_30px_90px_rgba(15,23,42,0.18)]"] { box-shadow: 0 30px 90px rgba(15, 23, 42, 0.18); }
+[class~="shadow-[0_6px_15px_rgba(0,0,0,0.25)]"] { box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25); }
+[class~="shadow-[inset_0_-8px_0_rgba(0,0,0,0.18)]"] { box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.18); }
+[class~="shadow-[inset_0_0_18px_rgba(255,255,255,0.05)]"] { box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.05); }
+[class~="shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"] { box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.25); }
+[class~="shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"] { box-shadow: inset 0 6px 0 rgba(0, 0, 0, 0.22); }
+.group:active [class~="group-active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.25)]"] { box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.25); }
+.group:active [class~="group-active:shadow-[inset_0_6px_0_rgba(0,0,0,0.22)]"] { box-shadow: inset 0 6px 0 rgba(0, 0, 0, 0.22); }
+.group:active [class~="group-active:translate-y-0.5"] { transform: translateY(0.125rem); }
+.group:active [class~="group-active:translate-y-0"] { transform: translateY(0); }
+.group:hover [class~="group-hover:scale-[1.03]"] { transform: scale(1.03); }
+[class~="!shadow-[0_12px_24px_rgba(0,0,0,0.35)]"] { box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35) !important; }
+[class~="transition-[background-color,box-shadow,border-radius]"] { transition-property: background-color, box-shadow, border-radius; }
+[class~="transition-[box-shadow]"] { transition-property: box-shadow; }
 
 /* Remove blue default colors and ensure gray theme for dialog elements */
 app-gallery-creation-dialog button,
