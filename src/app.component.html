@@ -380,7 +380,7 @@
         </div>
       } @else {
         <!-- Gallery List Canvas -->
-        <div #canvas class="absolute will-change-transform">
+        <div #canvas class="absolute will-change-transform gallery-canvas">
           @for (item of visibleItems(); track trackById($index, item)) {
             @if (item.type === 'gallery') {
               <div
@@ -456,7 +456,7 @@
           }
         </div>
       }
-      <div #canvas class="absolute will-change-transform">
+      <div #canvas class="absolute will-change-transform gallery-canvas">
         @for (item of visibleItems(); track trackById($index, item)) {
           <div
             class="photo-card"
