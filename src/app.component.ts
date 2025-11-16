@@ -763,7 +763,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   );
 
   // --- Referências a Elementos do Template ---
-  private canvas = viewChild<ElementRef<HTMLDivElement>>('canvas');
+  private canvasWrapper = viewChild<ElementRef<HTMLDivElement>>('canvasWrapper');
   private expandedItemElement = viewChild<ElementRef<HTMLDivElement>>('expandedItemElement');
   private mobileScrollContainer = viewChild<ElementRef<HTMLDivElement>>('mobileScrollContainer');
 
@@ -772,6 +772,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   private target = { x: 0, y: 0 };
   private current = { x: 0, y: 0 };
   private viewport = { width: 0, height: 0 };
+  private initialPosition = { x: 0, y: 0 };
+  private teleportDistance = { x: 0, y: 0 };
+  private hasInitializedPosition = false;
   private readonly EDGE_THRESHOLD = 150;
   private readonly MAX_SCROLL_SPEED = 25;
   private readonly activeArrowKeys = new Set<ArrowKey>();
@@ -1025,6 +1028,65 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
     this.viewport.width = rect.width;
     this.viewport.height = rect.height;
+  }
+
+  private updateTeleportationAnchors(): void {
+    if (this.viewport.width === 0 || this.viewport.height === 0) {
+      return;
+    }
+
+    const baseX = -this.itemDimensions.cellWidth + (this.viewport.width - this.itemDimensions.width) / 2;
+    const baseY = -this.itemDimensions.cellHeight + (this.viewport.height - this.itemDimensions.height) / 2;
+
+    const deltaX = baseX - this.initialPosition.x;
+    const deltaY = baseY - this.initialPosition.y;
+
+    this.initialPosition.x = baseX;
+    this.initialPosition.y = baseY;
+    this.teleportDistance.x = this.itemDimensions.cellWidth;
+    this.teleportDistance.y = this.itemDimensions.cellHeight;
+
+    if (this.hasInitializedPosition) {
+      this.current.x += deltaX;
+      this.current.y += deltaY;
+      this.target.x += deltaX;
+      this.target.y += deltaY;
+    } else {
+      this.current.x = baseX;
+      this.current.y = baseY;
+      this.target.x = baseX;
+      this.target.y = baseY;
+      this.hasInitializedPosition = true;
+    }
+  }
+
+  private applyTeleportation(): void {
+    if (!this.hasInitializedPosition) {
+      return;
+    }
+
+    const { x: baseX, y: baseY } = this.initialPosition;
+    const { x: distanceX, y: distanceY } = this.teleportDistance;
+
+    if (distanceX > 0) {
+      if (this.current.x > baseX + distanceX) {
+        this.current.x -= distanceX;
+        this.target.x -= distanceX;
+      } else if (this.current.x < baseX - distanceX) {
+        this.current.x += distanceX;
+        this.target.x += distanceX;
+      }
+    }
+
+    if (distanceY > 0) {
+      if (this.current.y > baseY + distanceY) {
+        this.current.y -= distanceY;
+        this.target.y -= distanceY;
+      } else if (this.current.y < baseY - distanceY) {
+        this.current.y += distanceY;
+        this.target.y += distanceY;
+      }
+    }
   }
 
   private onMouseEnter(): void {
@@ -1451,6 +1513,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.viewport.width === 0 || this.viewport.height === 0) {
       this.calculateGridDimensions();
+      this.updateTeleportationAnchors();
     }
 
     const viewWidth = this.viewport.width;
@@ -1686,8 +1749,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
             this.current.x += (this.target.x - this.current.x) * this.settings.dragEase;
             this.current.y += (this.target.y - this.current.y) * this.settings.dragEase;
 
-            if (this.canvas()) {
-              this.canvas()!.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
+            this.applyTeleportation();
+
+            const wrapperRef = this.canvasWrapper();
+            if (wrapperRef) {
+              wrapperRef.nativeElement.style.transform = `translate(${this.current.x}px, ${this.current.y}px)`;
             }
 
             this.updateVisibleItems();
@@ -1770,6 +1836,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onResize(): void {
     this.calculateGridDimensions();
+    this.updateTeleportationAnchors();
     this.updateVisibleItems(true);
     this.updateResponsiveLayout();
     if (this.expandedItem()) {
