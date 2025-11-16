@@ -1,90 +1,34 @@
-README - Configuração do Backend
-Abaixo está o conteúdo completo do arquivo Markdown que descreve a configuração atual do backend do projeto, incluindo Storage, tabelas relacionadas a galerias, autenticação e observações operacionais. Você pediu a opção B (texto para copiar/colar). Copie este conteúdo para um arquivo README.md onde preferir.
+# Configuração do Backend (Supabase)
 
-Backend — Visão Geral e Configuração
-Este documento descreve a configuração atual do backend do projeto, com foco em Storage (Supabase Storage), estruturas de dados para galerias e imagens, autenticação e pontos operacionais importantes.
+Este guia descreve apenas o que é necessário para o aplicativo funcionar com um projeto Supabase próprio. Use-o em conjunto com o README principal.
 
-Sumário
-Visão geral
-Estruturas principais (buckets e tabelas)
-Como imagens e galerias estão vinculadas
-Observações sobre metadados e sizing
-Recomendações operacionais e de manutenção
-Como reproduzir/estender
-Visão geral
-O backend usa Supabase (Postgres + Storage + Auth + Realtime). As principais responsabilidades são:
+## Estrutura mínima
+- **Bucket**: crie um bucket público chamado `gallery-images` no Supabase Storage.
+- **Tabelas** (schema `public`):
+  - `galleries` com colunas `id uuid primary key`, `name text`, `description text`, `thumbnail_url text`, `created_at timestamp`.
+  - `gallery_images` com colunas `id uuid primary key`, `gallery_id uuid references galleries(id) on delete cascade`, `image_url text`, `created_at timestamp default now()`.
 
-Armazenamento de imagens e outros objetos em um bucket do Supabase Storage.
-Tabelas no schema public para representar galerias e as imagens dentro delas.
-Autenticação gerenciada pelo schema auth (Supabase Auth).
-Possibilidade de notificações em tempo real usando o schema realtime, embora não haja triggers públicos configurados para isso neste momento.
-Buckets e objetos (Supabase Storage)
-Bucket principal identificado: gallery-images (1 bucket no projeto).
-Tabela storage.objects contém os objetos armazenados no bucket (45 objetos atualmente).
-Cada objeto tem campos relevantes:
-id (uuid)
-bucket_id (text)
-name (text) — caminho relativo dentro do bucket (ex.: /.png)
-metadata / user_metadata (jsonb) — podem conter informações adicionais, inclusive um campo size
-created_at, updated_at
-Observações:
+## Política de acesso
+- O app usa a **chave `anon`** para listar e inserir registros e para enviar arquivos ao Storage; habilite RLS conforme sua política de segurança.
+- Para ações administrativas na UI (criar/editar/excluir), o e-mail autorizado deve corresponder a `NG_APP_SUPABASE_ADMIN_EMAIL`.
+- Caso utilize RLS restritivas, garanta que a chave `anon` possa inserir/selecionar em `galleries` e `gallery_images` e fazer upload/download no bucket `gallery-images`.
 
-Os nomes dos objetos incluem subpastas (por exemplo: /.png).
-Muitos objetos possuem extensão .png e têm tamanhos entre ~170 KB e ~430 KB conforme metadados disponíveis.
-Tabelas de domínio
-public.galleries
+## Convenções de armazenamento
+- Uploads são salvos como `/{galleryId}/{uuid}.(png|webp)` no bucket `gallery-images`.
+- `image_url` armazena a URL pública completa retornada pelo Storage (`.../storage/v1/object/public/gallery-images/...`).
+- Ao remover uma galeria, o `SupabaseService` deleta as entradas em `gallery_images` e remove os arquivos correspondentes no Storage.
 
-colunas: id (uuid), name (text), description (text), thumbnail_url (text), created_at
-Registra as galerias criadas (4 galerias no momento).
-public.gallery_images
+## Variáveis de ambiente
+Defina antes de rodar o app (arquivo `.env` ou export no shell):
 
-colunas: id (uuid), gallery_id (uuid), image_url (text), created_at
-Armazena referências a imagens relacionadas a cada galeria (23 registros).
-Observação importante: image_url parece conter um valor que não bate exatamente com storage.objects.name (possivelmente é uma URL completa ou um caminho diferente), o que dificulta joins diretos entre tabela e objetos do Storage.
-Autenticação e controle de acesso
-Auth: tabela auth.users existe e contém os usuários do sistema (supabase auth padrão).
-RLS: storage e public podem ter políticas RLS ativas (padrão do Supabase). Verifique políticas se precisar de acesso via conta anon/cliente.
-Para operações administrativas (ex.: listar/editar objetos via SQL), utilize a service_role ou funções/Edge Functions com as credenciais apropriadas.
-Observações sobre correspondência entre imagens e registros
-Durante a análise foi observado:
+```
+NG_APP_SUPABASE_URL="https://<sua-instancia>.supabase.co"
+NG_APP_SUPABASE_ANON_KEY="<sua-chave-anon>"
+NG_APP_SUPABASE_BUCKET="gallery-images"
+NG_APP_SUPABASE_ADMIN_EMAIL="email-autorizado@dominio.com"
+```
 
-storage.objects contém 45 objetos com nomes terminando em .png.
-public.gallery_images contém 23 registros referenciando imagens.
-A consulta inicial não encontrou correspondências exatas entre storage.objects.name e gallery_images.image_url por causa de diferenças de formato (p.ex.: image_url pode incluir domínio completo ou caminho absoluto, enquanto objects.name usa apenas o caminho relativo).
-Recomenda-se padronizar o armazenamento de referência (por exemplo, salvar apenas o caminho relativo ou separar bucket + path) para facilitar joins, limpeza de arquivos órfãos e integridade referencial.
-Tamanhos e estimativas
-Média de tamanho observada (quando metadata.size está presente): ~230 KB por objeto.
-Soma total dos objetos com size conhecido: ~9,9 MB.
-Com essa média, estimativas aproximadas:
-~4.300 imagens por GB (usando 230 KB média e base decimal),
-Ajuste conforme a média real das suas imagens (ex.: fotos em alta resolução terão média maior).
-Observação: o Supabase não expõe uma quota de armazenamento via banco por padrão. Para estimar quantas imagens ainda cabem, informe o espaço disponível em GB ou confirme uma suposição (ex.: 5 GB).
-
-Recomendações e boas práticas
-Normalizar referências de imagens:
-Armazenar em public.gallery_images: bucket_id + object_name (em colunas separadas) em vez de usar uma URL completa em image_url. Isso facilita joins e operações de manutenção.
-Criar constraints ou funções de verificação:
-Triggers ou jobs que garantam que, ao apagar um registro em gallery_images, o objeto no Storage seja removido (ou vice-versa — política de soft-delete).
-Limpeza de arquivos órfãos:
-Rodar periodicamente uma rotina que identifique objetos do bucket que não estejam referenciados e remover ou arquivar.
-Indexes e RLS:
-Indexar colunas usadas em políticas RLS (por exemplo, gallery_id) e nas queries frequentes.
-Revisar políticas RLS para garantir que apenas usuários autorizados acessem/editem galeries e imagens.
-Metadados:
-Armazenar size em metadata/user_metadata de forma consistente ao fazer upload (para permitir análises sem precisar baixar o objeto).
-Monitoramento:
-Habilitar logs e/ou auditoria para uploads e deleções importantes.
-Ações sugeridas imediatas
-Corrigir a lógica de correspondência entre public.gallery_images.image_url e storage.objects.name:
-Rodar uma correção que compare apenas o final do path (basename) ou normalize removendo domínio/host.
-Gerar relatório de objetos órfãos completo e tomar decisão de deleção/arquivamento.
-Atualizar o schema de gallery_images para separar bucket e path (migrar os valores existentes).
-Automatizar rotina de limpeza com uma Edge Function ou job no banco.
-Como reproduzir a análise (consultas úteis)
-Exemplos que podem ser usados para diagnóstico:
-
-Listar objetos no bucket: SELECT * FROM storage.objects WHERE bucket_id = 'gallery-images' ORDER BY name;
-Listar registros de imagens: SELECT * FROM public.gallery_images ORDER BY created_at;
-Comparação permissiva (suffix match) entre objects.name e gallery_images.image_url: SELECT o.*, g.image_url FROM storage.objects o LEFT JOIN public.gallery_images g ON g.image_url LIKE '%' || o.name OR o.name LIKE '%' || g.image_url;
-Média de tamanho a partir dos metadados: SELECT AVG((user_metadata->>'size')::bigint) FROM storage.objects WHERE user_metadata ? 'size';*
-Ajuste as queries conforme suas convenções de path/URL.
+## Teste rápido
+1. Suba o backend conforme acima.
+2. Rode `npm run dev` e abra a aplicação.
+3. Capture uma imagem ou crie uma galeria; verifique no painel do Supabase se os registros aparecem nas tabelas e se o arquivo foi enviado ao bucket.
