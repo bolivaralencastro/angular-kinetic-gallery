@@ -58,6 +58,11 @@ export class AuthService {
     return this.initializePromise;
   }
 
+  resetState(): void {
+    this.clearSession();
+    this.loadingSignal.set(false);
+  }
+
   canManageContent(): boolean {
     const role = this.userRole()?.toLowerCase();
     if (role === 'admin') {

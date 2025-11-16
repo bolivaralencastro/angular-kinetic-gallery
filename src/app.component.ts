@@ -7,11 +7,13 @@ import { GalleryEditorComponent } from './components/gallery-editor/gallery-edit
 import { GalleryCreationDialogComponent } from './components/gallery-creation-dialog/gallery-creation-dialog.component';
 import { InfoDialogComponent } from './components/info-dialog/info-dialog.component';
 import { MobileGalleryCardComponent } from './components/mobile-gallery-card/mobile-gallery-card.component';
+import { SettingsDialogComponent } from './components/settings-dialog/settings-dialog.component';
 
 import { Gallery } from './interfaces/gallery.interface';
 import { InteractiveCursor } from './services/interactive-cursor';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
+import { SupabaseAuthClientService } from './services/supabase-auth-client.service';
 import { ContextMenuAction, ContextMenuGroup } from './types/context-menu';
 
 // Interfaces para tipagem dos dados
@@ -66,7 +68,7 @@ interface ExpandedItem {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent, MobileGalleryCardComponent],
+  imports: [CommonModule, ContextMenuComponent, WebcamCaptureComponent, GalleryEditorComponent, GalleryCreationDialogComponent, InfoDialogComponent, SettingsDialogComponent, MobileGalleryCardComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -478,10 +480,143 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   async signOut(): Promise<void> {
     this.closeUserMenu();
     await this.authService.signOut();
+    this.resetAfterAuthChange();
+  }
+
+  openSettingsDialog(): void {
+    this.closeUserMenu();
+    this.deleteAccountError.set(null);
+    this.isSettingsDialogVisible.set(true);
+  }
+
+  closeSettingsDialog(): void {
+    if (this.isDeleteAccountInProgress()) {
+      return;
+    }
+
+    this.isSettingsDialogVisible.set(false);
+    this.deleteAccountError.set(null);
+  }
+
+  async confirmAccountDeletion(): Promise<void> {
+    if (this.isDeleteAccountInProgress()) {
+      return;
+    }
+
+    this.deleteAccountError.set(null);
+    this.isDeleteAccountInProgress.set(true);
+
+    try {
+      const session = await this.supabaseAuthClient.getSession();
+      if (!session) {
+        this.handleUnauthorizedDeletion('Não foi possível validar sua sessão. Faça login novamente.');
+        return;
+      }
+
+      const response = await fetch('https://ouqykxafhtctlaymzoxw.functions.supabase.co/delete-account', {
+        method: 'POST',
+        headers: {
+          Authorization: `${session.tokenType} ${session.accessToken}`,
+        },
+      });
+
+      if (response.status === 200) {
+        await this.handleAccountDeletionSuccess();
+        return;
+      }
+
+      if (response.status === 401) {
+        this.handleUnauthorizedDeletion();
+        return;
+      }
+
+      if (response.status >= 500) {
+        this.deleteAccountError.set('Encontramos um problema ao excluir a conta. Tente novamente em instantes.');
+        return;
+      }
+
+      this.deleteAccountError.set(await this.extractDeleteAccountError(response));
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      this.deleteAccountError.set('Não foi possível excluir a conta. Tente novamente.');
+    } finally {
+      this.isDeleteAccountInProgress.set(false);
+    }
+  }
+
+  private async handleAccountDeletionSuccess(): Promise<void> {
+    await this.supabaseAuthClient.signOut();
+    this.resetAfterAuthChange();
+    this.redirectToPublicView();
+  }
+
+  private handleUnauthorizedDeletion(message?: string): void {
+    this.supabaseAuthClient.clearLocalSession();
+    if (message) {
+      this.deleteAccountError.set(message);
+    }
+    this.resetAfterAuthChange();
+    this.openLoginDialog();
+  }
+
+  private async extractDeleteAccountError(response: Response): Promise<string> {
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const body = await response.json() as { message?: string; error?: string };
+        const message = body.message ?? body.error;
+        if (message && typeof message === 'string') {
+          return message;
+        }
+      }
+
+      const text = await response.text();
+      if (text) {
+        return text;
+      }
+    } catch (error) {
+      console.error('Erro ao interpretar resposta de exclusão de conta:', error);
+    }
+
+    return 'Não foi possível excluir a conta. Tente novamente em instantes.';
+  }
+
+  private resetAfterAuthChange(): void {
+    this.authService.resetState();
+    this.galleryService.resetState();
+    this.resetApplicationState();
+  }
+
+  private resetApplicationState(): void {
+    this.contextMenu.set({ visible: false, x: 0, y: 0, groups: [] });
+    this.expandedItem.set(null);
+    this.isWebcamVisible.set(false);
+    this.isGalleryEditorVisible.set(false);
+    this.isGalleryCreationDialogVisible.set(false);
+    this.isInfoDialogVisible.set(false);
+    this.isSettingsDialogVisible.set(false);
+    this.isUserMenuOpen.set(false);
+    this.isAutoNavigationActive.set(false);
+    this.autoNavigationCountdown.set(null);
+    this.autoNavigationHintVisible.set(false);
+    this.isLoginDialogVisible.set(false);
     this.loginPassword.set('');
     this.loginError.set(null);
     this.hasInitializedView.set(false);
     this.mobileCaptureGalleryId.set(null);
+    this.mobileView.set('capture');
+    this.mobileCommandPanelVisible.set(false);
+    this.currentView.set('galleries');
+    this.pendingCaptureToAssign.set(null);
+    this.lastCapturedImage.set(null);
+    this.isDeleteAccountInProgress.set(false);
+    this.deleteAccountError.set(null);
+  }
+
+  private redirectToPublicView(): void {
+    if (typeof window !== 'undefined' && window.location) {
+      window.location.replace(window.location.origin || '/');
+    }
   }
 
   toggleUserMenu(event: MouseEvent): void {
@@ -575,6 +710,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   galleryService = inject(GalleryService);
   themeService = inject(ThemeService);
   authService = inject(AuthService);
+  supabaseAuthClient = inject(SupabaseAuthClientService);
 
   canManageContent = computed(() => this.authService.canManageContent());
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
@@ -639,6 +775,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   loginPassword = signal('');
   loginError = signal<string | null>(null);
   isLoginInProgress = signal(false);
+  isSettingsDialogVisible = signal(false);
+  deleteAccountError = signal<string | null>(null);
+  isDeleteAccountInProgress = signal(false);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
   private closeUserMenuOnLayoutChange = effect(
@@ -842,6 +981,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !this.isGalleryEditorVisible() &&
       !this.isGalleryCreationDialogVisible() &&
       !this.isInfoDialogVisible() &&
+      !this.isSettingsDialogVisible() &&
       !this.isAutoNavigationActive()
   );
 
