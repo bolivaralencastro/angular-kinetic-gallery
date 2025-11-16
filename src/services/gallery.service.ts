@@ -3,6 +3,11 @@ import { Gallery } from '../interfaces/gallery.interface';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 
+type PendingUpload = Readonly<{
+  galleryId: string;
+  dataUrl: string;
+}>;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -10,6 +15,7 @@ export class GalleryService {
   private readonly supabaseService = inject(SupabaseService);
   private readonly authService = inject(AuthService);
   private readonly ongoingUploads = new Set<string>();
+  private readonly pendingUploadsStorageKey = 'kinetic-gallery.pending-uploads';
 
   galleries = signal<Gallery[]>([]);
   selectedGalleryId = signal<string | null>(null);
@@ -26,12 +32,18 @@ export class GalleryService {
   });
 
   constructor() {
-    if (this.supabaseService.isEnabled()) {
-      void this.loadRemoteGalleries();
-    }
+    void this.initializeData();
   }
 
   // --- Gallery Management ---
+
+  private async initializeData(): Promise<void> {
+    if (this.supabaseService.isEnabled()) {
+      await this.loadRemoteGalleries();
+    }
+
+    this.restorePendingUploads();
+  }
 
   createGallery(name: string, description: string): string | null {
     if (!this.canManage()) {
@@ -163,6 +175,10 @@ export class GalleryService {
       this.persistGallery(gallery);
     }
 
+    if (imageUrl.startsWith('data:')) {
+      this.registerPendingUpload(galleryId, imageUrl);
+    }
+
     this.syncGalleryBase64Images(galleryId, [imageUrl]);
   }
 
@@ -186,6 +202,10 @@ export class GalleryService {
     const updatedGallery = this.getGallery(galleryId);
     if (updatedGallery) {
       this.persistGallery(updatedGallery);
+    }
+
+    if (imageUrl.startsWith('data:')) {
+      this.unregisterPendingUpload(galleryId, imageUrl);
     }
 
     if (this.supabaseService.isEnabled()) {
@@ -243,6 +263,8 @@ export class GalleryService {
           if (updatedGallery) {
             this.persistGallery(updatedGallery);
           }
+
+          this.unregisterPendingUpload(galleryId, base64Url);
         }).finally(() => {
           this.endUpload(galleryId, base64Url);
         });
@@ -275,6 +297,109 @@ export class GalleryService {
     }
 
     void this.supabaseService.upsertGallery(gallery);
+  }
+
+  private registerPendingUpload(galleryId: string, imageUrl: string): void {
+    if (!this.canUseLocalStorage()) {
+      return;
+    }
+
+    this.updatePendingUploads(current => {
+      const exists = current.some(
+        pending => pending.galleryId === galleryId && pending.dataUrl === imageUrl,
+      );
+
+      if (exists) {
+        return current;
+      }
+
+      return [{ galleryId, dataUrl: imageUrl }, ...current];
+    });
+  }
+
+  private unregisterPendingUpload(galleryId: string, imageUrl: string): void {
+    if (!this.canUseLocalStorage()) {
+      return;
+    }
+
+    this.updatePendingUploads(current =>
+      current.filter(pending => !(pending.galleryId === galleryId && pending.dataUrl === imageUrl)),
+    );
+  }
+
+  private restorePendingUploads(): void {
+    const pending = this.readPendingUploads();
+
+    if (pending.length === 0) {
+      return;
+    }
+
+    const imagesByGallery = pending.reduce<Map<string, string[]>>((map, { galleryId, dataUrl }) => {
+      const images = map.get(galleryId) ?? [];
+      if (!images.includes(dataUrl)) {
+        images.unshift(dataUrl);
+      }
+      map.set(galleryId, images);
+      return map;
+    }, new Map());
+
+    this.galleries.update(currentGalleries =>
+      currentGalleries.map(gallery => {
+        const pendingImages = imagesByGallery.get(gallery.id);
+        if (!pendingImages || pendingImages.length === 0) {
+          return gallery;
+        }
+
+        const mergedImages = [...pendingImages, ...gallery.imageUrls.filter(url => !pendingImages.includes(url))];
+        const thumbnail = mergedImages[0] ?? gallery.thumbnailUrl;
+        return { ...gallery, imageUrls: mergedImages, thumbnailUrl: thumbnail };
+      }),
+    );
+
+    imagesByGallery.forEach((images, galleryId) => {
+      this.syncGalleryBase64Images(galleryId, images);
+    });
+  }
+
+  private readPendingUploads(): PendingUpload[] {
+    if (!this.canUseLocalStorage()) {
+      return [];
+    }
+
+    try {
+      const raw = window.localStorage.getItem(this.pendingUploadsStorageKey);
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw) as PendingUpload[];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed.filter(
+        (item): item is PendingUpload =>
+          Boolean(item) && typeof item.galleryId === 'string' && typeof item.dataUrl === 'string',
+      );
+    } catch (error) {
+      console.error('Falha ao restaurar uploads pendentes do localStorage', error);
+      return [];
+    }
+  }
+
+  private updatePendingUploads(mutator: (current: PendingUpload[]) => PendingUpload[]): void {
+    const current = this.readPendingUploads();
+    const updated = mutator(current);
+
+    try {
+      window.localStorage.setItem(this.pendingUploadsStorageKey, JSON.stringify(updated));
+    } catch (error) {
+      console.error('Falha ao persistir uploads pendentes no localStorage', error);
+    }
+  }
+
+  private canUseLocalStorage(): boolean {
+    return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
   }
 
   private canManage(): boolean {
