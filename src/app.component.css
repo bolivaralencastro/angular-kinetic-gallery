@@ -4,3 +4,9 @@
   height: 100%;
   user-select: none;
 }
+
+@media (max-width: 768px) {
+  :host {
+    padding: 0;
+  }
+}
