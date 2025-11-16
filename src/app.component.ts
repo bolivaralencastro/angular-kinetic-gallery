@@ -1449,8 +1449,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.lastGridPosition = newGridPosition;
 
-    const viewWidth = this.elementRef.nativeElement.clientWidth;
-    const viewHeight = this.elementRef.nativeElement.clientHeight;
+    if (this.viewport.width === 0 || this.viewport.height === 0) {
+      this.calculateGridDimensions();
+    }
+
+    const viewWidth = this.viewport.width;
+    const viewHeight = this.viewport.height;
+
+    if (viewWidth === 0 || viewHeight === 0) {
+      return;
+    }
 
     const startCol = Math.floor((-this.current.x) / this.itemDimensions.cellWidth - this.settings.bufferZone);
     const endCol = Math.ceil((-this.current.x + viewWidth) / this.itemDimensions.cellWidth + this.settings.bufferZone);
