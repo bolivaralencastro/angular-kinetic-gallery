@@ -14,6 +14,7 @@ import { InteractiveCursor } from './services/interactive-cursor';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
 import { SupabaseAuthClientService } from './services/supabase-auth-client.service';
+import { PermissionsService } from './services/permissions.service';
 import { ContextMenuAction, ContextMenuGroup } from './types/context-menu';
 
 // Interfaces para tipagem dos dados
@@ -710,48 +711,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   galleryService = inject(GalleryService);
   themeService = inject(ThemeService);
   authService = inject(AuthService);
+  permissionsService = inject(PermissionsService);
   supabaseAuthClient = inject(SupabaseAuthClientService);
 
-  canManageContent = computed(() => this.authService.canManageContent());
+  canManageContent = this.permissionsService.canManageContent;
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
-  canEditGallery = computed(() => {
-    const active = this.activeGallery();
-    if (!active) {
-      return false;
-    }
-
-    if (typeof active.canEditGallery === 'boolean') {
-      return active.canEditGallery;
-    }
-
-    return this.authService.canManageGallery(active.ownerId ?? '');
-  });
-  canUploadToGallery = computed(() => {
-    const active = this.activeGallery();
-    if (!active) {
-      return false;
-    }
-
-    if (typeof active.canUploadToGallery === 'boolean') {
-      return active.canUploadToGallery;
-    }
-
-    return this.authService.canManageGallery(active.ownerId ?? '');
-  });
-  canDeletePhoto = computed(() => {
-    const active = this.activeGallery();
-    if (!active) {
-      return false;
-    }
-
-    if (typeof active.canDeletePhoto === 'boolean') {
-      return active.canDeletePhoto;
-    }
-
-    return this.authService.canManageGallery(active.ownerId ?? '');
-  });
+  canUploadToGallery = this.permissionsService.canUploadToSelectedGallery;
   userRoleLabel = computed(() => {
     const role = this.authService.userRole();
     if (role) {
@@ -762,13 +729,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   });
   isUserMenuOpen = signal(false);
   private hasInitializedView = signal(false);
-  canCreateGalleries = computed(() => this.authService.canManageContent());
-  canManageSelectedGallery = computed(() => this.canEditGallery());
-  canCaptureInSelectedGallery = computed(() => this.canUploadToGallery());
-  canEditSelectedGallery = computed(() => this.canEditGallery());
-  canDeleteSelectedGallery = computed(() => this.canEditGallery());
-  canViewMobileGalleryList = computed(() => this.canCreateGalleries());
-  canUseCaptureDialog = computed(() => this.canUploadToGallery() || this.canCreateGalleries());
+  canCreateGalleries = this.permissionsService.canCreateGalleries;
+  canManageSelectedGallery = this.permissionsService.canManageSelectedGallery;
+  canCaptureInSelectedGallery = this.permissionsService.canCaptureInSelectedGallery;
+  canEditSelectedGallery = this.permissionsService.canEditSelectedGallery;
+  canDeleteSelectedGallery = this.permissionsService.canDeleteSelectedGallery;
+  canViewMobileGalleryList = this.permissionsService.canViewMobileGalleryList;
+  canUseCaptureDialog = this.permissionsService.canUseCaptureDialog;
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
@@ -945,23 +912,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       label: this.generalGroupLabel,
       actions,
     };
-  }
-
-  private canManageGalleryById(galleryId: string | null): boolean {
-    if (!galleryId) {
-      return false;
-    }
-
-    const gallery = this.galleryService.getGallery(galleryId);
-    if (!gallery) {
-      return false;
-    }
-
-    if (typeof gallery.canEditGallery === 'boolean') {
-      return gallery.canEditGallery;
-    }
-
-    return this.authService.canManageGallery(gallery.ownerId ?? '');
   }
 
   private isTypingElement(target: HTMLElement | null): boolean {
@@ -1603,7 +1553,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startCaptureForGallery(galleryId: string): void {
-    if (!this.canManageGalleryById(galleryId)) {
+    if (!this.permissionsService.canCaptureInGallery(galleryId)) {
       return;
     }
 
@@ -1675,7 +1625,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   showCaptureWithGallery(galleryId: string): void {
-    if (!this.canManageGalleryById(galleryId)) {
+    if (!this.permissionsService.canCaptureInGallery(galleryId)) {
       return;
     }
     this.mobileCaptureGalleryId.set(galleryId);
@@ -1684,7 +1634,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   useGalleryForCapture(galleryId: string): void {
-    if (!this.canManageGalleryById(galleryId)) {
+    if (!this.permissionsService.canCaptureInGallery(galleryId)) {
       return;
     }
     this.mobileCaptureGalleryId.set(galleryId);
@@ -1701,7 +1651,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectMobileCaptureGallery(galleryId: string): void {
-    if (!this.canManageGalleryById(galleryId)) {
+    if (!this.permissionsService.canCaptureInGallery(galleryId)) {
       return;
     }
     this.mobileCaptureGalleryId.set(galleryId);
@@ -1714,7 +1664,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.canManageGalleryById(captureId)) {
+    if (!this.permissionsService.canCaptureInGallery(captureId)) {
       return;
     }
 
@@ -2152,7 +2102,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGallery(id: string): void {
-    if (!this.canManageGalleryById(id)) {
+    if (!this.permissionsService.canManageGalleryById(id)) {
       return;
     }
 
@@ -2255,7 +2205,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async handleGallerySave(event: { id: string | null; name: string; description: string }): Promise<void> {
     if (event.id) {
-      if (!this.canManageGalleryById(event.id)) {
+      if (!this.permissionsService.canManageGalleryById(event.id)) {
         return;
       }
       const success = await this.galleryService.updateGallery(event.id, event.name, event.description);
@@ -2284,7 +2234,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async handleGalleryDelete(id: string): Promise<void> {
-    if (!this.canManageGalleryById(id)) {
+    if (!this.permissionsService.canManageGalleryById(id)) {
       return;
     }
 
@@ -2323,7 +2273,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         groups.push({ label: 'Galerias', actions: ['createGallery'] });
       }
 
-      if (this.canManageGalleryById(galleryId)) {
+      if (this.permissionsService.canManageGalleryById(galleryId)) {
         groups.push({ label: 'Galeria selecionada', actions: ['togglePlayback', 'editGallery', 'deleteGallery'] });
       }
 
@@ -2424,7 +2374,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deleteGallery(id: string): Promise<void> {
-    if (!this.canManageGalleryById(id)) {
+    if (!this.permissionsService.canManageGalleryById(id)) {
       return;
     }
 
@@ -2473,7 +2423,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGalleryContextMenu(): void {
-    if (!this.canManageGalleryById(this.contextMenuGalleryId)) {
+    if (!this.permissionsService.canManageGalleryById(this.contextMenuGalleryId)) {
       return;
     }
 
@@ -2483,7 +2433,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteGalleryContextMenu(): void {
-    if (!this.canManageGalleryById(this.contextMenuGalleryId)) {
+    if (!this.permissionsService.canManageGalleryById(this.contextMenuGalleryId)) {
       return;
     }
 
