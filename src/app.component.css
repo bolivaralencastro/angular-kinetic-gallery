@@ -1,6 +1,14 @@
 :host {
   display: block;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
+  padding: var(--app-shell-spacing-lg);
+  box-sizing: border-box;
   user-select: none;
+}
+
+@media (max-width: 768px) {
+  :host {
+    padding: 0;
+  }
 }
