@@ -28,6 +28,8 @@ export interface DialogPalette {
   buttonPrimaryText: string;
   buttonSecondaryBg: string;
   buttonSecondaryText: string;
+  buttonDangerBg: string;
+  buttonDangerText: string;
   disabledBg: string;
   disabledText: string;
   timerActiveBg: string;
@@ -79,6 +81,8 @@ export class ThemeService {
         buttonPrimaryText: '#ffffff',
         buttonSecondaryBg: 'rgb(60, 60, 60)',
         buttonSecondaryText: '#ffffff',
+        buttonDangerBg: '#ef4444',
+        buttonDangerText: '#ffffff',
         disabledBg: 'rgb(38, 38, 38)',
         disabledText: 'rgb(150, 150, 150)',
         timerActiveBg: 'rgb(80, 80, 80)',
@@ -116,6 +120,8 @@ export class ThemeService {
         buttonPrimaryText: '#f8fafc',
         buttonSecondaryBg: 'rgba(148, 163, 184, 0.25)',
         buttonSecondaryText: '#0f172a',
+        buttonDangerBg: '#ef4444',
+        buttonDangerText: '#ffffff',
         disabledBg: 'rgba(226, 232, 240, 0.9)',
         disabledText: 'rgba(148, 163, 184, 0.9)',
         timerActiveBg: '#0f172a',
