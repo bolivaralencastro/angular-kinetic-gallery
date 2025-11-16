@@ -783,7 +783,7 @@ body[data-theme='light'] .photo-mosaic__border {
 .screen-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 9000;
   background-color: rgba(0, 0, 0, 0.9);
   transition: opacity 400ms ease;
   pointer-events: none;
@@ -817,7 +817,7 @@ body[data-theme='light'] .photo-mosaic__border {
 }
 
 .screen-overlay__media {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -830,6 +830,7 @@ body[data-theme='light'] .photo-mosaic__border {
   box-shadow: 0 20px 65px rgba(0, 0, 0, 0.6);
   max-width: 90vw;
   max-height: 90vh;
+  z-index: 10000;
 }
 
 .screen-overlay__image {
