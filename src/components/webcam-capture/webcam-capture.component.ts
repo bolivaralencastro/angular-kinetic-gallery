@@ -541,9 +541,6 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
       try {
         const dataUrl = await this.blobToDataUrl(blob);
         this.capture.emit(dataUrl);
-        if (!this.isMobileVariant()) {
-          this.close.emit();
-        }
       } catch (error) {
         console.error('Erro ao gerar pré-visualização da captura', error);
         this.error.set('Não foi possível processar a imagem capturada.');
