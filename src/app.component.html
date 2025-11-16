@@ -50,6 +50,13 @@
                   type="button"
                   class="button button--ghost user-menu__action"
                   data-cursor-pointer
+                  (click)="openSettingsDialog()">
+                  Configurações
+                </button>
+                <button
+                  type="button"
+                  class="button button--ghost user-menu__action"
+                  data-cursor-pointer
                   (click)="signOut()">
                   Sair
                 </button>
@@ -721,6 +728,15 @@
     (close)="isGalleryCreationDialogVisible.set(false)"
     (save)="handleGalleryCreate($event)">
   </app-gallery-creation-dialog>
+}
+
+@if (isSettingsDialogVisible()) {
+  <app-settings-dialog
+    [isDeleting]="isDeleteAccountInProgress()"
+    [error]="deleteAccountError()"
+    (close)="closeSettingsDialog()"
+    (confirmDelete)="confirmAccountDeletion()">
+  </app-settings-dialog>
 }
 
 @if (isInfoDialogVisible()) {

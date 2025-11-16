@@ -28,6 +28,10 @@ export class SupabaseService {
     return Boolean(this.baseUrl && this.anonKey);
   }
 
+  resetState(): void {
+    this.currentUserGalleryId = null;
+  }
+
   private async restRequest(path: string, init: RequestOptions = {}): Promise<Response> {
     const response = await fetch(`${this.baseUrl}/rest/v1/${path}`, {
       ...init,

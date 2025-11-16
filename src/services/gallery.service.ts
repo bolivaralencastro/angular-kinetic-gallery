@@ -37,6 +37,17 @@ export class GalleryService {
     void this.initializeData();
   }
 
+  resetState(): void {
+    this.supabaseService.resetState();
+    this.galleries.set([]);
+    this.selectedGalleryId.set(null);
+    this.pendingCaptures.set([]);
+    this.currentUserGalleryId.set(null);
+    this.lastErrorMessage.set(null);
+    this.ongoingUploads.clear();
+    this.clearPendingUploadsStorage();
+  }
+
   // --- Gallery Management ---
 
   private async initializeData(): Promise<void> {
@@ -480,6 +491,18 @@ export class GalleryService {
       window.localStorage.setItem(this.pendingUploadsStorageKey, JSON.stringify(updated));
     } catch (error) {
       console.error('Falha ao persistir uploads pendentes no localStorage', error);
+    }
+  }
+
+  private clearPendingUploadsStorage(): void {
+    if (!this.canUseLocalStorage()) {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(this.pendingUploadsStorageKey);
+    } catch (error) {
+      console.error('Falha ao limpar uploads pendentes do localStorage', error);
     }
   }
 
