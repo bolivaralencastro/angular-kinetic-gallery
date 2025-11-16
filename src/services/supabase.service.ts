@@ -20,13 +20,16 @@ export class SupabaseService {
   }
 
   private async restRequest(path: string, init: RequestOptions = {}): Promise<Response> {
-    return fetch(`${this.baseUrl}/rest/v1/${path}`, {
+    const response = await fetch(`${this.baseUrl}/rest/v1/${path}`, {
       ...init,
       headers: {
         ...this.buildRestHeaders(),
         ...(init.headers ?? {}),
       },
     });
+
+    this.handleUnauthorized(response);
+    return response;
   }
 
   private async storageRequest(
@@ -34,13 +37,16 @@ export class SupabaseService {
     init: RequestOptions = {},
     contentType?: string,
   ): Promise<Response> {
-    return fetch(`${this.baseUrl}/storage/v1/${path}`, {
+    const response = await fetch(`${this.baseUrl}/storage/v1/${path}`, {
       ...init,
       headers: {
         ...this.buildStorageHeaders(contentType),
         ...(init.headers ?? {}),
       },
     });
+
+    this.handleUnauthorized(response);
+    return response;
   }
 
   private logFailure(context: string, detail: unknown): void {
@@ -49,6 +55,12 @@ export class SupabaseService {
 
   private logUnexpected(context: string, error: unknown): void {
     console.error(`${context}:`, error);
+  }
+
+  private handleUnauthorized(response: Response): void {
+    if (response.status === 401) {
+      this.authService.handleUnauthorized();
+    }
   }
 
   async fetchGalleries(): Promise<Gallery[] | null> {
@@ -63,6 +75,9 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao buscar galerias no Supabase', await response.text());
+        if (response.status === 401) {
+          this.authService.handleUnauthorized();
+        }
         return null;
       }
 
