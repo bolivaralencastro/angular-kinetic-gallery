@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone, HostListener, HostBinding } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, computed, effect, viewChild, ElementRef, OnInit, AfterViewInit, OnDestroy, NgZone, HostListener, HostBinding, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GalleryService } from './services/gallery.service';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
@@ -588,14 +588,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoginInProgress = signal(false);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
-  private closeUserMenuOnLayoutChange = effect(() => {
-    this.isMobileLayout();
-    this.mobileView();
+  private closeUserMenuOnLayoutChange = effect(
+    () => {
+      this.isMobileLayout();
+      this.mobileView();
 
-    if (this.isUserMenuOpen()) {
-      this.isUserMenuOpen.set(false);
-    }
-  });
+      if (untracked(this.isUserMenuOpen)) {
+        this.isUserMenuOpen.set(false);
+      }
+    },
+    { allowSignalWrites: true }
+  );
 
   // --- Configurações da Galeria ---
   private numColumns = signal(4);
