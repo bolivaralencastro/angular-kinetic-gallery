@@ -1043,8 +1043,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.initialPosition.x = baseX;
     this.initialPosition.y = baseY;
-    this.teleportDistance.x = this.itemDimensions.cellWidth;
-    this.teleportDistance.y = this.itemDimensions.cellHeight;
+
+    const visibleColumns = Math.max(
+      this.numColumns(),
+      Math.ceil(this.viewport.width / this.itemDimensions.cellWidth)
+    );
+    const visibleRows = Math.max(
+      1,
+      Math.ceil(this.viewport.height / this.itemDimensions.cellHeight)
+    );
+
+    this.teleportDistance.x = this.itemDimensions.cellWidth * (visibleColumns + this.settings.bufferZone * 2);
+    this.teleportDistance.y = this.itemDimensions.cellHeight * (visibleRows + this.settings.bufferZone * 2);
 
     if (this.hasInitializedPosition) {
       this.current.x += deltaX;
