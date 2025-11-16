@@ -18,11 +18,11 @@ import { ThemeMode } from '../../services/theme.service';
           <li class="menu__group" role="none">
             <p class="menu__heading">{{ group.label }}</p>
             <ul class="menu__items" role="none">
-              @for (action of group.actions; track action) {
-                @if (isActionAllowed(action)) {
-                  <li role="none">
-                    <button
-                      type="button"
+                @for (action of group.actions; track action) {
+                  @if (isActionAllowed(action)) {
+                    <li role="none">
+                      <button
+                        type="button"
                       class="menu__item"
                       role="menuitem"
                       data-cursor-pointer
@@ -128,9 +128,10 @@ import { ThemeMode } from '../../services/theme.service';
                         <ng-container *ngSwitchCase="'deleteGallery'">Excluir galeria</ng-container>
                         <ng-container *ngSwitchCase="'deletePhoto'">Excluir foto</ng-container>
                       </ng-container>
-                    </span>
-                  </button>
-                </li>
+                      </span>
+                    </button>
+                  </li>
+                }
               }
             </ul>
             @if (!$last) {
