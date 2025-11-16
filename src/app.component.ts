@@ -580,6 +580,42 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
+  canEditGallery = computed(() => {
+    const active = this.activeGallery();
+    if (!active) {
+      return false;
+    }
+
+    if (typeof active.canEditGallery === 'boolean') {
+      return active.canEditGallery;
+    }
+
+    return this.authService.canManageGallery(active.ownerId ?? '');
+  });
+  canUploadToGallery = computed(() => {
+    const active = this.activeGallery();
+    if (!active) {
+      return false;
+    }
+
+    if (typeof active.canUploadToGallery === 'boolean') {
+      return active.canUploadToGallery;
+    }
+
+    return this.authService.canManageGallery(active.ownerId ?? '');
+  });
+  canDeletePhoto = computed(() => {
+    const active = this.activeGallery();
+    if (!active) {
+      return false;
+    }
+
+    if (typeof active.canDeletePhoto === 'boolean') {
+      return active.canDeletePhoto;
+    }
+
+    return this.authService.canManageGallery(active.ownerId ?? '');
+  });
   userRoleLabel = computed(() => {
     const role = this.authService.userRole();
     if (role) {
@@ -591,19 +627,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isUserMenuOpen = signal(false);
   private hasInitializedView = signal(false);
   canCreateGalleries = computed(() => this.authService.canManageContent());
-  canManageSelectedGallery = computed(() => {
-    const active = this.activeGallery();
-    if (!active) {
-      return false;
-    }
-
-    return this.authService.canManageGallery(active.ownerId);
-  });
-  canCaptureInSelectedGallery = computed(() => this.canManageSelectedGallery());
-  canEditSelectedGallery = computed(() => this.canManageSelectedGallery());
-  canDeleteSelectedGallery = computed(() => this.canManageSelectedGallery());
+  canManageSelectedGallery = computed(() => this.canEditGallery());
+  canCaptureInSelectedGallery = computed(() => this.canUploadToGallery());
+  canEditSelectedGallery = computed(() => this.canEditGallery());
+  canDeleteSelectedGallery = computed(() => this.canEditGallery());
   canViewMobileGalleryList = computed(() => this.canCreateGalleries());
-  canUseCaptureDialog = computed(() => this.canCaptureInSelectedGallery() || this.canCreateGalleries());
+  canUseCaptureDialog = computed(() => this.canUploadToGallery() || this.canCreateGalleries());
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
@@ -703,7 +732,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return false;
     }
 
-    return this.authService.canManageGallery(gallery.ownerId);
+    if (typeof gallery.canUploadToGallery === 'boolean') {
+      return gallery.canUploadToGallery;
+    }
+
+    return this.authService.canManageGallery(gallery.ownerId ?? '');
   });
   galleryLatestImages = computed(() => {
     const latest: Record<string, string> = {};
@@ -785,7 +818,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return false;
     }
 
-    return this.authService.canManageGallery(gallery.ownerId);
+    if (typeof gallery.canEditGallery === 'boolean') {
+      return gallery.canEditGallery;
+    }
+
+    return this.authService.canManageGallery(gallery.ownerId ?? '');
   }
 
   private isTypingElement(target: HTMLElement | null): boolean {

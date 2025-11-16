@@ -86,6 +86,9 @@ export class GalleryService {
       imageUrls: [],
       thumbnailUrl: undefined,
       createdAt,
+      canEditGallery: true,
+      canUploadToGallery: true,
+      canDeletePhoto: true,
     };
 
     if (this.supabaseService.isEnabled()) {
@@ -111,7 +114,7 @@ export class GalleryService {
       return false;
     }
 
-    const updatedGallery: Gallery = { ...gallery, name, description };
+    const updatedGallery: Gallery = this.withPermissions({ ...gallery, name, description });
     if (this.supabaseService.isEnabled()) {
       const result = await this.supabaseService.upsertGallery(updatedGallery);
       if (!result.success) {
@@ -199,11 +202,11 @@ export class GalleryService {
       return false;
     }
 
-    const updatedGallery: Gallery = {
+    const updatedGallery: Gallery = this.withPermissions({
       ...gallery,
       imageUrls: [imageUrl, ...gallery.imageUrls],
       thumbnailUrl: imageUrl,
-    };
+    });
 
     this.galleries.update(currentGalleries =>
       currentGalleries.map(g => (g.id === galleryId ? updatedGallery : g))
@@ -265,7 +268,7 @@ export class GalleryService {
     }
 
     const remoteGalleries = result.data ?? [];
-    this.galleries.set(remoteGalleries);
+    this.galleries.set(remoteGalleries.map(gallery => this.withPermissions(gallery)));
 
     const selectedId = this.selectedGalleryId();
     const selectedGallery = this.findGalleryByIdOrAlias(selectedId, remoteGalleries);
@@ -527,5 +530,16 @@ export class GalleryService {
     }
 
     return galleries.find(gallery => gallery.id === id || gallery.galleryId === id);
+  }
+
+  private withPermissions(gallery: Gallery): Gallery {
+    const canEdit = this.authService.canManageGallery(gallery.ownerId ?? '');
+
+    return {
+      ...gallery,
+      canEditGallery: canEdit,
+      canUploadToGallery: canEdit,
+      canDeletePhoto: canEdit,
+    };
   }
 }
