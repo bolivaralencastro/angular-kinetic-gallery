@@ -1635,7 +1635,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private runExpandAnimation(element: HTMLElement, item: ExpandedItem): void {
-    const side = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+    const maxWidth = window.innerWidth * 0.9;
+    const maxHeight = window.innerHeight * 0.9;
+    const aspectRatio =
+      item.originalWidth > 0 && item.originalHeight > 0
+        ? item.originalWidth / item.originalHeight
+        : 1;
+
+    let targetWidth = maxWidth;
+    let targetHeight = maxWidth / aspectRatio;
+
+    if (targetHeight > maxHeight) {
+      targetHeight = maxHeight;
+      targetWidth = maxHeight * aspectRatio;
+    }
+
     const startX = item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2;
     const startY = item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2;
 
@@ -1643,19 +1657,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     element.style.width = `${item.originalWidth}px`;
     element.style.height = `${item.originalHeight}px`;
-    element.style.transform = `translate(${startX}px, ${startY}px)`;
+    element.style.transform = `translate(calc(-50% + ${startX}px), calc(-50% + ${startY}px))`;
 
     const animation = element.animate(
       [
         {
           width: `${item.originalWidth}px`,
           height: `${item.originalHeight}px`,
-          transform: `translate(${startX}px, ${startY}px)`,
+          transform: `translate(calc(-50% + ${startX}px), calc(-50% + ${startY}px))`,
         },
         {
-          width: `${side}px`,
-          height: `${side}px`,
-          transform: 'translate(0px, 0px)',
+          width: `${targetWidth}px`,
+          height: `${targetHeight}px`,
+          transform: 'translate(-50%, -50%)',
         },
       ],
       {
@@ -1667,9 +1681,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     animation.finished
       .then(() => {
-        element.style.width = `${side}px`;
-        element.style.height = `${side}px`;
-        element.style.transform = 'translate(0px, 0px)';
+        element.style.width = `${targetWidth}px`;
+        element.style.height = `${targetHeight}px`;
+        element.style.transform = 'translate(-50%, -50%)';
       })
       .catch(() => {
         // A animação pode ser cancelada se uma nova começar imediatamente.
@@ -1995,15 +2009,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (element && this.expandedItem()) {
       const item = this.expandedItem()!;
       const nativeElement = element.nativeElement;
-      const computedStyle = getComputedStyle(nativeElement);
-      const matrix =
-        computedStyle.transform && computedStyle.transform !== 'none'
-          ? new DOMMatrixReadOnly(computedStyle.transform)
-          : new DOMMatrixReadOnly();
-      const currentWidth = parseFloat(computedStyle.width);
-      const currentHeight = parseFloat(computedStyle.height);
-      const currentX = matrix.m41;
-      const currentY = matrix.m42;
+      const rect = nativeElement.getBoundingClientRect();
+      const currentWidth = rect.width;
+      const currentHeight = rect.height;
+      const currentX = rect.left + rect.width / 2 - window.innerWidth / 2;
+      const currentY = rect.top + rect.height / 2 - window.innerHeight / 2;
       const targetX = item.originalRect.left + item.originalWidth / 2 - window.innerWidth / 2;
       const targetY = item.originalRect.top + item.originalHeight / 2 - window.innerHeight / 2;
 
@@ -2011,19 +2021,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
       nativeElement.style.width = `${currentWidth}px`;
       nativeElement.style.height = `${currentHeight}px`;
-      nativeElement.style.transform = `translate(${currentX}px, ${currentY}px)`;
+      nativeElement.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`;
 
       const animation = nativeElement.animate(
         [
           {
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
-            transform: `translate(${currentX}px, ${currentY}px)`,
+            transform: `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px))`,
           },
           {
             width: `${item.originalWidth}px`,
             height: `${item.originalHeight}px`,
-            transform: `translate(${targetX}px, ${targetY}px)`,
+            transform: `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px))`,
           },
         ],
         {
@@ -2037,7 +2047,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         .then(() => {
           nativeElement.style.width = `${item.originalWidth}px`;
           nativeElement.style.height = `${item.originalHeight}px`;
-          nativeElement.style.transform = `translate(${targetX}px, ${targetY}px)`;
+          nativeElement.style.transform = `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px))`;
         })
         .catch(() => {
           // A animação pode ser cancelada se uma nova começar imediatamente.
