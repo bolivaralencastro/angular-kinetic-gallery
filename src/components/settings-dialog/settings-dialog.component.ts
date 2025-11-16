@@ -79,7 +79,7 @@ import { ThemeService } from '../../services/theme.service';
                 <input
                   type="checkbox"
                   [checked]="acknowledgeIrreversibility()"
-                  (change)="acknowledgeIrreversibility.set(($event.target as HTMLInputElement).checked)"
+                  (change)="onAcknowledgeChange($event)"
                 />
                 <span>Entendo que esta ação não pode ser desfeita.</span>
               </label>
@@ -92,7 +92,7 @@ import { ThemeService } from '../../services/theme.service';
                   placeholder="DELETAR"
                   autocomplete="off"
                   [value]="confirmationPhrase()"
-                  (input)="confirmationPhrase.set(($event.target as HTMLInputElement).value)"
+                  (input)="onConfirmationInput($event)"
                 />
               </label>
             </div>
@@ -302,5 +302,15 @@ export class SettingsDialogComponent {
     }
 
     this.confirmDelete.emit();
+  }
+
+  onAcknowledgeChange(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.acknowledgeIrreversibility.set(target?.checked ?? false);
+  }
+
+  onConfirmationInput(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.confirmationPhrase.set(target?.value ?? '');
   }
 }
