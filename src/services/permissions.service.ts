@@ -31,6 +31,9 @@ export class PermissionsService {
   readonly canCaptureInSelectedGallery = computed(() =>
     this.canUploadToGalleryById(this.galleryService.selectedGalleryId())
   );
+  readonly canDeletePhotoFromSelectedGallery = computed(() =>
+    this.canDeletePhotoById(this.galleryService.selectedGalleryId())
+  );
 
   readonly canUseCaptureDialog = computed(
     () => this.canUploadToSelectedGallery() || this.canCreateGalleries()
