@@ -35,30 +35,51 @@ export class AuthService {
   private readonly anonKey = environment.supabaseAnonKey;
   private readonly adminEmail = environment.supabaseAdminEmail.trim().toLowerCase();
   private readonly storageKey = 'kinetic-auth-session';
+  private readonly initializePromise: Promise<void>;
 
   private readonly sessionSignal = signal<AuthSession | null>(null);
   private readonly loadingSignal = signal(true);
   private refreshTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly session = computed(() => this.sessionSignal());
+  readonly sessionToken = computed(() => this.sessionSignal()?.accessToken ?? null);
+  readonly ownerId = computed(() => this.extractOwnerId(this.sessionSignal()));
+  readonly userRole = computed(() => this.extractRole(this.sessionSignal()));
   readonly accessToken = computed(() => this.sessionSignal()?.accessToken ?? null);
   readonly isAuthenticated = computed(() => this.sessionSignal() !== null);
   readonly isLoading = computed(() => this.loadingSignal());
-  readonly isAdmin = computed(() => {
-    if (!this.adminEmail) {
-      return false;
-    }
-
-    const email = this.sessionSignal()?.user?.email ?? '';
-    return email.trim().toLowerCase() === this.adminEmail;
-  });
+  readonly isAdmin = computed(() => this.matchesAdminEmail(this.sessionSignal()?.user?.email));
 
   constructor() {
-    void this.restoreSession();
+    this.initializePromise = this.restoreSession();
+  }
+
+  async initialize(): Promise<void> {
+    return this.initializePromise;
   }
 
   canManageContent(): boolean {
+    const role = this.userRole()?.toLowerCase();
+    if (role === 'admin') {
+      return true;
+    }
+
     return this.isAdmin();
+  }
+
+  canManageGallery(ownerId: string): boolean {
+    if (!this.isAuthenticated()) {
+      return false;
+    }
+
+    if (this.canManageContent()) {
+      return true;
+    }
+
+    const normalizedOwnerId = ownerId?.trim();
+    const currentOwner = this.ownerId()?.trim();
+
+    return Boolean(normalizedOwnerId && currentOwner && normalizedOwnerId === currentOwner);
   }
 
   async signIn(email: string, password: string): Promise<AuthResult> {
@@ -172,6 +193,11 @@ export class AuthService {
     this.scheduleRefresh(null);
   }
 
+  handleUnauthorized(): void {
+    this.clearSession();
+    this.loadingSignal.set(false);
+  }
+
   private async refreshCurrentSession(): Promise<void> {
     const session = this.sessionSignal();
     if (!session || !session.refreshToken) {
@@ -200,6 +226,9 @@ export class AuthService {
       if (!response.ok) {
         const errorText = await this.extractError(response);
         console.warn('Falha ao atualizar sessão do Supabase:', errorText);
+        if (response.status === 401) {
+          this.handleUnauthorized();
+        }
         return null;
       }
 
@@ -295,6 +324,118 @@ export class AuthService {
 
   private isBrowser(): boolean {
     return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+  }
+
+  private extractOwnerId(session: AuthSession | null): string | null {
+    if (!session) {
+      return null;
+    }
+
+    const claims = this.decodeJwtClaims(session.accessToken);
+    const claimOwner = this.firstString(
+      claims?.owner_id,
+      claims?.ownerId,
+      claims?.sub,
+    );
+
+    if (claimOwner) {
+      return claimOwner;
+    }
+
+    const userOwner = this.firstString(
+      session.user?.owner_id,
+      session.user?.ownerId,
+      session.user?.id,
+    );
+
+    return userOwner ?? null;
+  }
+
+  private extractRole(session: AuthSession | null): string | null {
+    if (!session) {
+      return null;
+    }
+
+    const claims = this.decodeJwtClaims(session.accessToken);
+    const claimRole = this.firstString(
+      claims?.role,
+      this.readNested(claims, 'user_role'),
+      this.readNested(claims, 'app_metadata', 'role'),
+    );
+
+    if (claimRole) {
+      return claimRole;
+    }
+
+    const userRole = this.firstString(
+      session.user?.role,
+      this.readNested(session.user, 'role'),
+      this.readNested(session.user, 'app_metadata', 'role'),
+      this.readNested(session.user, 'user_metadata', 'role'),
+    );
+
+    if (userRole) {
+      return userRole;
+    }
+
+    if (this.matchesAdminEmail(session.user?.email)) {
+      return 'admin';
+    }
+
+    return null;
+  }
+
+  private decodeJwtClaims(token: string): Record<string, unknown> | null {
+    const [, payload] = token.split('.');
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const decodeBase64 = typeof atob === 'function'
+        ? atob
+        : (value: string) => Buffer.from(value, 'base64').toString('binary');
+      const decoded = decodeBase64(padded);
+      return JSON.parse(decoded) as Record<string, unknown>;
+    } catch (error) {
+      console.error('Erro ao decodificar JWT do Supabase:', error);
+      return null;
+    }
+  }
+
+  private firstString(...candidates: ReadonlyArray<unknown>): string | null {
+    const first = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.length > 0);
+    return first ?? null;
+  }
+
+  private readNested(value: unknown, ...path: readonly string[]): string | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    let current: unknown = value;
+    for (const key of path) {
+      if (!current || typeof current !== 'object' || !(key in current)) {
+        return null;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+
+    return typeof current === 'string' && current.length > 0 ? current : null;
+  }
+
+  private matchesAdminEmail(email: string | null | undefined): boolean {
+    if (!this.adminEmail) {
+      return false;
+    }
+
+    if (!email) {
+      return false;
+    }
+
+    return email.trim().toLowerCase() === this.adminEmail;
   }
 
   private async extractError(response: Response): Promise<string | null> {

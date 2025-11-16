@@ -578,7 +578,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   canManageContent = computed(() => this.authService.canManageContent());
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
-  userRoleLabel = computed(() => (this.canManageContent() ? 'Admin' : 'Usuário'));
+  userRoleLabel = computed(() => {
+    const role = this.authService.userRole();
+    if (role) {
+      return role;
+    }
+
+    return this.canManageContent() ? 'Admin' : 'Usuário';
+  });
   isUserMenuOpen = signal(false);
 
   isLoginDialogVisible = signal(false);
