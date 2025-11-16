@@ -725,6 +725,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // --- Propriedades para o Context Menu ---
   private contextMenuGalleryId: string | null = null;
+  private contextMenuPhotoUrl: string | null = null;
   private readonly generalGroupLabel = 'Ações gerais';
 
   private createGeneralGroup(includePlayback: boolean = true): ContextMenuGroup {
@@ -1312,6 +1313,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     };
 
     this.expandItem(placeholderItem, event.currentTarget as HTMLElement);
+  }
+
+  deleteExpandedPhoto(event: MouseEvent): void {
+    event.stopPropagation();
+
+    if (!this.canManageContent()) {
+      return;
+    }
+
+    const item = this.expandedItem();
+    if (!item) {
+      return;
+    }
+
+    this.deletePhotoByUrl(item.url);
   }
 
   mobileAddAction(): void {
@@ -1979,6 +1995,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
+    this.contextMenuPhotoUrl = null;
+    this.contextMenuGalleryId = null;
   }
 
   onGalleryRightClick(event: MouseEvent, galleryId: string): void {
@@ -1995,7 +2013,28 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
       // Store the gallery ID for context menu actions
       this.contextMenuGalleryId = galleryId;
+      this.contextMenuPhotoUrl = null;
     }
+  }
+
+  onPhotoRightClick(event: MouseEvent, photoUrl: string): void {
+    if (this.isMobileLayout()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const groups: ContextMenuGroup[] = [this.createGeneralGroup(false)];
+
+    if (this.canManageContent()) {
+      const photoActions: ContextMenuAction[] = ['capturePhoto', 'deletePhoto'];
+      groups.push({ label: 'Fotos', actions: photoActions });
+    }
+
+    this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
+    this.contextMenuPhotoUrl = photoUrl;
+    this.contextMenuGalleryId = null;
   }
 
   closeContextMenu(event?: MouseEvent): void {
@@ -2008,6 +2047,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.contextMenu.set({ visible: false, x: 0, y: 0, groups: [] });
     this.contextMenuGalleryId = null;
+    this.contextMenuPhotoUrl = null;
   }
 
   openWebcamCapture(): void {
@@ -2079,6 +2119,32 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateVisibleItems(true);
   }
 
+  deletePhotoByUrl(photoUrl: string): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
+    const activeGalleryId = this.galleryService.selectedGalleryId();
+    if (!activeGalleryId) {
+      return;
+    }
+
+    if (!this.confirmPhotoDeletion()) {
+      return;
+    }
+
+    this.galleryService.removeImageFromGallery(activeGalleryId, photoUrl);
+    this.updateVisibleItems(true);
+
+    if (this.expandedItem()?.url === photoUrl) {
+      this.closeExpandedItem();
+    }
+  }
+
+  private confirmPhotoDeletion(): boolean {
+    return window.confirm('Tem certeza que deseja excluir esta foto? Esta ação não pode ser desfeita.');
+  }
+
   editGalleryContextMenu(): void {
     if (!this.canManageContent()) {
       return;
@@ -2097,6 +2163,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.contextMenuGalleryId) {
       this.deleteGallery(this.contextMenuGalleryId);
     }
+  }
+
+  deletePhotoContextMenu(): void {
+    if (!this.canManageContent()) {
+      return;
+    }
+
+    if (!this.contextMenuPhotoUrl) {
+      return;
+    }
+
+    this.deletePhotoByUrl(this.contextMenuPhotoUrl);
+    this.contextMenuPhotoUrl = null;
   }
 
   openGalleryCreationDialog(): void {

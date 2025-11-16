@@ -92,6 +92,12 @@ import { ThemeMode } from '../../services/theme.service';
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.107H7.218a2.25 2.25 0 01-2.244-2.107L4.74 5.836m19.825 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM12 4.5V3.75c0-.621-.504-1.125-1.125-1.125H9.75A1.125 1.125 0 008.625 3.75v.75m-8.1 4.5H12m-.75 0h-.75m.75 0h-.75M12 4.5H5.25m-1.5 0h-.75M4.5 4.5V2.25m0 0H2.25M2.25 2.25V4.5m0 0h-.75m.75 0v.75m0 0H2.25V4.5m-1.5 0h-.75M2.25 4.5V2.25M2.25 4.5h-.75m.75 0v.75m0 0H4.5m-.75 0V2.25M12 4.5h-.75m.75 0h-.75M12 4.5V3.75c0-.621-.504-1.125-1.125-1.125H9.75A1.125 1.125 0 008.625 3.75v.75m-8.1 4.5H12m-.75 0h-.75m.75 0h-.75Z" />
                           </svg>
                         </ng-container>
+                        <ng-container *ngSwitchCase="'deletePhoto'">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 13.5 10 15.25a1.06 1.06 0 0 0 1.5 0l4.25-4.25" />
+                          </svg>
+                        </ng-container>
                       </ng-container>
                     </span>
                     <span class="menu__label">
@@ -118,6 +124,7 @@ import { ThemeMode } from '../../services/theme.service';
                         <ng-container *ngSwitchCase="'capturePhoto'">Tirar foto</ng-container>
                         <ng-container *ngSwitchCase="'editGallery'">Editar galeria</ng-container>
                         <ng-container *ngSwitchCase="'deleteGallery'">Excluir galeria</ng-container>
+                        <ng-container *ngSwitchCase="'deletePhoto'">Excluir foto</ng-container>
                       </ng-container>
                     </span>
                   </button>
@@ -151,6 +158,7 @@ export class ContextMenuComponent {
   createGallery = output<void>();
   editGallery = output<void>();
   deleteGallery = output<void>();
+  deletePhoto = output<void>();
   info = output<void>();
 
   handleAction(action: ContextMenuAction, event: Event): void {
@@ -180,6 +188,9 @@ export class ContextMenuComponent {
         break;
       case 'deleteGallery':
         this.deleteGallery.emit();
+        break;
+      case 'deletePhoto':
+        this.deletePhoto.emit();
         break;
     }
 

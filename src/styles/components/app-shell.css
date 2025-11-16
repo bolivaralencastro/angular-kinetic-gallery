@@ -904,6 +904,32 @@ body[data-theme='light'] .photo-mosaic__border {
   pointer-events: none;
 }
 
+.screen-overlay__action {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.screen-overlay__action:hover {
+  background-color: rgba(0, 0, 0, 0.75);
+  transform: translateY(-1px);
+}
+
+.screen-overlay__action:active {
+  transform: translateY(0);
+}
+
 .login-dialog {
   display: flex;
   align-items: center;

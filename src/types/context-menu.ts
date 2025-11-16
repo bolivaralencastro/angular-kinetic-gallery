@@ -6,7 +6,8 @@ export type ContextMenuAction =
   | 'createGallery'
   | 'capturePhoto'
   | 'editGallery'
-  | 'deleteGallery';
+  | 'deleteGallery'
+  | 'deletePhoto';
 
 export interface ContextMenuGroup {
   label: string;
