@@ -461,36 +461,36 @@
       <div class="absolute gallery-canvas">
         <div #canvasWrapper class="canvas-wrapper">
           @for (item of visibleItems(); track trackById($index, item)) {
-            <div
-              class="photo-card"
-              [class.photo-card--light]="themeService.isLight()"
-              [class.is-disabled]="!isInteractionEnabled()"
-              [class.is-interactive]="isInteractionEnabled()"
-              [style.width.px]="item.width"
-              [style.height.px]="item.height"
-              [style.left.px]="item.x"
-              [style.top.px]="item.y"
-              [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
-              (click)="onImageClick($event, item)"
-              (contextmenu)="onPhotoRightClick($event, item.url)"
-            >
-              <div class="photo-card__media">
-                @if (item.type === 'photo') {
+            @if (item.type === 'photo') {
+              <div
+                class="photo-card"
+                [class.photo-card--light]="themeService.isLight()"
+                [class.is-disabled]="!isInteractionEnabled()"
+                [class.is-interactive]="isInteractionEnabled()"
+                [style.width.px]="item.width"
+                [style.height.px]="item.height"
+                [style.left.px]="item.x"
+                [style.top.px]="item.y"
+                [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
+                (click)="onImageClick($event, item)"
+                (contextmenu)="onPhotoRightClick($event, item.url)"
+              >
+                <div class="photo-card__media">
                   <img [src]="item.url"
                        class="photo-card__image"
                        (load)="$event.target.classList.add('is-visible')"
                        alt="Imagem da galeria capturada pela webcam">
-                }
-                <div
-                  class="photo-card__overlay"
-                  [class.photo-card__overlay--dark]="themeService.isDark()"
-                  [class.photo-card__overlay--light]="themeService.isLight()"
-                ></div>
+                  <div
+                    class="photo-card__overlay"
+                    [class.photo-card__overlay--dark]="themeService.isDark()"
+                    [class.photo-card__overlay--light]="themeService.isLight()"
+                  ></div>
+                </div>
+                <span class="photo-card__badge">
+                  {{ item.creationOrder }}
+                </span>
               </div>
-              <span class="photo-card__badge">
-                {{ item.creationOrder }}
-              </span>
-            </div>
+            }
           }
         </div>
       </div>
