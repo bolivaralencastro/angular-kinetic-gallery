@@ -5,7 +5,10 @@ import type { SupabaseGalleryImageRecord, SupabaseGalleryRecord } from '../types
 import { AuthService } from './auth.service';
 
 type RequestOptions = Omit<RequestInit, 'headers'> & { headers?: Record<string, string> };
-type RemoteResult<T = void> = Readonly<{ success: true; data?: T }> | Readonly<{ success: false; error: string }>;
+type RemoteResult<T = void> = Readonly<
+  | { success: true; data?: T; error?: undefined }
+  | { success: false; error: string; data?: undefined }
+>;
 
 @Injectable({
   providedIn: 'root',
@@ -287,7 +290,7 @@ export class SupabaseService {
 
       const thumbnailUpdate = await this.updateGalleryThumbnail(galleryId, publicUrl);
       if (!thumbnailUpdate.success) {
-        return thumbnailUpdate;
+        return { success: false, error: thumbnailUpdate.error };
       }
 
       return { success: true, data: publicUrl };
