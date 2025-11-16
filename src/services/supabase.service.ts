@@ -5,6 +5,7 @@ import type { SupabaseGalleryImageRecord, SupabaseGalleryRecord } from '../types
 import { AuthService } from './auth.service';
 
 type RequestOptions = Omit<RequestInit, 'headers'> & { headers?: Record<string, string> };
+type RemoteResult<T = void> = Readonly<{ success: true; data?: T }> | Readonly<{ success: false; error: string }>;
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +15,11 @@ export class SupabaseService {
   private readonly anonKey = environment.supabaseAnonKey;
   private readonly bucketName = environment.supabaseBucket;
   private readonly authService = inject(AuthService);
+  private currentUserGalleryId: string | null = null;
+
+  getCurrentUserGalleryId(): string | null {
+    return this.currentUserGalleryId;
+  }
 
   isEnabled(): boolean {
     return Boolean(this.baseUrl && this.anonKey);
@@ -63,47 +69,103 @@ export class SupabaseService {
     }
   }
 
-  async fetchGalleries(): Promise<Gallery[] | null> {
-    if (!this.isEnabled()) {
-      return null;
+  private async buildError(response: Response, fallback: string): Promise<string> {
+    const parsed = await this.extractError(response);
+    const base = parsed ?? fallback;
+
+    if (response.status === 401 || response.status === 403) {
+      return 'Acesso negado: você não tem permissão para operar nesta galeria.';
     }
 
-    try {
-      const response = await this.restRequest(
-        'galleries?select=id,name,description,thumbnail_url,created_at,gallery_images:gallery_images(image_url,created_at)&order=created_at.desc',
-      );
+    return base;
+  }
 
-      if (!response.ok) {
-        this.logFailure('Falha ao buscar galerias no Supabase', await response.text());
-        if (response.status === 401) {
-          this.authService.handleUnauthorized();
-        }
-        return null;
+  private async extractError(response: Response): Promise<string | null> {
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const body = await response.json();
+        const message = (body as { message?: string; error?: string }).message ?? (body as { error?: string }).error;
+        return typeof message === 'string' && message.length > 0 ? message : null;
       }
 
-      const data = (await response.json()) as SupabaseGalleryRecord[];
-      return data.map(record => ({
-        id: record.id,
-        name: record.name,
-        description: record.description ?? '',
-        imageUrls: this.extractGalleryImageUrls(record.gallery_images),
-        thumbnailUrl: record.thumbnail_url ?? undefined,
-        createdAt: this.formatDate(record.created_at),
-      }));
+      const text = await response.text();
+      return text || null;
     } catch (error) {
-      this.logUnexpected('Erro inesperado ao carregar galerias do Supabase', error);
+      console.error('Falha ao interpretar resposta de erro do Supabase:', error);
       return null;
     }
   }
 
-  async upsertGallery(gallery: Gallery): Promise<void> {
+  async fetchGalleries(): Promise<RemoteResult<Gallery[]>> {
     if (!this.isEnabled()) {
-      return;
+      return { success: true, data: [] };
+    }
+
+    try {
+      const response = await this.restRequest(
+        'galleries?select=id,gallery_id,owner_id,name,description,thumbnail_url,created_at,gallery_images:gallery_images(image_url,created_at)&order=created_at.desc',
+      );
+
+      if (!response.ok) {
+        this.logFailure('Falha ao buscar galerias no Supabase', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível carregar as galerias.') };
+      }
+
+      const data = (await response.json()) as SupabaseGalleryRecord[];
+      return {
+        success: true,
+        data: data.map(record => ({
+          id: record.id,
+          galleryId: record.gallery_id ?? record.id,
+          ownerId: record.owner_id ?? null,
+          name: record.name,
+          description: record.description ?? '',
+          imageUrls: this.extractGalleryImageUrls(record.gallery_images),
+          thumbnailUrl: record.thumbnail_url ?? undefined,
+          createdAt: this.formatDate(record.created_at),
+        })),
+      };
+    } catch (error) {
+      this.logUnexpected('Erro inesperado ao carregar galerias do Supabase', error);
+      return { success: false, error: 'Erro inesperado ao carregar galerias.' };
+    }
+  }
+
+  async syncCurrentUserGallery(): Promise<RemoteResult<string | null>> {
+    if (!this.isEnabled() || !this.authService.isAuthenticated()) {
+      this.currentUserGalleryId = null;
+      return { success: true, data: null };
+    }
+
+    try {
+      const response = await this.restRequest('rpc/get_or_create_user_gallery', { method: 'POST' });
+
+      if (!response.ok) {
+        this.logFailure('Falha ao obter galeria padrão do usuário', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível recuperar a sua galeria.') };
+      }
+
+      const body = (await response.json()) as { gallery_id?: string | null } | null;
+      const galleryId = typeof body?.gallery_id === 'string' ? body.gallery_id : null;
+      this.currentUserGalleryId = galleryId;
+      return { success: true, data: galleryId };
+    } catch (error) {
+      this.logUnexpected('Erro inesperado ao sincronizar galeria do usuário', error);
+      return { success: false, error: 'Erro inesperado ao carregar galeria do usuário.' };
+    }
+  }
+
+  async upsertGallery(gallery: Gallery): Promise<RemoteResult<void>> {
+    if (!this.isEnabled()) {
+      return { success: true };
     }
 
     try {
       const payload: Record<string, unknown> = {
         id: gallery.id,
+        gallery_id: gallery.galleryId,
+        owner_id: gallery.ownerId,
         name: gallery.name,
         description: gallery.description,
         thumbnail_url: this.sanitizeThumbnailUrl(gallery.thumbnailUrl),
@@ -124,15 +186,19 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao salvar galeria no Supabase', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível salvar a galeria.') };
       }
+
+      return { success: true };
     } catch (error) {
       this.logUnexpected('Erro inesperado ao salvar galeria no Supabase', error);
+      return { success: false, error: 'Erro inesperado ao salvar galeria.' };
     }
   }
 
-  async deleteGallery(galleryId: string, imageUrls: readonly string[]): Promise<void> {
+  async deleteGallery(galleryId: string, imageUrls: readonly string[]): Promise<RemoteResult<void>> {
     if (!this.isEnabled()) {
-      return;
+      return { success: true };
     }
 
     try {
@@ -151,6 +217,7 @@ export class SupabaseService {
 
       if (!imagesResponse.ok) {
         this.logFailure('Falha ao remover imagens associadas no Supabase', await imagesResponse.text());
+        return { success: false, error: await this.buildError(imagesResponse, 'Não foi possível remover imagens da galeria.') };
       }
 
       const response = await this.restRequest(`galleries?id=eq.${encodeURIComponent(galleryId)}`, {
@@ -159,15 +226,19 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao excluir galeria no Supabase', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível excluir a galeria.') };
       }
+
+      return { success: true };
     } catch (error) {
       this.logUnexpected('Erro inesperado ao excluir galeria no Supabase', error);
+      return { success: false, error: 'Erro inesperado ao excluir galeria.' };
     }
   }
 
-  async uploadImage(galleryId: string, dataUrl: string): Promise<string | null> {
+  async uploadImage(galleryId: string, dataUrl: string): Promise<RemoteResult<string>> {
     if (!this.isEnabled()) {
-      return null;
+      return { success: true, data: dataUrl };
     }
 
     try {
@@ -193,7 +264,7 @@ export class SupabaseService {
 
       if (!uploadResponse.ok) {
         this.logFailure('Falha ao enviar imagem para o Supabase Storage', await uploadResponse.text());
-        return null;
+        return { success: false, error: await this.buildError(uploadResponse, 'Não foi possível enviar a imagem.') };
       }
 
       const publicUrl = `${this.baseUrl}/storage/v1/object/public/${this.bucketName}/${fileName}`;
@@ -211,14 +282,18 @@ export class SupabaseService {
 
       if (!imageInsertResponse.ok) {
         this.logFailure('Falha ao registrar imagem no Supabase', await imageInsertResponse.text());
+        return { success: false, error: await this.buildError(imageInsertResponse, 'Não foi possível registrar a imagem.') };
       }
 
-      await this.updateGalleryThumbnail(galleryId, publicUrl);
+      const thumbnailUpdate = await this.updateGalleryThumbnail(galleryId, publicUrl);
+      if (!thumbnailUpdate.success) {
+        return thumbnailUpdate;
+      }
 
-      return publicUrl;
+      return { success: true, data: publicUrl };
     } catch (error) {
       this.logUnexpected('Erro inesperado ao enviar imagem para o Supabase', error);
-      return null;
+      return { success: false, error: 'Erro inesperado ao enviar imagem.' };
     }
   }
 
@@ -226,9 +301,9 @@ export class SupabaseService {
     galleryId: string,
     imageUrl: string,
     nextThumbnail: string | undefined,
-  ): Promise<void> {
+  ): Promise<RemoteResult<void>> {
     if (!this.isEnabled()) {
-      return;
+      return { success: true };
     }
 
     try {
@@ -239,6 +314,7 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao remover imagem do Supabase', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível remover a imagem.') };
       }
 
       const path = this.extractStoragePath(imageUrl);
@@ -246,18 +322,24 @@ export class SupabaseService {
         await this.removeFromStorage([path]);
       }
 
-      await this.updateGalleryThumbnail(galleryId, nextThumbnail ?? null);
+      const thumbnailUpdate = await this.updateGalleryThumbnail(galleryId, nextThumbnail ?? null);
+      if (!thumbnailUpdate.success) {
+        return thumbnailUpdate;
+      }
+
+      return { success: true };
     } catch (error) {
       this.logUnexpected('Erro inesperado ao remover imagem do Supabase', error);
+      return { success: false, error: 'Erro inesperado ao remover imagem.' };
     }
   }
 
   private async updateGalleryThumbnail(
     galleryId: string,
     thumbnailUrl: string | null,
-  ): Promise<void> {
+  ): Promise<RemoteResult<void>> {
     if (!this.isEnabled()) {
-      return;
+      return { success: true };
     }
 
     try {
@@ -270,9 +352,13 @@ export class SupabaseService {
 
       if (!response.ok) {
         this.logFailure('Falha ao atualizar thumbnail da galeria no Supabase', await response.text());
+        return { success: false, error: await this.buildError(response, 'Não foi possível atualizar a capa da galeria.') };
       }
+
+      return { success: true };
     } catch (error) {
       this.logUnexpected('Erro inesperado ao atualizar thumbnail no Supabase', error);
+      return { success: false, error: 'Erro inesperado ao atualizar a capa da galeria.' };
     }
   }
 

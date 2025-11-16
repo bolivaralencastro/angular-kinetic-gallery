@@ -5,6 +5,8 @@ export interface SupabaseGalleryImageRecord {
 
 export interface SupabaseGalleryRecord {
   id: string;
+  gallery_id?: string | null;
+  owner_id?: string | null;
   name: string;
   description: string | null;
   thumbnail_url: string | null;
