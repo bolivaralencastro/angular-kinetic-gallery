@@ -400,10 +400,16 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
         throw new Error('A API de mídia do navegador não está disponível.');
       }
 
+      const commonVideoConstraints: MediaTrackConstraints = {
+        aspectRatio: 1,
+        width: { ideal: 1280 },
+        height: { ideal: 1280 },
+      };
+
       const constraints: MediaStreamConstraints = {
         video: this.selectedCameraId()
-          ? { deviceId: { exact: this.selectedCameraId()! } }
-          : { facingMode: 'environment' },
+          ? { ...commonVideoConstraints, deviceId: { exact: this.selectedCameraId()! } }
+          : { ...commonVideoConstraints, facingMode: 'environment' },
       };
 
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
