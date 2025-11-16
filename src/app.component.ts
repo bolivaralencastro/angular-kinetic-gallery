@@ -1468,9 +1468,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const newVisibleItems: VisibleItem[] = [];
     for (let row = startRow; row <= endRow; row++) {
       for (let col = startCol; col <= endCol; col++) {
-        const itemIndex = Math.abs((row * this.numColumns() + col) % itemsToDisplay.length);
-        const currentItem = itemsToDisplay[itemIndex];
-        const creationOrder = this.calculateCreationOrder(itemsToDisplay.length, itemIndex);
+        const wrappedIndex = this.getWrappedIndex(row * this.numColumns() + col, itemsToDisplay.length);
+        const currentItem = itemsToDisplay[wrappedIndex];
+        const creationOrder = this.calculateCreationOrder(itemsToDisplay.length, wrappedIndex);
 
         if (isGalleryView) {
           const gallery = currentItem as Gallery;
@@ -1525,6 +1525,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       }
     }
+  }
+
+  private getWrappedIndex(index: number, length: number): number {
+    if (length <= 0) {
+      return 0;
+    }
+
+    const normalizedIndex = index % length;
+    return normalizedIndex < 0 ? normalizedIndex + length : normalizedIndex;
   }
 
   private calculateCreationOrder(totalItems: number, index: number): number {
