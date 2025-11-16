@@ -63,13 +63,16 @@ body[data-theme='light'] {
   display: flex;
   align-items: center;
   gap: var(--app-shell-spacing-md);
-  z-index: 40;
+  z-index: 120;
+  pointer-events: auto;
 }
 
 .app-shell__status-bar--mobile {
   position: fixed;
   inset-inline: auto var(--app-shell-spacing-md);
   top: var(--app-shell-spacing-md);
+  z-index: 120;
+  pointer-events: auto;
 }
 
 .user-menu {

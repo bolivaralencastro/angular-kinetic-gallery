@@ -101,16 +101,6 @@ import { convertToWebp } from '../../utils/convert-to-webp';
               <div class="capture__control-placeholder" aria-hidden="true"></div>
             }
           </div>
-
-          <div class="capture__panel-refresh">
-            <button
-              type="button"
-              (click)="reloadApp()"
-              class="btn btn--ghost capture__refresh"
-              title="Atualizar aplicativo">
-              Atualizar aplicativo
-            </button>
-          </div>
         </div>
 
         <canvas
