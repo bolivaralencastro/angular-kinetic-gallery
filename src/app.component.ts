@@ -504,13 +504,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const menuElement = this.userMenuRoot()?.nativeElement;
-    if (!menuElement) {
-      this.isUserMenuOpen.set(false);
-      return;
-    }
+    const target = event.target as HTMLElement | null;
 
-    if (!menuElement.contains(event.target as Node)) {
+    if (!target || !target.closest('.user-menu')) {
       this.isUserMenuOpen.set(false);
     }
   }
@@ -584,7 +580,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
   userRoleLabel = computed(() => (this.canManageContent() ? 'Admin' : 'Usuário'));
   isUserMenuOpen = signal(false);
-  userMenuRoot = viewChild<ElementRef<HTMLElement>>('userMenuRoot');
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
