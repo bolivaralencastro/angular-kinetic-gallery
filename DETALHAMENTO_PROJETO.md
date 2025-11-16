@@ -12,7 +12,6 @@ O Angular Kinetic Gallery é uma aplicação web voltada para a criação e cura
 | Reatividade | Angular Signals | `signal`, `computed` e `effect` distribuem estados no `AppComponent`, serviços e temas. |
 | Backend-as-a-Service | Supabase REST & Storage | Persistência de galerias e imagens, autenticação de administradores e sincronização remota. |
 | Autenticação | Supabase Auth | Controle de sessão para usuários administradores via `AuthService`. |
-| Inteligência Artificial | Google Gemini (SDK `@google/genai`) | Preparado para geração de imagens/descrições futuras via `GeminiService`. |
 | Utilidades de Imagem | Conversão para WebP | Conversão opcional de capturas para formatos mais leves em `convert-to-webp`. |
 | Build e Dev Server | Angular CLI (`ng serve`, `ng build`) | Scripts expostos em `package.json` para desenvolvimento e produção. |
 | PWA | Service Worker customizado | Cache offline e atualização de assets em `service-worker.js`. |
@@ -23,7 +22,7 @@ O Angular Kinetic Gallery é uma aplicação web voltada para a criação e cura
   - `npm run build`: gera artefatos de produção otimizados.
   - `npm run preview`: reusa o servidor do Angular em modo produção para inspeção local.
 - **Variáveis de ambiente** (`src/environments/environment.ts`): valores padrão para URL do Supabase, chave `anon`, bucket de imagens e email administrador podem ser sobrescritos via `import.meta.env` (`NG_APP_SUPABASE_*`).
-- **Dependências externas**: Angular 20.x, RxJS 7.8, Tailwind CSS, Supabase via chamadas REST nativas e `@google/genai` para futura integração.
+- **Dependências externas**: Angular 20.x, RxJS 7.8, Tailwind CSS e Supabase via chamadas REST nativas.
 
 ## 4. Estrutura do Código-Fonte
 ### 4.1 Entrada e bootstrap
@@ -42,7 +41,6 @@ O Angular Kinetic Gallery é uma aplicação web voltada para a criação e cura
 - **GalleryEditorComponent** (`src/components/gallery-editor`): modal para criar ou editar metadados de uma galeria existente, com validação simples e opção de exclusão.
 - **GalleryCreationDialogComponent**: assistente para criar uma galeria a partir de capturas pendentes, exibindo miniaturas e distribuindo fotos para coleções existentes.
 - **InfoDialogComponent**: apresenta instruções e atalhos para o usuário final.
-- **ImageGeneratorComponent**: ponto de entrada para integração com IA (utiliza o serviço Gemini quando habilitado).
 - **MobileGalleryCardComponent**: card otimizado para dispositivos móveis, com destaque visual para a galeria ativa e atalhos de abertura.
 
 ### 4.4 Serviços
@@ -51,7 +49,6 @@ O Angular Kinetic Gallery é uma aplicação web voltada para a criação e cura
 - **AuthService**: realiza *login* e *logout* no Supabase, persiste tokens, renova sessões próximas da expiração e expõe flags como `isAdmin` para liberar operações de gerenciamento.
 - **GalleryService**: mantém as listas de galerias, imagens e capturas pendentes em *signals*, realiza CRUD local, sincroniza com Supabase (REST + Storage), controla uploads em andamento e define miniaturas automaticamente.
 - **SupabaseService**: abstrai chamadas REST (coleções) e Storage (upload/delete de imagens), com tratamento de erros, formatação de datas e sanitização de URLs.
-- **GeminiService**: reservado para invocar modelos generativos via `@google/genai` (atualmente sem implementação para facilitar expansão futura).
 
 ### 4.5 Tipos e interfaces
 - `src/interfaces/gallery.interface.ts`: descreve a estrutura de uma galeria (id, nome, descrição, URLs das imagens, miniatura e data de criação).
@@ -98,21 +95,17 @@ O Angular Kinetic Gallery é uma aplicação web voltada para a criação e cura
 - Exclusões removem tanto os registros (`gallery_images`, `galleries`) quanto os arquivos físicos; operações falhas são logadas para inspeção.
 - Datas retornadas pelo Supabase são normalizadas para `DD/MM/YYYY` na UI.
 
-## 7. Integração com IA (Gemini)
-- O projeto inclui dependência `@google/genai` e um `GeminiService` reservado para chamadas a modelos generativos. Apesar de ainda não possuir implementação, ele centraliza credenciais e fluxos de requisição quando a funcionalidade for ativada.
-
-## 8. Progressive Web App
+## 7. Progressive Web App
 - `service-worker.js` gerencia cache de shell básico (HTML, manifesto e ícones) e atualiza ativos sob demanda.
 - Durante `bootstrap`, o *service worker* é registrado após o evento `load`, garantindo compatibilidade com navegadores que suportam PWA.
 
-## 9. Execução Local e Deploy
+## 8. Execução Local e Deploy
 1. Instale as dependências com `npm install`.
 2. Configure as variáveis de ambiente (`NG_APP_SUPABASE_URL`, `NG_APP_SUPABASE_ANON_KEY`, `NG_APP_SUPABASE_BUCKET`, `NG_APP_SUPABASE_ADMIN_EMAIL`) se for utilizar Supabase próprio.
 3. Rode `npm run dev` para desenvolvimento ou `npm run build` para gerar os artefatos de produção.
 4. Opcionalmente utilize `npm run preview` para validar o build localmente.
 
-## 10. Boas Práticas e Extensões Futuras
+## 9. Boas Práticas e Extensões Futuras
 - Componentização standalone e *signals* permitem reutilização e testabilidade elevada.
 - A separação entre `GalleryService` e `SupabaseService` facilita substituir o backend ou adicionar camadas de cache.
-- O espaço reservado do `GeminiService` possibilita ampliar experiências com geração de imagens e descrições assistidas.
 - O cursor interativo, embora visualmente marcante, é opcional e pode ser desativado em dispositivos touch para preservar desempenho.
