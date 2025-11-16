@@ -8,7 +8,7 @@
 
   <div class="app-shell__viewport">
     <ng-template #userMenu>
-      @if (canManageContent()) {
+      @if (isAuthenticated()) {
         <div class="user-menu">
           <button
             type="button"
@@ -85,11 +85,11 @@
             <app-webcam-capture
               class="app-shell__capture full-area"
               [variant]="'mobile'"
-              [captureAllowed]="canManageContent() && !!mobileCaptureGallery()"
+              [captureAllowed]="mobileCaptureAllowed()"
               (prepareCapture)="prepareMobileCapture()"
               (capture)="onCaptureComplete($event)">
               <ng-container ngProjectAs="[mobileGallerySelection]">
-                @if (canManageContent()) {
+                @if (canViewMobileGalleryList()) {
                   @if (galleries().length === 0) {
                     <button
                       type="button"
@@ -192,6 +192,17 @@
                       </svg>
                     </button>
                   }
+                } @else if (mobileCaptureGallery()) {
+                  <div class="stack stack--tight">
+                    <app-mobile-gallery-card
+                      [gallery]="mobileCaptureGallery()!"
+                      [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
+                      [active]="true"
+                      [selectable]="false"
+                      [showActiveIndicator]="false"
+                      (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
+                    />
+                  </div>
                 } @else {
                   <div
                     class="mobile-card mobile-card--locked"
@@ -199,7 +210,7 @@
                     (pointerup)="onMobileGallerySelectorPressEnd()"
                     (pointerleave)="onMobileGallerySelectorPressCancel()"
                     (pointercancel)="onMobileGallerySelectorPressCancel()">
-                    Entre com a conta administradora para escolher uma galeria e capturar fotos.
+                    Selecione uma conta com galeria vinculada para capturar fotos.
                   </div>
                 }
               </ng-container>
@@ -211,7 +222,7 @@
         <div class="mobile-shell mobile-shell--galleries">
           <header class="mobile-shell__header">
             <div>
-              @if (canManageContent()) {
+              @if (canViewMobileGalleryList()) {
                 <button
                   type="button"
                   class="button button--ghost"
@@ -221,7 +232,7 @@
               }
             </div>
             <div>
-              @if (canManageContent()) {
+              @if (canViewMobileGalleryList()) {
                 <button
                   type="button"
                   class="button button--ghost"
@@ -238,7 +249,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
                 <h3 class="empty-state__title">Nenhuma galeria ainda</h3>
-                @if (canManageContent()) {
+                @if (canCreateGalleries()) {
                   <p class="empty-state__text">Crie uma galeria para começar a capturar suas memórias.</p>
                 } @else {
                   <p class="empty-state__text">Aguarde a publicação de galerias públicas.</p>
@@ -251,6 +262,7 @@
                     [gallery]="gallery"
                     [coverUrl]="getGalleryCover(gallery)"
                     [active]="mobileCaptureGalleryId() === gallery.id"
+                    [selectable]="canViewMobileGalleryList()"
                     (select)="selectMobileCaptureGallery(gallery.id)"
                     (open)="openMobileGalleryDetail(gallery.id)"
                   />
@@ -276,7 +288,7 @@
               </span>
             </button>
             <div class="mobile-shell__actions">
-              @if (canManageContent()) {
+              @if (canManageSelectedGallery()) {
                 <button
                   type="button"
                   class="button button--ghost"
@@ -321,7 +333,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                 </svg>
                 <h3 class="empty-state__title">Esta galeria está vazia</h3>
-                @if (canManageContent()) {
+                @if (canCaptureInSelectedGallery()) {
                   <p class="empty-state__text">Capture novas imagens para começar seu diário.</p>
                 } @else {
                   <p class="empty-state__text">Nenhuma foto foi enviada para esta galeria.</p>
@@ -360,7 +372,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
           <h2 class="empty-overlay__title">Nenhuma galeria criada</h2>
-          @if (canManageContent()) {
+          @if (canCreateGalleries()) {
             <p class="empty-overlay__text">Clique com o botão direito para criar uma nova galeria.</p>
             <div class="empty-overlay__actions">
               <p class="empty-overlay__note">Como tirar uma foto:</p>
@@ -432,7 +444,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
           </svg>
           <h2 class="empty-overlay__title">Esta galeria está vazia</h2>
-          @if (canManageContent()) {
+          @if (canCaptureInSelectedGallery()) {
             <p class="empty-overlay__text">Clique com o botão direito para adicionar fotos.</p>
             <div class="empty-overlay__actions">
               <p class="empty-overlay__note">Como tirar uma foto:</p>
@@ -540,7 +552,7 @@
       class="screen-overlay__media"
       style="transform: translate(-50%, -50%); will-change: width, height, transform;">
       <img [src]="item.url" class="screen-overlay__image" alt="Imagem expandida">
-      @if (isMobileLayout() && canManageContent()) {
+      @if (isMobileLayout() && canManageSelectedGallery()) {
         <button
           type="button"
           class="screen-overlay__action button button--icon"
@@ -671,16 +683,16 @@
   </app-context-menu>
 }
 
-@if (isWebcamVisible() && canManageContent()) {
+@if (isWebcamVisible() && canUseCaptureDialog()) {
   <div class="overlay-panel" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture
-      [captureAllowed]="canManageContent()"
+      [captureAllowed]="canUseCaptureDialog()"
       (capture)="onCaptureComplete($event)"
       (close)="isWebcamVisible.set(false)"></app-webcam-capture>
   </div>
 }
 
-@if (isGalleryEditorVisible() && canManageContent()) {
+@if (isGalleryEditorVisible() && canManageSelectedGallery()) {
   <app-gallery-editor
     [gallery]="editingGallery()"
     (close)="isGalleryEditorVisible.set(false); editingGallery.set(null)"
@@ -689,7 +701,7 @@
   </app-gallery-editor>
 }
 
-@if (isGalleryCreationDialogVisible() && canManageContent()) {
+@if (isGalleryCreationDialogVisible() && canCreateGalleries()) {
   <app-gallery-creation-dialog
     (close)="isGalleryCreationDialogVisible.set(false)"
     (save)="handleGalleryCreate($event)">
