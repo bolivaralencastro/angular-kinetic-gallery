@@ -60,10 +60,6 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
                   da câmera do dispositivo, e organizar suas imagens em uma interface cinética e dinâmica.
                 </p>
                 <p>
-                  Todas as fotos são capturadas em formato quadrado (1:1) e convertidas automaticamente
-                  para preto e branco, criando uma estética minimalista e elegante.
-                </p>
-                <p>
                   Os dados são armazenados localmente no navegador, garantindo privacidade e acesso
                   rápido às suas galerias.
                 </p>
