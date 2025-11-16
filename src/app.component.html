@@ -380,45 +380,47 @@
         </div>
       } @else {
         <!-- Gallery List Canvas -->
-        <div #canvas class="absolute will-change-transform gallery-canvas">
-          @for (item of visibleItems(); track trackById($index, item)) {
-            @if (item.type === 'gallery') {
-              <div
-                class="gallery-card"
-                [class.gallery-card--light]="themeService.isLight()"
-                [class.is-disabled]="!isInteractionEnabled()"
-                [class.is-interactive]="isInteractionEnabled()"
-                [style.width.px]="item.width"
-                [style.height.px]="item.height"
-                [style.left.px]="item.x"
-                [style.top.px]="item.y"
-                [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
-                (click)="selectGallery(item.id)"
-                (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
-                (mouseleave)="onGalleryHoverEnd(item.previewKey)"
-                (contextmenu)="onGalleryRightClick($event, item.id)"
-              >
-                <div class="gallery-card__media">
-                  <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
-                       class="gallery-card__image"
-                       (load)="$event.target.classList.add('is-visible')"
-                       alt="Capa da Galeria: {{ item.name }}">
-                  <div
-                    class="gallery-card__overlay"
-                    [class.gallery-card__overlay--dark]="themeService.isDark()"
-                    [class.gallery-card__overlay--light]="themeService.isLight()"
-                  ></div>
+        <div class="absolute gallery-canvas">
+          <div #canvasWrapper class="canvas-wrapper">
+            @for (item of visibleItems(); track trackById($index, item)) {
+              @if (item.type === 'gallery') {
+                <div
+                  class="gallery-card"
+                  [class.gallery-card--light]="themeService.isLight()"
+                  [class.is-disabled]="!isInteractionEnabled()"
+                  [class.is-interactive]="isInteractionEnabled()"
+                  [style.width.px]="item.width"
+                  [style.height.px]="item.height"
+                  [style.left.px]="item.x"
+                  [style.top.px]="item.y"
+                  [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
+                  (click)="selectGallery(item.id)"
+                  (mouseenter)="onGalleryHoverStart(item.id, item.previewKey)"
+                  (mouseleave)="onGalleryHoverEnd(item.previewKey)"
+                  (contextmenu)="onGalleryRightClick($event, item.id)"
+                >
+                  <div class="gallery-card__media">
+                    <img [src]="galleryPreviewImages()[item.previewKey] ?? item.thumbnailUrl"
+                         class="gallery-card__image"
+                         (load)="$event.target.classList.add('is-visible')"
+                         alt="Capa da Galeria: {{ item.name }}">
+                    <div
+                      class="gallery-card__overlay"
+                      [class.gallery-card__overlay--dark]="themeService.isDark()"
+                      [class.gallery-card__overlay--light]="themeService.isLight()"
+                    ></div>
+                  </div>
+                  <span class="gallery-card__badge">
+                    {{ item.creationOrder }}
+                  </span>
+                  <div class="gallery-card__meta stack stack--tight">
+                    <div class="meta-label">{{ item.createdAt }}</div>
+                    <div class="meta-title">{{ item.name }}</div>
+                  </div>
                 </div>
-                <span class="gallery-card__badge">
-                  {{ item.creationOrder }}
-                </span>
-                <div class="gallery-card__meta stack stack--tight">
-                  <div class="meta-label">{{ item.createdAt }}</div>
-                  <div class="meta-title">{{ item.name }}</div>
-                </div>
-              </div>
+              }
             }
-          }
+          </div>
         </div>
       }
     } @else {
@@ -456,38 +458,40 @@
           }
         </div>
       }
-      <div #canvas class="absolute will-change-transform gallery-canvas">
-        @for (item of visibleItems(); track trackById($index, item)) {
-          <div
-            class="photo-card"
-            [class.photo-card--light]="themeService.isLight()"
-            [class.is-disabled]="!isInteractionEnabled()"
-            [class.is-interactive]="isInteractionEnabled()"
-            [style.width.px]="item.width"
-            [style.height.px]="item.height"
-            [style.left.px]="item.x"
-            [style.top.px]="item.y"
-            [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
-            (click)="onImageClick($event, item)"
-          >
-            <div class="photo-card__media">
-              @if (item.type === 'photo') {
-                <img [src]="item.url"
-                     class="photo-card__image"
-                     (load)="$event.target.classList.add('is-visible')"
-                     alt="Imagem da galeria capturada pela webcam">
-              }
-              <div
-                class="photo-card__overlay"
-                [class.photo-card__overlay--dark]="themeService.isDark()"
-                [class.photo-card__overlay--light]="themeService.isLight()"
-              ></div>
+      <div class="absolute gallery-canvas">
+        <div #canvasWrapper class="canvas-wrapper">
+          @for (item of visibleItems(); track trackById($index, item)) {
+            <div
+              class="photo-card"
+              [class.photo-card--light]="themeService.isLight()"
+              [class.is-disabled]="!isInteractionEnabled()"
+              [class.is-interactive]="isInteractionEnabled()"
+              [style.width.px]="item.width"
+              [style.height.px]="item.height"
+              [style.left.px]="item.x"
+              [style.top.px]="item.y"
+              [attr.data-cursor-pointer]="isInteractionEnabled() ? '' : null"
+              (click)="onImageClick($event, item)"
+            >
+              <div class="photo-card__media">
+                @if (item.type === 'photo') {
+                  <img [src]="item.url"
+                       class="photo-card__image"
+                       (load)="$event.target.classList.add('is-visible')"
+                       alt="Imagem da galeria capturada pela webcam">
+                }
+                <div
+                  class="photo-card__overlay"
+                  [class.photo-card__overlay--dark]="themeService.isDark()"
+                  [class.photo-card__overlay--light]="themeService.isLight()"
+                ></div>
+              </div>
+              <span class="photo-card__badge">
+                {{ item.creationOrder }}
+              </span>
             </div>
-            <span class="photo-card__badge">
-              {{ item.creationOrder }}
-            </span>
-          </div>
-        }
+          }
+        </div>
       </div>
     }
 

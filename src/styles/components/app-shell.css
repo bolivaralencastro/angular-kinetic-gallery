@@ -537,6 +537,12 @@ body[data-theme='light'] .section-title {
   overflow: hidden;
 }
 
+.canvas-wrapper {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
 .mobile-gallery-collection {
   margin-top: 2rem;
 }
