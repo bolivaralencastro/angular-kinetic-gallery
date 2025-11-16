@@ -1322,7 +1322,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.expandItem(placeholderItem, event.currentTarget as HTMLElement);
   }
 
-  deleteExpandedPhoto(event: MouseEvent): void {
+  async deleteExpandedPhoto(event: MouseEvent): Promise<void> {
     event.stopPropagation();
 
     if (!this.canManageContent()) {
@@ -1334,7 +1334,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.deletePhotoByUrl(item.url);
+    await this.deletePhotoByUrl(item.url);
   }
 
   mobileAddAction(): void {
@@ -1375,7 +1375,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mobileView.set('galleryDetail');
   }
 
-  deleteActiveGalleryFromMobile(): void {
+  async deleteActiveGalleryFromMobile(): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
@@ -1390,7 +1390,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.galleryService.deleteGallery(activeGallery.id);
+    const success = await this.galleryService.deleteGallery(activeGallery.id);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
     this.updateVisibleItems(true);
     this.returnToMobileGalleries();
   }
@@ -1442,7 +1446,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.openGalleryCreationDialog();
   }
 
-  onCaptureComplete(imageUrl: string): void {
+  async onCaptureComplete(imageUrl: string): Promise<void> {
     const selectedGalleryId = this.galleryService.selectedGalleryId();
 
     if (!selectedGalleryId) {
@@ -1451,17 +1455,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.galleryService.addImageToGallery(selectedGalleryId, imageUrl);
+    const success = await this.galleryService.addImageToGallery(selectedGalleryId, imageUrl);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
     this.lastCapturedImage.set(imageUrl);
   }
 
-  assignPendingToGallery(galleryId: string, imageUrl?: string): void {
+  async assignPendingToGallery(galleryId: string, imageUrl?: string): Promise<void> {
     const targetImage = imageUrl ?? this.selectedPendingCapture();
     if (!targetImage) {
       return;
     }
 
-    this.galleryService.assignPendingCaptureToGallery(galleryId, targetImage);
+    const success = await this.galleryService.assignPendingCaptureToGallery(galleryId, targetImage);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
     this.lastCapturedImage.set(targetImage);
     if (this.pendingCaptureToAssign() === targetImage) {
       this.pendingCaptureToAssign.set(null);
@@ -1937,13 +1949,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  handleGalleryCreate(event: { name: string; description: string }): void {
+  async handleGalleryCreate(event: { name: string; description: string }): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
 
-    const newGalleryId = this.galleryService.createGallery(event.name, event.description);
+    const newGalleryId = await this.galleryService.createGallery(event.name, event.description);
     if (!newGalleryId) {
+      this.notifyGalleryError();
       return;
     }
 
@@ -1955,16 +1968,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateVisibleItems(true); // Refresh the view
   }
 
-  handleGallerySave(event: { id: string | null; name: string; description: string }): void {
+  async handleGallerySave(event: { id: string | null; name: string; description: string }): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
 
     if (event.id) {
-      this.galleryService.updateGallery(event.id, event.name, event.description);
+      const success = await this.galleryService.updateGallery(event.id, event.name, event.description);
+      if (!success) {
+        this.notifyGalleryError();
+        return;
+      }
     } else {
-      const createdId = this.galleryService.createGallery(event.name, event.description);
+      const createdId = await this.galleryService.createGallery(event.name, event.description);
       if (!createdId) {
+        this.notifyGalleryError();
         return;
       }
 
@@ -1978,12 +1996,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateVisibleItems(true); // Refresh the view
   }
 
-  handleGalleryDelete(id: string): void {
+  async handleGalleryDelete(id: string): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
 
-    this.galleryService.deleteGallery(id);
+    const success = await this.galleryService.deleteGallery(id);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
     this.isGalleryEditorVisible.set(false);
     this.editingGallery.set(null);
     this.updateVisibleItems(true); // Refresh the view
@@ -2111,13 +2133,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.handleMobileNavigationTransition();
   }
 
-  deleteGallery(id: string): void {
+  async deleteGallery(id: string): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
 
     const activeGallery = this.galleryService.selectedGalleryId();
-    this.galleryService.deleteGallery(id);
+    const success = await this.galleryService.deleteGallery(id);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
 
     if (activeGallery === id) {
       this.backToGalleries();
@@ -2126,7 +2152,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateVisibleItems(true);
   }
 
-  deletePhotoByUrl(photoUrl: string): void {
+  async deletePhotoByUrl(photoUrl: string): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
@@ -2140,7 +2166,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.galleryService.removeImageFromGallery(activeGalleryId, photoUrl);
+    const success = await this.galleryService.removeImageFromGallery(activeGalleryId, photoUrl);
+    if (!success) {
+      this.notifyGalleryError();
+      return;
+    }
     this.updateVisibleItems(true);
 
     if (this.expandedItem()?.url === photoUrl) {
@@ -2172,7 +2202,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  deletePhotoContextMenu(): void {
+  async deletePhotoContextMenu(): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
@@ -2181,7 +2211,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.deletePhotoByUrl(this.contextMenuPhotoUrl);
+    await this.deletePhotoByUrl(this.contextMenuPhotoUrl);
     this.contextMenuPhotoUrl = null;
   }
 
@@ -2199,7 +2229,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isInfoDialogVisible.update(visible => !visible);
   }
 
-  createGalleryWithTimestamp(): void {
+  async createGalleryWithTimestamp(): Promise<void> {
     if (!this.canManageContent()) {
       return;
     }
@@ -2216,8 +2246,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     const timestamp = `${day}/${month}/${year} às ${hours}:${minutes}:${seconds}`;
     const galleryName = `Galeria ${timestamp}`;
 
-    const createdId = this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
+    const createdId = await this.galleryService.createGallery(galleryName, 'Galeria criada automaticamente');
     if (!createdId) {
+      this.notifyGalleryError();
       return;
     }
 
@@ -2287,8 +2318,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.expandedItem.set(null);
     }
   }
-
-
+  private notifyGalleryError(): void {
+    const message = this.galleryService.lastErrorMessage();
+    if (message) {
+      console.warn(message);
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert(message);
+      }
+    }
+  }
 
   trackById(index: number, item: VisibleItem): string {
     if (item.type === 'gallery') {

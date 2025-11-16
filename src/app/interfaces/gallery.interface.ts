@@ -1,5 +1,7 @@
 export interface Gallery {
   id: string;
+  galleryId: string;
+  ownerId: string | null;
   name: string;
   description: string;
   imageUrls: string[];

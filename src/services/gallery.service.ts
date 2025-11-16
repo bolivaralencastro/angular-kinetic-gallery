@@ -20,6 +20,8 @@ export class GalleryService {
   galleries = signal<Gallery[]>([]);
   selectedGalleryId = signal<string | null>(null);
   pendingCaptures = signal<string[]>([]);
+  currentUserGalleryId = signal<string | null>(null);
+  lastErrorMessage = signal<string | null>(null);
 
   // Computed signal for the images of the currently selected gallery
   images = computed(() => {
@@ -39,71 +41,112 @@ export class GalleryService {
 
   private async initializeData(): Promise<void> {
     if (this.supabaseService.isEnabled()) {
+      await this.syncCurrentUserGallery();
       await this.loadRemoteGalleries();
     }
 
     this.restorePendingUploads();
   }
 
-  createGallery(name: string, description: string): string | null {
-    if (!this.canManage()) {
+  private async syncCurrentUserGallery(): Promise<void> {
+    const result = await this.supabaseService.syncCurrentUserGallery();
+    if (!result.success) {
+      this.setError(result.error ?? 'Não foi possível sincronizar a galeria do usuário.');
+      return;
+    }
+
+    const galleryId = result.data ?? null;
+    this.currentUserGalleryId.set(galleryId);
+
+    if (!this.authService.canManageContent() && galleryId) {
+      this.selectedGalleryId.set(galleryId);
+    }
+  }
+
+  async createGallery(name: string, description: string): Promise<string | null> {
+    const ownerId = this.authService.ownerId();
+    if (!this.requireOwnerOrAdmin(ownerId)) {
       return null;
     }
 
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
     const createdAt = `${day}/${month}/${year}`;
 
+    const galleryId = crypto.randomUUID();
+
     const newGallery: Gallery = {
-      id: crypto.randomUUID(), // Generate a unique ID
+      id: galleryId,
+      galleryId,
+      ownerId,
       name,
       description,
       imageUrls: [],
       thumbnailUrl: undefined,
       createdAt,
     };
+
+    if (this.supabaseService.isEnabled()) {
+      const result = await this.supabaseService.upsertGallery(newGallery);
+      if (!result.success) {
+        this.setError(result.error ?? 'Não foi possível criar a galeria.');
+        return null;
+      }
+    }
+
     this.galleries.update(currentGalleries => [newGallery, ...currentGalleries]);
-    this.persistGallery(newGallery);
+    this.setError(null);
     return newGallery.id;
   }
 
   getGallery(id: string): Gallery | undefined {
-    return this.galleries().find(g => g.id === id);
+    return this.galleries().find(gallery => gallery.id === id || gallery.galleryId === id);
   }
 
-  updateGallery(id: string, name: string, description: string): void {
-    if (!this.canManage()) {
-      return;
+  async updateGallery(id: string, name: string, description: string): Promise<boolean> {
+    const gallery = this.getGallery(id);
+    if (!this.requireOwnership(gallery)) {
+      return false;
+    }
+
+    const updatedGallery: Gallery = { ...gallery, name, description };
+    if (this.supabaseService.isEnabled()) {
+      const result = await this.supabaseService.upsertGallery(updatedGallery);
+      if (!result.success) {
+        this.setError(result.error ?? 'Não foi possível atualizar a galeria.');
+        return false;
+      }
     }
 
     this.galleries.update(currentGalleries =>
-      currentGalleries.map(g =>
-        g.id === id ? { ...g, name, description } : g
-      )
+      currentGalleries.map(g => (g.id === id ? updatedGallery : g))
     );
-    const updatedGallery = this.getGallery(id);
-    if (updatedGallery) {
-      this.persistGallery(updatedGallery);
-    }
+    this.setError(null);
+    return true;
   }
 
-  deleteGallery(id: string): void {
-    if (!this.canManage()) {
-      return;
-    }
-
+  async deleteGallery(id: string): Promise<boolean> {
     const galleryToDelete = this.getGallery(id);
-    this.galleries.update(currentGalleries =>
-      currentGalleries.filter(g => g.id !== id)
-    );
+    if (!this.requireOwnership(galleryToDelete)) {
+      return false;
+    }
+
+    if (this.supabaseService.isEnabled()) {
+      const result = await this.supabaseService.deleteGallery(id, galleryToDelete.imageUrls);
+      if (!result.success) {
+        this.setError(result.error ?? 'Não foi possível excluir a galeria.');
+        return false;
+      }
+    }
+
+    this.galleries.update(currentGalleries => currentGalleries.filter(g => g.id !== id));
     if (this.selectedGalleryId() === id) {
-      this.selectedGalleryId.set(null); // Deselect if the current gallery is deleted
+      this.selectedGalleryId.set(null);
     }
-    if (galleryToDelete) {
-      void this.supabaseService.deleteGallery(id, galleryToDelete.imageUrls);
-    }
+    this.setError(null);
+    return true;
   }
 
   selectGallery(id: string | null): void {
@@ -112,79 +155,73 @@ export class GalleryService {
 
   // --- Image Management within a Gallery ---
 
-  addImage(imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
-    }
-
-    // If no gallery is selected, create a default gallery
+  async addImage(imageUrl: string): Promise<boolean> {
     if (!this.selectedGalleryId()) {
-      const newGalleryId = this.createGallery('Galeria Principal', 'Galeria padrão para fotos capturadas');
+      const newGalleryId = await this.createGallery('Galeria Principal', 'Galeria padrão para fotos capturadas');
       if (newGalleryId) {
         this.selectedGalleryId.set(newGalleryId);
+      } else {
+        return false;
       }
     }
 
     const selectedGalleryId = this.selectedGalleryId();
-    if (selectedGalleryId) {
-      this.addImageToGallery(selectedGalleryId, imageUrl);
+    if (!selectedGalleryId) {
+      this.setError('Selecione uma galeria para salvar a imagem.');
+      return false;
     }
-  }
 
-  addPendingCapture(imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
+    const targetGallery = this.getGallery(selectedGalleryId);
+    if (!this.requireOwnership(targetGallery)) {
+      return false;
     }
 
     this.pendingCaptures.update(current => [imageUrl, ...current]);
+    return true;
   }
 
-  assignPendingCaptureToGallery(galleryId: string, imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
-    }
+  addPendingCapture(imageUrl: string): void {
+    this.pendingCaptures.update(current => [imageUrl, ...current]);
+  }
 
+  async assignPendingCaptureToGallery(galleryId: string, imageUrl: string): Promise<boolean> {
     this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
-    this.addImageToGallery(galleryId, imageUrl);
+    return this.addImageToGallery(galleryId, imageUrl);
   }
 
   removePendingCapture(imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
-    }
-
     this.pendingCaptures.update(current => current.filter(url => url !== imageUrl));
   }
 
-  addImageToGallery(galleryId: string, imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
+  async addImageToGallery(galleryId: string, imageUrl: string): Promise<boolean> {
+    const gallery = this.getGallery(galleryId);
+    if (!this.requireOwnership(gallery)) {
+      return false;
     }
 
+    const updatedGallery: Gallery = {
+      ...gallery,
+      imageUrls: [imageUrl, ...gallery.imageUrls],
+      thumbnailUrl: imageUrl,
+    };
+
     this.galleries.update(currentGalleries =>
-      currentGalleries.map(g => {
-        if (g.id === galleryId) {
-          const updatedImageUrls = [imageUrl, ...g.imageUrls];
-          return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: imageUrl }; // Set new image as thumbnail
-        }
-        return g;
-      })
+      currentGalleries.map(g => (g.id === galleryId ? updatedGallery : g))
     );
-    const gallery = this.getGallery(galleryId);
-    if (gallery) {
-      this.persistGallery(gallery);
-    }
 
     if (imageUrl.startsWith('data:')) {
       this.registerPendingUpload(galleryId, imageUrl);
     }
 
     this.syncGalleryBase64Images(galleryId, [imageUrl]);
+    this.setError(null);
+    return true;
   }
 
-  removeImageFromGallery(galleryId: string, imageUrl: string): void {
-    if (!this.canManage()) {
-      return;
+  async removeImageFromGallery(galleryId: string, imageUrl: string): Promise<boolean> {
+    const gallery = this.getGallery(galleryId);
+    if (!this.requireOwnership(gallery)) {
+      return false;
     }
 
     let nextThumbnail: string | undefined;
@@ -193,37 +230,57 @@ export class GalleryService {
         if (g.id === galleryId) {
           const updatedImageUrls = g.imageUrls.filter(url => url !== imageUrl);
           nextThumbnail = updatedImageUrls[0];
-          return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: nextThumbnail }; // Update thumbnail
+          return { ...g, imageUrls: updatedImageUrls, thumbnailUrl: nextThumbnail };
         }
         return g;
       })
     );
-
-    const updatedGallery = this.getGallery(galleryId);
-    if (updatedGallery) {
-      this.persistGallery(updatedGallery);
-    }
 
     if (imageUrl.startsWith('data:')) {
       this.unregisterPendingUpload(galleryId, imageUrl);
     }
 
     if (this.supabaseService.isEnabled()) {
-      void this.supabaseService.removeImageFromGallery(galleryId, imageUrl, nextThumbnail);
+      const result = await this.supabaseService.removeImageFromGallery(galleryId, imageUrl, nextThumbnail);
+      if (!result.success) {
+        this.setError(result.error ?? 'Não foi possível remover a imagem.');
+        return false;
+      }
     }
+
+    const updatedGallery = this.getGallery(galleryId);
+    if (updatedGallery) {
+      void this.persistGallery(updatedGallery);
+    }
+
+    this.setError(null);
+    return true;
   }
 
   private async loadRemoteGalleries(): Promise<void> {
-    const remoteGalleries = await this.supabaseService.fetchGalleries();
-    if (remoteGalleries === null) {
+    const result = await this.supabaseService.fetchGalleries();
+    if (!result.success) {
+      this.setError(result.error ?? 'Não foi possível carregar as galerias.');
       return;
     }
 
+    const remoteGalleries = result.data ?? [];
     this.galleries.set(remoteGalleries);
 
     const selectedId = this.selectedGalleryId();
-    if (selectedId && !remoteGalleries.some(gallery => gallery.id === selectedId)) {
+    const selectedGallery = this.findGalleryByIdOrAlias(selectedId, remoteGalleries);
+    if (selectedId && !selectedGallery) {
       this.selectedGalleryId.set(null);
+    } else if (selectedGallery) {
+      this.selectedGalleryId.set(selectedGallery.id);
+    }
+
+    const defaultUserGallery = this.currentUserGalleryId();
+    if (!this.authService.canManageContent() && !this.selectedGalleryId() && defaultUserGallery) {
+      const resolvedDefault = this.findGalleryByIdOrAlias(defaultUserGallery, remoteGalleries);
+      if (resolvedDefault) {
+        this.selectedGalleryId.set(resolvedDefault.id);
+      }
     }
   }
 
@@ -232,7 +289,8 @@ export class GalleryService {
       return;
     }
 
-    if (!this.canManage()) {
+    const gallery = this.getGallery(galleryId);
+    if (!this.requireOwnership(gallery)) {
       return;
     }
 
@@ -243,10 +301,14 @@ export class GalleryService {
           return;
         }
 
-        void this.supabaseService.uploadImage(galleryId, base64Url).then(remoteUrl => {
-          if (!remoteUrl) {
+        void this.supabaseService.uploadImage(galleryId, base64Url).then(async remoteResult => {
+          if (!remoteResult.success || !remoteResult.data) {
+            this.setError(remoteResult.error ?? 'Não foi possível enviar a imagem.');
+            this.removeBase64Placeholder(galleryId, base64Url);
             return;
           }
+
+          const remoteUrl = remoteResult.data;
 
           this.galleries.update(currentGalleries =>
             currentGalleries.map(g => {
@@ -261,7 +323,7 @@ export class GalleryService {
 
           const updatedGallery = this.getGallery(galleryId);
           if (updatedGallery) {
-            this.persistGallery(updatedGallery);
+            await this.persistGallery(updatedGallery);
           }
 
           this.unregisterPendingUpload(galleryId, base64Url);
@@ -285,18 +347,38 @@ export class GalleryService {
     this.ongoingUploads.delete(this.createUploadKey(galleryId, imageUrl));
   }
 
+  private removeBase64Placeholder(galleryId: string, placeholder: string): void {
+    this.galleries.update(currentGalleries =>
+      currentGalleries.map(gallery => {
+        if (gallery.id !== galleryId) {
+          return gallery;
+        }
+
+        const imageUrls = gallery.imageUrls.filter(url => url !== placeholder);
+        const thumbnailUrl = gallery.thumbnailUrl === placeholder ? imageUrls[0] : gallery.thumbnailUrl;
+        return { ...gallery, imageUrls, thumbnailUrl };
+      }),
+    );
+  }
+
   private createUploadKey(galleryId: string, imageUrl: string): string {
     const prefix = imageUrl.slice(0, 64);
     const suffix = imageUrl.slice(-16);
     return `${galleryId}::${imageUrl.length}::${prefix}::${suffix}`;
   }
 
-  private persistGallery(gallery: Gallery): void {
-    if (!this.canManage()) {
-      return;
+  private async persistGallery(gallery: Gallery): Promise<boolean> {
+    if (!this.requireOwnership(gallery)) {
+      return false;
     }
 
-    void this.supabaseService.upsertGallery(gallery);
+    const result = await this.supabaseService.upsertGallery(gallery);
+    if (!result.success) {
+      this.setError(result.error ?? 'Não foi possível atualizar a galeria.');
+      return false;
+    }
+
+    return true;
   }
 
   private registerPendingUpload(galleryId: string, imageUrl: string): void {
@@ -402,7 +484,48 @@ export class GalleryService {
     return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
   }
 
-  private canManage(): boolean {
-    return this.authService.canManageContent();
+  private requireOwnership(gallery: Gallery | null | undefined): gallery is Gallery {
+    if (!gallery) {
+      this.setError('Galeria não encontrada.');
+      return false;
+    }
+
+    return this.requireOwnerOrAdmin(gallery.ownerId);
+  }
+
+  private requireOwnerOrAdmin(ownerId: string | null): boolean {
+    if (!this.authService.isAuthenticated()) {
+      this.setError('Faça login para gerenciar galerias.');
+      return false;
+    }
+
+    if (this.authService.canManageContent()) {
+      return true;
+    }
+
+    const normalizedOwner = ownerId?.trim();
+    if (!normalizedOwner) {
+      this.setError('Não foi possível validar o proprietário da galeria.');
+      return false;
+    }
+
+    if (!this.authService.canManageGallery(normalizedOwner)) {
+      this.setError('Você não tem permissão para alterar esta galeria.');
+      return false;
+    }
+
+    return true;
+  }
+
+  private setError(message: string | null): void {
+    this.lastErrorMessage.set(message);
+  }
+
+  private findGalleryByIdOrAlias(id: string | null, galleries: readonly Gallery[]): Gallery | undefined {
+    if (!id) {
+      return undefined;
+    }
+
+    return galleries.find(gallery => gallery.id === id || gallery.galleryId === id);
   }
 }
