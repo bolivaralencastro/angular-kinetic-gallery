@@ -719,6 +719,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
   canUploadToGallery = this.permissionsService.canUploadToSelectedGallery;
+  canDeletePhoto = this.permissionsService.canDeletePhotoFromSelectedGallery;
   userRoleLabel = computed(() => {
     const role = this.authService.userRole();
     if (role) {
@@ -2393,7 +2394,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deletePhotoByUrl(photoUrl: string): Promise<void> {
-    if (!this.canManageSelectedGallery()) {
+    if (!this.canDeletePhoto()) {
       return;
     }
 
@@ -2443,7 +2444,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deletePhotoContextMenu(): Promise<void> {
-    if (!this.canManageSelectedGallery()) {
+    if (!this.canDeletePhoto()) {
       return;
     }
 
