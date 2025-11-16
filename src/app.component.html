@@ -7,27 +7,77 @@
   (contextmenu)="onRightClick($event)">
 
   <div class="app-shell__viewport">
-  @if (canManageContent()) {
-    <div
-      class="app-shell__admin-panel"
-      [class.app-shell__admin-panel--mobile]="isMobileLayout()">
-      <div
-        class="identity-card"
-        [class.identity-card--mobile]="isMobileLayout()">
-        <span class="identity-card__name" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
-        <span class="identity-card__role">Admin</span>
-        <button
-          type="button"
-          data-cursor-pointer
-          class="identity-card__action"
-          (click)="signOut()">
-          Sair
-        </button>
-      </div>
-    </div>
-  }
+    <ng-template #userMenu>
+      @if (canManageContent()) {
+        <div class="user-menu" #userMenuRoot>
+          <button
+            type="button"
+            data-cursor-pointer
+            class="user-menu__trigger"
+            aria-label="Menu do usuário"
+            [attr.aria-expanded]="isUserMenuOpen()"
+            (click)="toggleUserMenu($event)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--md" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a8.25 8.25 0 0 1 15 0" />
+            </svg>
+          </button>
 
-  @if (isMobileLayout()) {
+          @if (isUserMenuOpen()) {
+            <div class="user-menu__dropdown">
+              <div class="user-menu__header">
+                <div class="user-menu__avatar">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--sm" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25a8.25 8.25 0 0 1 15 0" />
+                  </svg>
+                </div>
+                <div class="user-menu__details">
+                  <span class="user-menu__email" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
+                  <span class="user-menu__role">{{ userRoleLabel() }}</span>
+                </div>
+              </div>
+
+              <div class="user-menu__actions">
+                <button
+                  type="button"
+                  class="button button--ghost user-menu__action"
+                  data-cursor-pointer
+                  (click)="refreshApp()">
+                  Atualizar aplicativo
+                </button>
+                <button
+                  type="button"
+                  class="button button--ghost user-menu__action"
+                  data-cursor-pointer
+                  (click)="signOut()">
+                  Sair
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </ng-template>
+
+    @if (!isMobileLayout()) {
+      <div class="app-shell__status-bar">
+        <div class="counter">
+          @if (currentView() === 'galleries') {
+            {{ galleryCounterLabel() }} {{ galleryCount() }}
+          } @else {
+            {{ photoCounterLabel() }} {{ photoCount() }}
+          }
+        </div>
+        <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
+      </div>
+    } @else if (mobileView() === 'capture') {
+      <div class="app-shell__status-bar app-shell__status-bar--mobile">
+        <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
+      </div>
+    }
+
+    @if (isMobileLayout()) {
     @switch (mobileView()) {
       @case ('capture') {
         <div class="mobile-shell mobile-shell--capture">
@@ -447,15 +497,6 @@
     </div>
     <div class="date-indicator">
       {{ currentDate() }}
-    </div>
-
-    <!-- Contador de Galerias ou Fotos -->
-    <div class="counter">
-      @if (currentView() === 'galleries') {
-        {{ galleryCounterLabel() }} {{ galleryCount() }}
-      } @else {
-        {{ photoCounterLabel() }} {{ photoCount() }}
-      }
     </div>
 
     @if (currentView() === 'photos' && !isIdle()) {

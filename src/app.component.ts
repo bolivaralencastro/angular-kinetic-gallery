@@ -478,9 +478,48 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async signOut(): Promise<void> {
+    this.closeUserMenu();
     await this.authService.signOut();
     this.loginPassword.set('');
     this.loginError.set(null);
+  }
+
+  toggleUserMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.isUserMenuOpen.update(isOpen => !isOpen);
+  }
+
+  closeUserMenu(): void {
+    this.isUserMenuOpen.set(false);
+  }
+
+  refreshApp(): void {
+    this.closeUserMenu();
+    window.location.reload();
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeUserMenuOnOutside(event: MouseEvent): void {
+    if (!this.isUserMenuOpen()) {
+      return;
+    }
+
+    const menuElement = this.userMenuRoot()?.nativeElement;
+    if (!menuElement) {
+      this.isUserMenuOpen.set(false);
+      return;
+    }
+
+    if (!menuElement.contains(event.target as Node)) {
+      this.isUserMenuOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeUserMenuOnEscape(): void {
+    if (this.isUserMenuOpen()) {
+      this.isUserMenuOpen.set(false);
+    }
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -543,6 +582,9 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   canManageContent = computed(() => this.authService.canManageContent());
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
+  userRoleLabel = computed(() => (this.canManageContent() ? 'Admin' : 'Usuário'));
+  isUserMenuOpen = signal(false);
+  userMenuRoot = viewChild<ElementRef<HTMLElement>>('userMenuRoot');
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
@@ -551,6 +593,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoginInProgress = signal(false);
   private ngZone = inject(NgZone);
   private elementRef = inject(ElementRef<HTMLElement>);
+  private closeUserMenuOnLayoutChange = effect(() => {
+    this.isMobileLayout();
+    this.mobileView();
+
+    if (this.isUserMenuOpen()) {
+      this.isUserMenuOpen.set(false);
+    }
+  });
 
   // --- Configurações da Galeria ---
   private numColumns = signal(4);
