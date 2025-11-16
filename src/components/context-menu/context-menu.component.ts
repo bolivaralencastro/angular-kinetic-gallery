@@ -19,14 +19,16 @@ import { ThemeMode } from '../../services/theme.service';
             <p class="menu__heading">{{ group.label }}</p>
             <ul class="menu__items" role="none">
               @for (action of group.actions; track action) {
-                <li role="none">
-                  <button
-                    type="button"
-                    class="menu__item"
-                    role="menuitem"
-                    data-cursor-pointer
-                    (click)="handleAction(action, $event)"
-                  >
+                @if (isActionAllowed(action)) {
+                  <li role="none">
+                    <button
+                      type="button"
+                      class="menu__item"
+                      role="menuitem"
+                      data-cursor-pointer
+                      [attr.title]="getActionTooltip(action)"
+                      (click)="handleAction(action, $event)"
+                    >
                     <span class="menu__icon" aria-hidden="true">
                       <ng-container [ngSwitch]="action">
                         <ng-container *ngSwitchCase="'toggleTheme'">
@@ -149,6 +151,10 @@ export class ContextMenuComponent {
   themeMode = input.required<ThemeMode>();
   isAutoNavigationActive = input<boolean>(false);
   autoNavigationCountdown = input<number | null>(null);
+  canEditGallery = input<boolean>(false);
+  canUploadToGallery = input<boolean>(false);
+  canDeletePhoto = input<boolean>(false);
+  adminActionHint = input<string>('Apenas administradores ou proprietários podem usar esta ação.');
 
   close = output<void>();
   capture = output<void>();
@@ -160,6 +166,32 @@ export class ContextMenuComponent {
   deleteGallery = output<void>();
   deletePhoto = output<void>();
   info = output<void>();
+
+  isActionAllowed(action: ContextMenuAction): boolean {
+    switch (action) {
+      case 'editGallery':
+      case 'deleteGallery':
+        return this.canEditGallery();
+      case 'capturePhoto':
+        return this.canUploadToGallery();
+      case 'deletePhoto':
+        return this.canDeletePhoto();
+      default:
+        return true;
+    }
+  }
+
+  getActionTooltip(action: ContextMenuAction): string | null {
+    switch (action) {
+      case 'editGallery':
+      case 'deleteGallery':
+      case 'capturePhoto':
+      case 'deletePhoto':
+        return this.adminActionHint();
+      default:
+        return null;
+    }
+  }
 
   handleAction(action: ContextMenuAction, event: Event): void {
     event.stopPropagation();

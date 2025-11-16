@@ -236,7 +236,9 @@
                 <button
                   type="button"
                   class="button button--ghost"
-                  (click)="openGalleryCreationDialogForMobileCapture()">
+                  (click)="openGalleryCreationDialogForMobileCapture()"
+                  title="Apenas administradores podem criar novas galerias"
+                >
                   Nova
                 </button>
               }
@@ -293,7 +295,9 @@
                   type="button"
                   class="button button--ghost"
                   [disabled]="!activeGallery()"
-                  (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)">
+                  (click)="activeGallery() && useGalleryForCapture(activeGallery()!.id)"
+                  title="Disponível apenas para administradores ou proprietários"
+                >
                   Usar esta galeria
                 </button>
                 <button
@@ -301,7 +305,9 @@
                   class="button button--danger button--icon"
                   aria-label="Excluir galeria"
                   [disabled]="!activeGallery()"
-                  (click)="deleteActiveGalleryFromMobile()">
+                  (click)="deleteActiveGalleryFromMobile()"
+                  title="Disponível apenas para administradores ou proprietários"
+                >
                   <span class="sr-only">Excluir galeria</span>
                   <span class="button__icon" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -453,6 +459,8 @@
                   data-cursor-pointer
                   (click)="openWebcamCapture(); $event.stopPropagation();"
                   class="button button--primary"
+                  [disabled]="!canUploadToGallery()"
+                  title="Apenas administradores ou proprietários podem capturar nesta galeria"
                 >
                   Usar Câmera
                 </button>
@@ -460,6 +468,8 @@
                   data-cursor-pointer
                   (click)="handleSpacebar($event)"
                   class="button button--primary"
+                  [disabled]="!canUploadToGallery()"
+                  title="Apenas administradores ou proprietários podem capturar nesta galeria"
                 >
                   Atalho: Espaço
                 </button>
@@ -558,7 +568,9 @@
           class="screen-overlay__action button button--icon"
           aria-label="Excluir foto"
           data-cursor-pointer
-          (click)="deleteExpandedPhoto($event)">
+          (click)="deleteExpandedPhoto($event)"
+          title="Disponível apenas para administradores ou proprietários"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon icon--sm">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75h4.5m-4.5 3h4.5M10.5 6h3A1.5 1.5 0 0 1 15 7.5v.75h3.75M6 8.25h12M9 6.75h-.75A1.5 1.5 0 0 0 6.75 8.25v9A1.5 1.5 0 0 0 8.25 18.75h7.5A1.5 1.5 0 0 0 17.25 17.25v-9a1.5 1.5 0 0 0-1.5-1.5H15" />
           </svg>
@@ -670,6 +682,9 @@
     [themeMode]="themeService.theme()"
     [isAutoNavigationActive]="isAutoNavigationActive()"
     [autoNavigationCountdown]="autoNavigationCountdown()"
+    [canEditGallery]="canEditSelectedGallery()"
+    [canUploadToGallery]="canUploadToGallery()"
+    [canDeletePhoto]="canDeletePhoto()"
     (close)="closeContextMenu()"
     (capture)="openWebcamCapture()"
     (toggleFullscreen)="toggleFullscreen()"
