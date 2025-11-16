@@ -102,8 +102,13 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
       event.preventDefault();
     }
+    const view = this.currentView();
+    const canCreate = this.canCreateGalleries();
+    const canCapture = this.canCaptureInSelectedGallery();
+
     if (
-      !this.canManageContent() ||
+      (!canCreate && view === 'galleries') ||
+      (!canCreate && !canCapture && view === 'photos') ||
       this.isWebcamVisible() ||
       this.expandedItem() ||
       this.isGalleryEditorVisible() ||
@@ -112,7 +117,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.currentView() === 'galleries') {
+    if (view === 'galleries') {
       // Create a new gallery when in gallery view
       this.openGalleryCreationDialog();
     } else {
@@ -408,7 +413,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Se já está logado como admin, o diálogo de login está aberto
     // ou a pessoa está digitando em algum campo, não faz nada
-    if (this.isLoginDialogVisible() || this.canManageContent() || this.isTypingElement(target)) {
+    if (this.isLoginDialogVisible() || this.isAuthenticated() || this.isTypingElement(target)) {
       return;
     }
 
@@ -465,13 +470,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.canManageContent()) {
-      this.loginError.set('Esta conta não possui acesso administrativo.');
-      await this.authService.signOut();
-      this.isLoginInProgress.set(false);
-      return;
-    }
-
     this.isLoginDialogVisible.set(false);
     this.loginPassword.set('');
     this.isLoginInProgress.set(false);
@@ -482,6 +480,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     await this.authService.signOut();
     this.loginPassword.set('');
     this.loginError.set(null);
+    this.hasInitializedView.set(false);
+    this.mobileCaptureGalleryId.set(null);
   }
 
   toggleUserMenu(event: MouseEvent): void {
@@ -578,6 +578,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   canManageContent = computed(() => this.authService.canManageContent());
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
+  isAuthenticated = computed(() => this.authService.isAuthenticated());
+  currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
   userRoleLabel = computed(() => {
     const role = this.authService.userRole();
     if (role) {
@@ -587,6 +589,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.canManageContent() ? 'Admin' : 'Usuário';
   });
   isUserMenuOpen = signal(false);
+  private hasInitializedView = signal(false);
+  canCreateGalleries = computed(() => this.authService.canManageContent());
+  canManageSelectedGallery = computed(() => {
+    const active = this.activeGallery();
+    if (!active) {
+      return false;
+    }
+
+    return this.authService.canManageGallery(active.ownerId);
+  });
+  canCaptureInSelectedGallery = computed(() => this.canManageSelectedGallery());
+  canEditSelectedGallery = computed(() => this.canManageSelectedGallery());
+  canDeleteSelectedGallery = computed(() => this.canManageSelectedGallery());
+  canViewMobileGalleryList = computed(() => this.canCreateGalleries());
+  canUseCaptureDialog = computed(() => this.canCaptureInSelectedGallery() || this.canCreateGalleries());
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
@@ -680,6 +697,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.galleries().find(gallery => gallery.id === captureId) ?? null;
   });
+  mobileCaptureAllowed = computed(() => {
+    const gallery = this.mobileCaptureGallery();
+    if (!gallery) {
+      return false;
+    }
+
+    return this.authService.canManageGallery(gallery.ownerId);
+  });
   galleryLatestImages = computed(() => {
     const latest: Record<string, string> = {};
     for (const gallery of this.galleries()) {
@@ -748,6 +773,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       label: this.generalGroupLabel,
       actions,
     };
+  }
+
+  private canManageGalleryById(galleryId: string | null): boolean {
+    if (!galleryId) {
+      return false;
+    }
+
+    const gallery = this.galleryService.getGallery(galleryId);
+    if (!gallery) {
+      return false;
+    }
+
+    return this.authService.canManageGallery(gallery.ownerId);
   }
 
   private isTypingElement(target: HTMLElement | null): boolean {
@@ -891,8 +929,48 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
+    effect(
+      () => {
+        const isLoading = this.authService.isLoading();
+        const session = this.authService.session();
+        const userGalleryId = this.currentUserGalleryId();
+        const isMobile = this.isMobileLayout();
+        const isAdmin = this.canCreateGalleries();
+
+        if (isLoading) {
+          return;
+        }
+
+        if (!session) {
+          this.hasInitializedView.set(false);
+          return;
+        }
+
+        if (this.hasInitializedView()) {
+          return;
+        }
+
+        if (isAdmin) {
+          this.currentView.set('galleries');
+          if (isMobile) {
+            this.mobileView.set('galleries');
+          }
+        } else if (userGalleryId) {
+          this.galleryService.selectGallery(userGalleryId);
+          this.currentView.set('photos');
+          this.mobileCaptureGalleryId.set(userGalleryId);
+          if (isMobile) {
+            this.mobileView.set('capture');
+          }
+        }
+
+        this.hasInitializedView.set(true);
+      },
+      { allowSignalWrites: true },
+    );
+
     effect(() => {
-      if (this.canManageContent() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
+      if (this.isAuthenticated() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
         return;
       }
 
@@ -1201,7 +1279,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (isMobile) {
       if (!previousState) {
-        this.mobileView.set('capture');
+        this.mobileView.set(this.canViewMobileGalleryList() ? 'galleries' : 'capture');
         this.mobileCommandPanelVisible.set(false);
       }
       this.scheduleMobilePanelReveal(previousState ? 600 : 400);
@@ -1278,7 +1356,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.canManageContent() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
+    if (this.isAuthenticated() || this.isLoginDialogVisible() || this.isLoginInProgress()) {
       return;
     }
 
@@ -1325,7 +1403,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   async deleteExpandedPhoto(event: MouseEvent): Promise<void> {
     event.stopPropagation();
 
-    if (!this.canManageContent()) {
+    if (!this.canManageSelectedGallery()) {
       return;
     }
 
@@ -1339,13 +1417,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   mobileAddAction(): void {
     if (this.currentView() === 'galleries') {
-      this.openGalleryCreationDialog();
-    } else {
+      if (this.canCreateGalleries()) {
+        this.openGalleryCreationDialog();
+      }
+    } else if (this.canUseCaptureDialog()) {
       this.openWebcamCapture();
     }
   }
 
   startCaptureForGallery(galleryId: string): void {
+    if (!this.canManageGalleryById(galleryId)) {
+      return;
+    }
+
     if (this.isMobileLayout()) {
       this.showCaptureWithGallery(galleryId);
       return;
@@ -1371,12 +1455,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openMobileGalleryDetail(galleryId: string): void {
+    if (!this.canViewMobileGalleryList() && galleryId !== this.currentUserGalleryId()) {
+      return;
+    }
     this.selectGallery(galleryId);
     this.mobileView.set('galleryDetail');
   }
 
   async deleteActiveGalleryFromMobile(): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canDeleteSelectedGallery()) {
       return;
     }
 
@@ -1400,29 +1487,46 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   returnToMobileGalleries(): void {
+    if (!this.canViewMobileGalleryList()) {
+      this.mobileView.set('capture');
+      this.handleMobileNavigationTransition();
+      return;
+    }
     this.currentView.set('galleries');
     this.mobileView.set('galleries');
     this.handleMobileNavigationTransition();
   }
 
   showCaptureWithGallery(galleryId: string): void {
+    if (!this.canManageGalleryById(galleryId)) {
+      return;
+    }
     this.mobileCaptureGalleryId.set(galleryId);
     this.galleryService.selectGallery(galleryId);
     this.showMobileCapture();
   }
 
   useGalleryForCapture(galleryId: string): void {
+    if (!this.canManageGalleryById(galleryId)) {
+      return;
+    }
     this.mobileCaptureGalleryId.set(galleryId);
     this.showMobileCapture();
   }
 
   openMobileGalleryPicker(): void {
+    if (!this.canViewMobileGalleryList()) {
+      return;
+    }
     this.currentView.set('galleries');
     this.mobileView.set('galleries');
     this.handleMobileNavigationTransition();
   }
 
   selectMobileCaptureGallery(galleryId: string): void {
+    if (!this.canManageGalleryById(galleryId)) {
+      return;
+    }
     this.mobileCaptureGalleryId.set(galleryId);
     this.showMobileCapture();
   }
@@ -1433,12 +1537,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (!this.canManageGalleryById(captureId)) {
+      return;
+    }
+
     this.galleryService.selectGallery(captureId);
     this.captureMode.set('selected');
   }
 
   openGalleryCreationDialogForMobileCapture(): void {
-    if (!this.canManageContent()) {
+    if (!this.canCreateGalleries()) {
       return;
     }
 
@@ -1867,7 +1975,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGallery(id: string): void {
-    if (!this.canManageContent()) {
+    if (!this.canManageGalleryById(id)) {
       return;
     }
 
@@ -1950,7 +2058,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async handleGalleryCreate(event: { name: string; description: string }): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canCreateGalleries()) {
       return;
     }
 
@@ -1969,17 +2077,19 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async handleGallerySave(event: { id: string | null; name: string; description: string }): Promise<void> {
-    if (!this.canManageContent()) {
-      return;
-    }
-
     if (event.id) {
+      if (!this.canManageGalleryById(event.id)) {
+        return;
+      }
       const success = await this.galleryService.updateGallery(event.id, event.name, event.description);
       if (!success) {
         this.notifyGalleryError();
         return;
       }
     } else {
+      if (!this.canCreateGalleries()) {
+        return;
+      }
       const createdId = await this.galleryService.createGallery(event.name, event.description);
       if (!createdId) {
         this.notifyGalleryError();
@@ -1997,7 +2107,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async handleGalleryDelete(id: string): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canManageGalleryById(id)) {
       return;
     }
 
@@ -2015,12 +2125,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.preventDefault();
     const groups: ContextMenuGroup[] = [this.createGeneralGroup()];
 
-    if (this.canManageContent()) {
-      if (this.currentView() === 'galleries') {
-        groups.push({ label: 'Galerias', actions: ['createGallery'] });
-      } else {
-        groups.push({ label: 'Fotos', actions: ['capturePhoto'] });
-      }
+    if (this.currentView() === 'galleries' && this.canCreateGalleries()) {
+      groups.push({ label: 'Galerias', actions: ['createGallery'] });
+    } else if (this.currentView() === 'photos' && this.canUseCaptureDialog()) {
+      groups.push({ label: 'Fotos', actions: ['capturePhoto'] });
     }
 
     this.contextMenu.set({ visible: true, x: event.clientX, y: event.clientY, groups });
@@ -2034,8 +2142,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.currentView() === 'galleries') {
       const groups: ContextMenuGroup[] = [this.createGeneralGroup()];
 
-      if (this.canManageContent()) {
+      if (this.canCreateGalleries()) {
         groups.push({ label: 'Galerias', actions: ['createGallery'] });
+      }
+
+      if (this.canManageGalleryById(galleryId)) {
         groups.push({ label: 'Galeria selecionada', actions: ['togglePlayback', 'editGallery', 'deleteGallery'] });
       }
 
@@ -2056,8 +2167,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const groups: ContextMenuGroup[] = [this.createGeneralGroup(false)];
 
-    if (this.canManageContent()) {
-      const photoActions: ContextMenuAction[] = ['capturePhoto', 'deletePhoto'];
+    if (this.canUseCaptureDialog()) {
+      const photoActions: ContextMenuAction[] = this.canCaptureInSelectedGallery()
+        ? ['capturePhoto', 'deletePhoto']
+        : ['capturePhoto'];
       groups.push({ label: 'Fotos', actions: photoActions });
     }
 
@@ -2080,7 +2193,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openWebcamCapture(): void {
-    if (!this.canManageContent()) {
+    if (!this.canUseCaptureDialog()) {
       return;
     }
 
@@ -2134,7 +2247,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deleteGallery(id: string): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canManageGalleryById(id)) {
       return;
     }
 
@@ -2153,7 +2266,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deletePhotoByUrl(photoUrl: string): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canManageSelectedGallery()) {
       return;
     }
 
@@ -2183,7 +2296,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   editGalleryContextMenu(): void {
-    if (!this.canManageContent()) {
+    if (!this.canManageGalleryById(this.contextMenuGalleryId)) {
       return;
     }
 
@@ -2193,7 +2306,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   deleteGalleryContextMenu(): void {
-    if (!this.canManageContent()) {
+    if (!this.canManageGalleryById(this.contextMenuGalleryId)) {
       return;
     }
 
@@ -2203,7 +2316,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async deletePhotoContextMenu(): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canManageSelectedGallery()) {
       return;
     }
 
@@ -2216,7 +2329,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openGalleryCreationDialog(): void {
-    if (!this.canManageContent()) {
+    if (!this.canCreateGalleries()) {
       return;
     }
 
@@ -2230,7 +2343,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   async createGalleryWithTimestamp(): Promise<void> {
-    if (!this.canManageContent()) {
+    if (!this.canCreateGalleries()) {
       return;
     }
 
