@@ -14,7 +14,7 @@
             type="button"
             data-cursor-pointer
             class="user-menu__trigger"
-            aria-label="Menu do usuário"
+            aria-label="Menu do perfil"
             [attr.aria-expanded]="isUserMenuOpen()"
             (click)="toggleUserMenu($event)">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--md" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -24,7 +24,12 @@
           </button>
 
           @if (isUserMenuOpen()) {
-            <div class="user-menu__dropdown">
+            <div
+              class="user-menu__dropdown"
+              (mouseenter)="pauseCanvasNavigation()"
+              (mouseleave)="resumeCanvasNavigation()"
+              (focusin)="pauseCanvasNavigation()"
+              (focusout)="resumeCanvasNavigation($event)">
               <div class="user-menu__header">
                 <div class="user-menu__avatar">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--sm" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -34,31 +39,31 @@
                 </div>
                 <div class="user-menu__details">
                   <span class="user-menu__email" [title]="authUserEmail() ?? undefined">{{ authUserEmail() }}</span>
-                  <span class="user-menu__role">{{ userRoleLabel() }}</span>
+                  <span class="user-menu__role">Sessão ativa • {{ userRoleLabel() }}</span>
                 </div>
               </div>
 
               <div class="user-menu__actions">
                 <button
                   type="button"
-                  class="button button--ghost user-menu__action"
+                  class="button button--ghost user-menu__action user-menu__action--subtle"
                   data-cursor-pointer
                   (click)="refreshApp()">
-                  Atualizar aplicativo
+                  Atualizar app
                 </button>
                 <button
                   type="button"
                   class="button button--ghost user-menu__action"
                   data-cursor-pointer
                   (click)="openSettingsDialog()">
-                  Configurações
+                  Preferências
                 </button>
                 <button
                   type="button"
                   class="button button--ghost user-menu__action"
                   data-cursor-pointer
                   (click)="signOut()">
-                  Sair
+                  Sair da conta
                 </button>
               </div>
             </div>
@@ -68,7 +73,12 @@
     </ng-template>
 
     @if (!isMobileLayout()) {
-      <div class="app-shell__status-bar">
+      <div
+        class="app-shell__status-bar"
+        (mouseenter)="pauseCanvasNavigation()"
+        (mouseleave)="resumeCanvasNavigation()"
+        (focusin)="pauseCanvasNavigation()"
+        (focusout)="resumeCanvasNavigation($event)">
         <div class="counter">
           @if (currentView() === 'galleries') {
             {{ galleryCounterLabel() }} {{ galleryCount() }}
@@ -83,21 +93,26 @@
               class="button button--ghost app-shell__auth-button"
               data-cursor-pointer
               (click)="openLoginDialog()">
-              Sign in
+              Entrar
             </button>
             <button
               type="button"
               class="button button--ghost app-shell__auth-button"
               data-cursor-pointer
               (click)="openSignUpDialog()">
-              Sign up
+              Criar conta
             </button>
           </div>
         }
         <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
       </div>
     } @else if (mobileView() === 'capture') {
-      <div class="app-shell__status-bar app-shell__status-bar--mobile">
+      <div
+        class="app-shell__status-bar app-shell__status-bar--mobile"
+        (mouseenter)="pauseCanvasNavigation()"
+        (mouseleave)="resumeCanvasNavigation()"
+        (focusin)="pauseCanvasNavigation()"
+        (focusout)="resumeCanvasNavigation($event)">
         @if (!isAuthenticated()) {
           <div class="app-shell__auth-actions">
             <button
@@ -105,14 +120,14 @@
               class="button button--ghost app-shell__auth-button"
               data-cursor-pointer
               (click)="openLoginDialog()">
-              Sign in
+              Entrar
             </button>
             <button
               type="button"
               class="button button--primary app-shell__auth-button"
               data-cursor-pointer
               (click)="openSignUpDialog()">
-              Sign up
+              Criar conta
             </button>
           </div>
         } @else {

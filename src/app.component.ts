@@ -749,6 +749,25 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     window.location.reload();
   }
 
+  pauseCanvasNavigation(): void {
+    this.isNavigationPaused.set(true);
+  }
+
+  resumeCanvasNavigation(event?: FocusEvent | MouseEvent): void {
+    if (event instanceof FocusEvent) {
+      const currentTarget = event.currentTarget as HTMLElement | null;
+      if (
+        currentTarget &&
+        event.relatedTarget instanceof HTMLElement &&
+        currentTarget.contains(event.relatedTarget)
+      ) {
+        return;
+      }
+    }
+
+    this.isNavigationPaused.set(false);
+  }
+
   @HostListener('document:click', ['$event'])
   closeUserMenuOnOutside(event: MouseEvent): void {
     if (!this.isUserMenuOpen()) {
@@ -915,6 +934,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isAutoNavigationActive = signal(false);
   autoNavigationCountdown = signal<number | null>(null);
   autoNavigationHintVisible = signal(false);
+  isNavigationPaused = signal(false);
   autoNavigationOverlayVisible = computed(
     () => this.autoNavigationCountdown() !== null || this.autoNavigationHintVisible()
   );
@@ -1057,7 +1077,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       !this.isGalleryCreationDialogVisible() &&
       !this.isInfoDialogVisible() &&
       !this.isSettingsDialogVisible() &&
-      !this.isAutoNavigationActive()
+      !this.isAutoNavigationActive() &&
+      !this.isNavigationPaused()
   );
 
   // --- Referências a Elementos do Template ---
