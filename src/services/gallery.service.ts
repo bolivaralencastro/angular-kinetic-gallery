@@ -132,6 +132,13 @@ export class GalleryService {
     }
 
     this.galleries.update(currentGalleries => [newGallery, ...currentGalleries]);
+    if (this.authService.canManageGallery(ownerId ?? '')) {
+      this.currentUserGalleryId.set(galleryId);
+
+      if (!this.authService.canManageContent()) {
+        this.selectedGalleryId.set(galleryId);
+      }
+    }
     this.setError(null);
     return newGallery.id;
   }

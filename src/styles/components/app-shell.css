@@ -82,6 +82,18 @@ body[data-theme='light'] {
   white-space: nowrap;
 }
 
+.app-shell__gallery-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-shell-spacing-xs);
+  font-weight: 700;
+}
+
+.app-shell__gallery-button .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 body[data-theme='light'] .app-shell__auth-button {
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
 }
