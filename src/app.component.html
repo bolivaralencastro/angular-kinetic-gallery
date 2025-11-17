@@ -326,7 +326,7 @@
               [captureAllowed]="mobileCaptureAllowed()"
               (prepareCapture)="prepareMobileCapture()"
               (capture)="onCaptureComplete($event)">
-              <ng-container ngProjectAs="[gallerySelection][mobileGallerySelection]">
+              <ng-container gallerySelection mobileGallerySelection>
                 <ng-container *ngTemplateOutlet="captureGallerySelection; context: { captureComponent: mobileCapture }"></ng-container>
               </ng-container>
             </app-webcam-capture>
@@ -966,7 +966,7 @@
       (galleryChange)="onDesktopGalleryChange($event)"
       (capture)="onCaptureComplete($event)"
       (close)="isWebcamVisible.set(false)">
-      <ng-container ngProjectAs="[gallerySelection]">
+      <ng-container gallerySelection>
         <ng-container *ngTemplateOutlet="captureGallerySelection; context: { captureComponent: desktopCapture }"></ng-container>
       </ng-container>
     </app-webcam-capture>
