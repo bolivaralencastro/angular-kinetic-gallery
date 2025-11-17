@@ -192,6 +192,13 @@ body[data-theme='light'] .app-shell__auth-button {
   background-color: var(--app-shell-panel-bg);
 }
 
+.user-menu__action--subtle {
+  font-size: 0.85rem;
+  color: var(--app-shell-muted-text);
+  border-style: dashed;
+  background-color: transparent;
+}
+
 .user-menu__action:hover {
   background-color: rgba(255, 255, 255, 0.06);
 }
