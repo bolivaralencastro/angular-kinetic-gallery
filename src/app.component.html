@@ -192,97 +192,18 @@
 
     <ng-template #captureGallerySelection let-captureComponent="captureComponent">
     @if (isMobileLayout()) {
-      @if (shouldShowMobileGalleryCreationSlot()) {
-        <button
-          type="button"
-          class="mobile-card mobile-card--action"
-          (click)="openGalleryCreationDialogForMobileCapture(); captureComponent?.requestGallerySelection()"
-          data-cursor-pointer>
-          <div
-            class="mobile-card__media">
-            <div class="mobile-card__placeholder">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="icon icon--md">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </div>
-          </div>
-          <div class="mobile-card__content">
-            <div class="mobile-card__heading">
-              <h3 class="mobile-card__title">Crie sua primeira galeria</h3>
-            </div>
-            <p class="mobile-card__description">
-              Você ainda não tem galerias. Toque para começar.
-            </p>
-            <div class="mobile-card__meta">
-              <span>Sem data</span>
-              <span>0 fotos</span>
-            </div>
-          </div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            class="mobile-card__chevron">
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      } @else if (canViewMobileGalleryList()) {
+      @if (canViewMobileGalleryList()) {
         @if (galleries().length === 0) {
-          <button
-            type="button"
-            class="mobile-card mobile-card--action"
-            (click)="openGalleryCreationDialogForMobileCapture(); captureComponent?.requestGallerySelection()"
-            data-cursor-pointer>
-            <div
-              class="mobile-card__media">
-              <div class="mobile-card__placeholder">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="icon icon--md">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-              </div>
-            </div>
+          <div class="mobile-card mobile-card--locked">
             <div class="mobile-card__content">
               <div class="mobile-card__heading">
-                <h3 class="mobile-card__title">Crie sua primeira galeria</h3>
+                <h3 class="mobile-card__title">Nenhuma galeria disponível</h3>
               </div>
               <p class="mobile-card__description">
-                Você ainda não tem galerias. Toque para começar.
+                Acesse a lista de galerias para visualizar ou criar novas.
               </p>
-              <div class="mobile-card__meta">
-                <span>Sem data</span>
-                <span>0 fotos</span>
-              </div>
             </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              class="mobile-card__chevron">
-              <path
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-                d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          </div>
         } @else if (mobileCaptureGallery()) {
           <div class="stack stack--tight">
             <app-mobile-gallery-card

@@ -1036,9 +1036,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   canSelectMobileCaptureGallery = computed(
     () => this.canViewMobileGalleryList() && this.canManageContent()
   );
-  shouldShowMobileGalleryCreationSlot = computed(
-    () => this.canCreateGalleries() && !this.canManageContent() && !this.mobileCaptureGallery()
-  );
   desktopCaptureGalleryId = signal<string | null>(null);
   desktopCaptureGallery = computed(() => {
     const captureId = this.desktopCaptureGalleryId();
