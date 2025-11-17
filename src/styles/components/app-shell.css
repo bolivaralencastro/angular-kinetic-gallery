@@ -386,6 +386,25 @@ body[data-theme='light'] .mobile-card__title {
   color: var(--text-gray-300);
 }
 
+.mobile-card__secondary-action {
+  align-self: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-gray-400);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  transition: color 150ms ease;
+}
+
+body[data-theme='light'] .mobile-card__secondary-action {
+  color: #475569;
+}
+
+.mobile-card__secondary-action:hover,
+.mobile-card__secondary-action:focus-visible {
+  color: var(--text-inverse);
+}
+
 .mobile-toolbar {
   display: flex;
   gap: 1rem;
