@@ -1034,6 +1034,35 @@ body[data-theme='light'] .alert--danger {
   color: #7f1d1d;
 }
 
+.alert--success {
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background-color: rgba(74, 222, 128, 0.12);
+  color: #bbf7d0;
+}
+
+body[data-theme='light'] .alert--success {
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #14532d;
+}
+
+.login-dialog__success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #bbf7d0;
+}
+
+body[data-theme='light'] .login-dialog__success-icon {
+  border-color: rgba(22, 163, 74, 0.35);
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
 .auto-navigation-shield {
   position: fixed;
   inset: 0;

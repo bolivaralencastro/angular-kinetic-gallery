@@ -539,10 +539,33 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.handleSignUpSuccess(email);
+  }
+
+  private handleSignUpSuccess(email: string): void {
+    this.signUpEmail.set(email);
+    this.loginEmail.set(email);
+    this.signUpSuccessEmail.set(email);
+    this.signUpError.set(null);
     this.isSignUpDialogVisible.set(false);
     this.signUpPassword.set('');
     this.signUpConfirmPassword.set('');
     this.isSignUpInProgress.set(false);
+    this.isSignUpSuccessDialogVisible.set(true);
+  }
+
+  closeSignUpSuccessDialog(): void {
+    this.isSignUpSuccessDialogVisible.set(false);
+  }
+
+  openLoginFromSignUpSuccess(): void {
+    const email = this.signUpSuccessEmail();
+    if (email) {
+      this.loginEmail.set(email);
+    }
+
+    this.isSignUpSuccessDialogVisible.set(false);
+    this.openLoginDialog();
   }
 
   async signOut(): Promise<void> {
@@ -675,6 +698,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.signUpPassword.set('');
     this.signUpConfirmPassword.set('');
     this.signUpError.set(null);
+    this.signUpSuccessEmail.set(null);
+    this.isSignUpSuccessDialogVisible.set(false);
     this.hasInitializedView.set(false);
     this.mobileCaptureGalleryId.set(null);
     this.mobileView.set('capture');
@@ -821,6 +846,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   signUpConfirmPassword = signal('');
   signUpError = signal<string | null>(null);
   isSignUpInProgress = signal(false);
+  isSignUpSuccessDialogVisible = signal(false);
+  signUpSuccessEmail = signal<string | null>(null);
   isSettingsDialogVisible = signal(false);
   deleteAccountError = signal<string | null>(null);
   isDeleteAccountInProgress = signal(false);
