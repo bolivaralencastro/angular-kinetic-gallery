@@ -101,6 +101,13 @@ export class GalleryService {
       return null;
     }
 
+    if (!this.authService.canManageContent() && this.hasGalleryForOwner(ownerId)) {
+      this.setError(
+        'Usuários comuns podem criar apenas uma galeria. Capture fotos na galeria que você já possui.'
+      );
+      return null;
+    }
+
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -573,6 +580,21 @@ export class GalleryService {
 
   private setError(message: string | null): void {
     this.lastErrorMessage.set(message);
+  }
+
+  hasGalleryForOwner(ownerId: string | null): boolean {
+    const normalizedOwnerId = ownerId?.trim();
+    if (!normalizedOwnerId) {
+      return false;
+    }
+
+    if (this.currentUserGalleryId()) {
+      return true;
+    }
+
+    return this.galleries().some(
+      gallery => gallery.ownerId?.trim() === normalizedOwnerId,
+    );
   }
 
   private findGalleryByIdOrAlias(id: string | null, galleries: readonly Gallery[]): Gallery | undefined {
