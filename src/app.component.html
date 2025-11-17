@@ -778,6 +778,59 @@
   </div>
 }
 
+@if (isSignUpSuccessDialogVisible()) {
+  <div class="login-dialog" (click)="closeSignUpSuccessDialog()" data-cursor-pointer>
+    <div
+      class="login-dialog__card"
+      (click)="$event.stopPropagation()">
+      <div class="login-dialog__header">
+        <div class="stack stack--tight">
+          <div class="login-dialog__success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon icon--sm">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75 9 17.25 19.5 6.75" />
+            </svg>
+          </div>
+          <h2 class="login-dialog__title">Conta criada com sucesso</h2>
+          <p class="login-dialog__description">
+            Enviamos um email para {{ signUpSuccessEmail() ?? 'sua caixa de entrada' }}. Confirme o endereço para habilitar o acesso.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-cursor-pointer
+          class="button-reset"
+          (click)="closeSignUpSuccessDialog()">
+          &times;
+        </button>
+      </div>
+
+      <div class="stack">
+        <div class="alert alert--success">
+          Abra o link de confirmação enviado para concluir o cadastro. Depois, volte aqui e faça login para liberar as ferramentas.
+        </div>
+        <p class="form-hint">Se não encontrar, verifique também a pasta de spam ou promoções.</p>
+
+        <div class="stack stack--tight">
+          <button
+            type="button"
+            data-cursor-pointer
+            class="button button--primary button--block"
+            (click)="openLoginFromSignUpSuccess()">
+            Abrir tela de login
+          </button>
+          <button
+            type="button"
+            data-cursor-pointer
+            class="button button--ghost button--block"
+            (click)="closeSignUpSuccessDialog()">
+            Continuar explorando
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 @if (contextMenu().visible) {
   <app-context-menu
     [x]="contextMenu().x"
