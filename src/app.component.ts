@@ -1281,12 +1281,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(
       () => {
         const isLoading = this.authService.isLoading();
+        const isGalleryLoading = this.galleryService.isLoading();
         const session = this.authService.session();
         const userGalleryId = this.currentUserGalleryId();
         const isMobile = this.isMobileLayout();
         const isAdmin = this.canCreateGalleries();
+        const hasGalleries = this.galleries().length > 0;
 
-        if (isLoading) {
+        if (isLoading || isGalleryLoading) {
           return;
         }
 
@@ -1296,6 +1298,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         }
 
         if (this.hasInitializedView()) {
+          return;
+        }
+
+        if (!isAdmin && !hasGalleries) {
+          this.currentView.set('galleries');
+          if (isMobile) {
+            this.mobileView.set('galleries');
+          }
+
+          this.isGalleryCreationDialogVisible.set(true);
+          this.hasInitializedView.set(true);
           return;
         }
 
