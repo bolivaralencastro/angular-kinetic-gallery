@@ -16,12 +16,15 @@ export class GalleryService {
   private readonly authService = inject(AuthService);
   private readonly ongoingUploads = new Set<string>();
   private readonly pendingUploadsStorageKey = 'kinetic-gallery.pending-uploads';
+  private readonly loadingSignal = signal(true);
+  private initializePromise: Promise<void> | null = null;
 
   galleries = signal<Gallery[]>([]);
   selectedGalleryId = signal<string | null>(null);
   pendingCaptures = signal<string[]>([]);
   currentUserGalleryId = signal<string | null>(null);
   lastErrorMessage = signal<string | null>(null);
+  readonly isLoading = computed(() => this.loadingSignal());
 
   // Computed signal for the images of the currently selected gallery
   images = computed(() => {
@@ -34,7 +37,7 @@ export class GalleryService {
   });
 
   constructor() {
-    void this.initializeData();
+    void this.initialize();
   }
 
   resetState(): void {
@@ -46,11 +49,29 @@ export class GalleryService {
     this.lastErrorMessage.set(null);
     this.ongoingUploads.clear();
     this.clearPendingUploadsStorage();
+    this.loadingSignal.set(true);
+  }
+
+  async initialize(): Promise<void> {
+    if (this.initializePromise) {
+      return this.initializePromise;
+    }
+
+    this.loadingSignal.set(true);
+    this.initializePromise = this.initializeData().finally(() => {
+      this.loadingSignal.set(false);
+      this.initializePromise = null;
+    });
+
+    return this.initializePromise;
   }
 
   // --- Gallery Management ---
 
   private async initializeData(): Promise<void> {
+    await this.authService.initialize();
+    this.lastErrorMessage.set(null);
+
     if (this.supabaseService.isEnabled()) {
       await this.syncCurrentUserGallery();
       await this.loadRemoteGalleries();

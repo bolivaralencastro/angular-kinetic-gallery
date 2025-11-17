@@ -482,17 +482,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoginInProgress.set(true);
     this.loginError.set(null);
 
-    const result = await this.authService.signIn(this.loginEmail(), this.loginPassword());
+    try {
+      const result = await this.authService.signIn(this.loginEmail(), this.loginPassword());
 
-    if (result.error) {
-      this.loginError.set(result.error);
+      if (result.error) {
+        this.loginError.set(result.error);
+        return;
+      }
+
+      await this.galleryService.initialize();
+      this.hasInitializedView.set(false);
+      this.isLoginDialogVisible.set(false);
+      this.loginPassword.set('');
+    } finally {
       this.isLoginInProgress.set(false);
-      return;
     }
-
-    this.isLoginDialogVisible.set(false);
-    this.loginPassword.set('');
-    this.isLoginInProgress.set(false);
   }
 
   openSignUpDialog(): void {
@@ -602,7 +606,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   async signOut(): Promise<void> {
     this.closeUserMenu();
     await this.authService.signOut();
-    this.resetAfterAuthChange();
+    await this.resetAfterAuthChange();
   }
 
   openSettingsDialog(): void {
@@ -631,7 +635,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       const session = await this.supabaseAuthClient.getSession();
       if (!session) {
-        this.handleUnauthorizedDeletion('Não foi possível validar sua sessão. Faça login novamente.');
+        await this.handleUnauthorizedDeletion('Não foi possível validar sua sessão. Faça login novamente.');
         return;
       }
 
@@ -648,7 +652,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       if (response.status === 401) {
-        this.handleUnauthorizedDeletion();
+        await this.handleUnauthorizedDeletion();
         return;
       }
 
@@ -668,16 +672,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private async handleAccountDeletionSuccess(): Promise<void> {
     await this.supabaseAuthClient.signOut();
-    this.resetAfterAuthChange();
+    await this.resetAfterAuthChange();
     this.redirectToPublicView();
   }
 
-  private handleUnauthorizedDeletion(message?: string): void {
+  private async handleUnauthorizedDeletion(message?: string): Promise<void> {
     this.supabaseAuthClient.clearLocalSession();
     if (message) {
       this.deleteAccountError.set(message);
     }
-    this.resetAfterAuthChange();
+    await this.resetAfterAuthChange();
     this.openLoginDialog();
   }
 
@@ -703,10 +707,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'Não foi possível excluir a conta. Tente novamente em instantes.';
   }
 
-  private resetAfterAuthChange(): void {
+  private async resetAfterAuthChange(): Promise<void> {
     this.authService.resetState();
     this.galleryService.resetState();
     this.resetApplicationState();
+    await this.galleryService.initialize();
   }
 
   private resetApplicationState(): void {
@@ -865,6 +870,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   canManageContent = this.permissionsService.canManageContent;
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
   isAuthenticated = computed(() => this.authService.isAuthenticated());
+  isAppLoading = computed(() => this.authService.isLoading() || this.galleryService.isLoading());
   currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
   canUploadToGallery = this.permissionsService.canUploadToSelectedGallery;
   canDeletePhoto = this.permissionsService.canDeletePhotoFromSelectedGallery;
@@ -876,6 +882,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     return this.canManageContent() ? 'Admin' : 'Usuário';
   });
+  appLoadingMessage = computed(() => {
+    if (this.authService.isLoading()) {
+      return 'Validando sua sessão e preferências...';
+    }
+
+    if (this.galleryService.isLoading()) {
+      return this.isAuthenticated()
+        ? 'Sincronizando suas galerias e permissões...'
+        : 'Carregando coleções disponíveis...';
+    }
+
+    return 'Preparando sua experiência na galeria';
+  });
+  appLoadingHint = computed(() =>
+    this.isAuthenticated()
+      ? 'Estamos deixando tudo pronto para você continuar a curadoria sem interrupções.'
+      : 'Em instantes você poderá explorar e capturar novas imagens.'
+  );
   isUserMenuOpen = signal(false);
   private hasInitializedView = signal(false);
   canCreateGalleries = this.permissionsService.canCreateGalleries;
