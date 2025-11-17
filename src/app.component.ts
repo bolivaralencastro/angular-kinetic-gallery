@@ -1014,6 +1014,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.galleries().find(gallery => gallery.id === captureId) ?? null;
   });
+  desktopCaptureGalleryId = signal<string | null>(null);
+  desktopCaptureGallery = computed(() => {
+    const captureId = this.desktopCaptureGalleryId();
+    if (!captureId) {
+      return null;
+    }
+    return this.galleries().find(gallery => gallery.id === captureId) ?? null;
+  });
   mobileCaptureAllowed = computed(() => {
     const gallery = this.mobileCaptureGallery();
     if (!gallery) {
@@ -1025,6 +1033,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     return this.authService.canManageGallery(gallery.ownerId ?? '');
+  });
+  capturableGalleries = computed(() =>
+    this.galleries().filter(gallery => this.permissionsService.canCaptureInGallery(gallery.id)),
+  );
+  desktopCaptureAllowed = computed(() => {
+    const gallery = this.desktopCaptureGallery();
+    if (!gallery) {
+      return false;
+    }
+
+    if (typeof gallery.canUploadToGallery === 'boolean') {
+      return gallery.canUploadToGallery;
+    }
+
+    return this.permissionsService.canCaptureInGallery(gallery.id);
   });
   galleryLatestImages = computed(() => {
     const latest: Record<string, string> = {};
@@ -1232,6 +1255,22 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mobileCaptureGalleryId.set(availableGalleries[0].id);
       }
     });
+
+    effect(
+      () => {
+        const availableGalleries = this.capturableGalleries();
+        const selectedDesktopCaptureId = this.desktopCaptureGalleryId();
+
+        if (selectedDesktopCaptureId && !availableGalleries.some(gallery => gallery.id === selectedDesktopCaptureId)) {
+          this.desktopCaptureGalleryId.set(availableGalleries[0]?.id ?? null);
+        }
+
+        if (!selectedDesktopCaptureId && availableGalleries.length === 1) {
+          this.desktopCaptureGalleryId.set(availableGalleries[0].id);
+        }
+      },
+      { allowSignalWrites: true },
+    );
 
     effect(() => {
       if (!this.isGalleryCreationDialogVisible()) {
@@ -1812,7 +1851,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.galleryService.selectGallery(galleryId);
+    this.onDesktopGalleryChange(galleryId);
     this.openWebcamCapture();
   }
 
@@ -1919,6 +1958,40 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.galleryService.selectGallery(captureId);
+    this.captureMode.set('selected');
+  }
+
+  prepareDesktopCapture(): void {
+    const captureId = this.desktopCaptureGalleryId();
+    if (!captureId) {
+      return;
+    }
+
+    if (!this.permissionsService.canCaptureInGallery(captureId)) {
+      return;
+    }
+
+    this.galleryService.selectGallery(captureId);
+    this.captureMode.set('selected');
+  }
+
+  onDesktopGallerySelect(event: Event): void {
+    const target = event.target as HTMLSelectElement | null;
+    const selectedId = target?.value;
+    if (!selectedId) {
+      return;
+    }
+
+    this.onDesktopGalleryChange(selectedId);
+  }
+
+  onDesktopGalleryChange(galleryId: string): void {
+    if (!this.permissionsService.canCaptureInGallery(galleryId)) {
+      return;
+    }
+
+    this.desktopCaptureGalleryId.set(galleryId);
+    this.galleryService.selectGallery(galleryId);
     this.captureMode.set('selected');
   }
 
@@ -2574,16 +2647,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    const captureGalleryId = this.resolveCaptureTargetGallery();
+    if (!captureGalleryId) {
+      return;
+    }
+
+    this.galleryService.selectGallery(captureGalleryId);
+
     if (this.isMobileLayout()) {
       this.captureMode.set('selected');
-      const selectedId = this.galleryService.selectedGalleryId();
-      if (selectedId) {
-        this.mobileCaptureGalleryId.set(selectedId);
-      }
+      this.mobileCaptureGalleryId.set(captureGalleryId);
       this.showMobileCapture();
       return;
     }
 
+    this.desktopCaptureGalleryId.set(captureGalleryId);
     this.captureMode.set('selected');
     this.deactivateAutoNavigation(true);
     this.isWebcamVisible.set(true);

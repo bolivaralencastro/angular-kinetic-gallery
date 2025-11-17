@@ -47,6 +47,7 @@ import { convertToWebp } from '../../utils/convert-to-webp';
 
             <div class="capture__gallery-slot">
               <ng-content select="[mobileGallerySelection]"></ng-content>
+              <ng-content select="[gallerySelection]"></ng-content>
             </div>
           </div>
         </div>
@@ -179,6 +180,10 @@ import { convertToWebp } from '../../utils/convert-to-webp';
           </div>
         </div>
 
+        <div class="capture-dialog__gallery-slot">
+          <ng-content select="[gallerySelection]"></ng-content>
+        </div>
+
         <div class="capture-dialog__footer stack stack--loose">
           <div class="capture-dialog__primary-actions">
             <button
@@ -275,6 +280,57 @@ import { convertToWebp } from '../../utils/convert-to-webp';
     .capture__canvas {
       display: none;
     }
+
+    .capture-dialog__gallery-slot {
+      margin-top: 12px;
+    }
+
+    .capture-dialog__selection-panel {
+      display: grid;
+      gap: 8px;
+      border: 1px solid currentColor;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .capture-dialog__selection-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .capture-dialog__selection-title {
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .capture-dialog__selection-hint {
+      margin: 0;
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+
+    .capture-dialog__selection-control {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid currentColor;
+      background: transparent;
+      color: inherit;
+    }
+
+    .capture-dialog__selection-empty {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px dashed currentColor;
+      font-size: 0.95rem;
+    }
+
+    .capture-dialog__selection-description {
+      margin: 0;
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -295,6 +351,8 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   close = output<void>();
   capture = output<string>();
   prepareCapture = output<void>();
+  galleryChange = output<string>();
+  gallerySelectionRequest = output<void>();
   captureAllowed = input(true);
   private capturing = signal(false);
   isStreaming = signal(false);
@@ -331,6 +389,14 @@ export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
 
   reloadApp(): void {
     window.location.reload();
+  }
+
+  notifyGalleryChange(galleryId: string): void {
+    this.galleryChange.emit(galleryId);
+  }
+
+  requestGallerySelection(): void {
+    this.gallerySelectionRequest.emit();
   }
 
   toggleTimer(): void {
