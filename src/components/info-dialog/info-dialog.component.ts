@@ -82,7 +82,8 @@ import { cycleFocus, focusFirstElement } from '../../utils/focus-trap';
                 <div>
                   <h3 class="info-dialog__list-title">Ações</h3>
                   <ul class="info-dialog__list">
-                    <li><span class="badge badge--mono">Espaço</span> Criar galeria (na view de galerias) ou capturar foto (na view de fotos)</li>
+                    <li><span class="badge badge--mono">G</span> Criar galeria (na view de galerias)</li>
+                    <li><span class="badge badge--mono">Espaço</span> Capturar foto (na view de fotos)</li>
                     <li><span class="badge badge--mono">T</span> Alternar tema claro/escuro</li>
                     <li><span class="badge badge--mono">R</span> Ativar/desativar timer na câmera</li>
                     <li><span class="badge badge--mono">F</span> Alternar tela cheia</li>
