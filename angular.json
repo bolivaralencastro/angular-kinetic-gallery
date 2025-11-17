@@ -12,6 +12,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "baseHref": "/angular-kinetic-gallery/", // <-- ADICIONE ESTA LINHA AQUI
             "outputPath": {
               "base": "./dist"
             },
