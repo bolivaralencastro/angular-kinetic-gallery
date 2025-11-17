@@ -762,6 +762,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isUserMenuOpen.set(false);
   }
 
+  onUserGalleryAction(): void {
+    if (!this.canAccessUserGalleryActions()) {
+      return;
+    }
+
+    const userGalleryId = this.currentUserGalleryId();
+    if (userGalleryId) {
+      this.selectGallery(userGalleryId);
+      return;
+    }
+
+    this.openGalleryCreationDialog();
+  }
+
   refreshApp(): void {
     this.closeUserMenu();
     window.location.reload();
@@ -909,6 +923,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   canDeleteSelectedGallery = this.permissionsService.canDeleteSelectedGallery;
   canViewMobileGalleryList = this.permissionsService.canViewMobileGalleryList;
   canUseCaptureDialog = this.permissionsService.canUseCaptureDialog;
+  canAccessUserGalleryActions = this.permissionsService.canCreateOwnGallery;
+  hasUserGallery = computed(() => !!this.currentUserGalleryId());
+  userGalleryActionLabel = computed(() =>
+    this.hasUserGallery() ? 'Ir para minha galeria' : 'Criar minha galeria'
+  );
 
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
@@ -2534,6 +2553,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.isGalleryCreationDialogVisible.set(false);
+    this.selectGallery(newGalleryId);
     if (this.assignNextGalleryToMobileCapture) {
       this.mobileCaptureGalleryId.set(newGalleryId);
       this.assignNextGalleryToMobileCapture = false;
@@ -2565,6 +2585,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mobileCaptureGalleryId.set(createdId);
         this.assignNextGalleryToMobileCapture = false;
       }
+
+      this.selectGallery(createdId);
     }
     this.isGalleryEditorVisible.set(false);
     this.editingGallery.set(null);
@@ -2835,6 +2857,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    this.selectGallery(createdId);
     this.updateVisibleItems(true); // Refresh the view
   }
 

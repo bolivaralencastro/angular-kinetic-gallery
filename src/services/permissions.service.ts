@@ -21,7 +21,12 @@ export class PermissionsService {
   });
 
   readonly canManageContent = computed(() => this.authService.canManageContent());
-  readonly canCreateGalleries = computed(() => this.canManageContent());
+  readonly canCreateOwnGallery = computed(
+    () => this.authService.isAuthenticated() && !this.canManageContent()
+  );
+  readonly canCreateGalleries = computed(
+    () => this.canManageContent() || this.canCreateOwnGallery()
+  );
   readonly canViewMobileGalleryList = computed(() => this.canCreateGalleries());
 
   readonly canManageSelectedGallery = computed(() => this.canEditGalleryById(this.galleryService.selectedGalleryId()));
