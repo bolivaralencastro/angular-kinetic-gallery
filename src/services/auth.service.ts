@@ -110,12 +110,56 @@ export class AuthService {
         return { error: errorText ?? 'Não foi possível realizar o login.' };
       }
 
-      const data = (await response.json()) as SupabaseAuthResponse;
+      const data = await response.json();
+      if (!this.isAuthResponse(data)) {
+        return { error: 'Resposta inválida do servidor de autenticação.' };
+      }
+
       this.applySession(data);
       return {};
     } catch (error) {
       console.error('Erro inesperado durante login no Supabase:', error);
       return { error: 'Ocorreu um erro inesperado ao tentar fazer login.' };
+    }
+  }
+
+  async signUp(email: string, password: string): Promise<AuthResult> {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      return { error: 'Informe email e senha para criar sua conta.' };
+    }
+
+    if (trimmedPassword.length < 6) {
+      return { error: 'A senha deve ter pelo menos 6 caracteres.' };
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          apikey: this.anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+      });
+
+      if (!response.ok) {
+        const errorText = await this.extractError(response);
+        return { error: errorText ?? 'Não foi possível criar a conta.' };
+      }
+
+      const data = await response.json();
+      if (!this.isAuthResponse(data)) {
+        return { error: 'Cadastro criado! Verifique seu email para confirmar o acesso.' };
+      }
+
+      this.applySession(data);
+      return {};
+    } catch (error) {
+      console.error('Erro inesperado durante cadastro no Supabase:', error);
+      return { error: 'Ocorreu um erro inesperado ao tentar criar a conta.' };
     }
   }
 
@@ -429,6 +473,23 @@ export class AuthService {
     }
 
     return typeof current === 'string' && current.length > 0 ? current : null;
+  }
+
+  private isAuthResponse(value: unknown): value is SupabaseAuthResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const candidate = value as Partial<SupabaseAuthResponse>;
+    return (
+      typeof candidate.access_token === 'string' &&
+      typeof candidate.refresh_token === 'string' &&
+      typeof candidate.expires_in === 'number' &&
+      typeof candidate.token_type === 'string' &&
+      !!candidate.user &&
+      typeof candidate.user === 'object' &&
+      typeof (candidate.user as { id?: unknown }).id === 'string'
+    );
   }
 
   private matchesAdminEmail(email: string | null | undefined): boolean {
