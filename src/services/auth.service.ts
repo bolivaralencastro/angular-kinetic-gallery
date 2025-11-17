@@ -533,10 +533,7 @@ export class AuthService {
       this.readNested(claims, 'user_metadata', 'email'),
     );
 
-    const user: SupabaseAuthUser = { id: subject };
-    if (email) {
-      user.email = email;
-    }
+    const user: SupabaseAuthUser = email ? { id: subject, email } : { id: subject };
 
     const userMetadata = this.readNestedObject(claims, 'user_metadata');
     if (userMetadata) {
