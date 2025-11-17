@@ -135,6 +135,9 @@ export class AuthService {
       return { error: 'A senha deve ter pelo menos 6 caracteres.' };
     }
 
+    // ALTERAÇÃO AQUI: Definimos a URL de redirecionamento explicitamente.
+    const redirectUrl = 'https://bolivaralencastro.github.io/angular-kinetic-gallery/';
+
     try {
       const response = await fetch(`${this.baseUrl}/auth/v1/signup`, {
         method: 'POST',
@@ -142,21 +145,25 @@ export class AuthService {
           apikey: this.anonKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+        // ALTERAÇÃO AQUI: Adicionamos a opção 'redirectTo' no corpo da requisição.
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+          options: {
+            redirectTo: redirectUrl,
+          },
+        }),
       });
 
       if (!response.ok) {
         const errorText = await this.extractError(response);
         return { error: errorText ?? 'Não foi possível criar a conta.' };
       }
-
-      const data = await response.json();
-      if (!this.isAuthResponse(data)) {
-        return { error: 'Cadastro criado! Verifique seu email para confirmar o acesso.' };
-      }
-
-      this.applySession(data);
-      return {};
+      
+      // A resposta de um signup bem-sucedido que requer confirmação não retorna uma sessão completa.
+      // Portanto, a mensagem de sucesso é o retorno correto aqui.
+      return { error: 'Cadastro criado! Verifique seu email para confirmar o acesso.' };
+      
     } catch (error) {
       console.error('Erro inesperado durante cadastro no Supabase:', error);
       return { error: 'Ocorreu um erro inesperado ao tentar criar a conta.' };
