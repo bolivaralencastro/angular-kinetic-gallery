@@ -1033,6 +1033,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return this.galleries().find(gallery => gallery.id === captureId) ?? null;
   });
+  canSelectMobileCaptureGallery = computed(
+    () => this.canViewMobileGalleryList() && this.canManageContent()
+  );
+  shouldShowMobileGalleryCreationSlot = computed(
+    () => this.canCreateGalleries() && !this.canManageContent() && !this.mobileCaptureGallery()
+  );
   desktopCaptureGalleryId = signal<string | null>(null);
   desktopCaptureGallery = computed(() => {
     const captureId = this.desktopCaptureGalleryId();
