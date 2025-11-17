@@ -150,142 +150,184 @@
       </div>
     }
 
+    <ng-template #captureGallerySelection let-captureComponent="captureComponent">
+      @if (isMobileLayout()) {
+        @if (canViewMobileGalleryList()) {
+          @if (galleries().length === 0) {
+            <button
+              type="button"
+              class="mobile-card mobile-card--action"
+              (click)="openGalleryCreationDialogForMobileCapture(); captureComponent?.requestGallerySelection()"
+              data-cursor-pointer>
+              <div
+                class="mobile-card__media">
+                <div class="mobile-card__placeholder">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="icon icon--md">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </div>
+              </div>
+              <div class="mobile-card__content">
+                <div class="mobile-card__heading">
+                  <h3 class="mobile-card__title">Crie sua primeira galeria</h3>
+                </div>
+                <p class="mobile-card__description">
+                  Você ainda não tem galerias. Toque para começar.
+                </p>
+                <div class="mobile-card__meta">
+                  <span>Sem data</span>
+                  <span>0 fotos</span>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="mobile-card__chevron">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          } @else if (mobileCaptureGallery()) {
+            <div class="stack stack--tight">
+              <app-mobile-gallery-card
+                [gallery]="mobileCaptureGallery()!"
+                [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
+                [active]="true"
+                [showActiveIndicator]="false"
+                (select)="openMobileGalleryPicker(); captureComponent?.requestGallerySelection()"
+                (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
+              />
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="mobile-card mobile-card--action"
+              (click)="openMobileGalleryPicker(); captureComponent?.requestGallerySelection()"
+              data-cursor-pointer>
+              <div
+                class="mobile-card__media">
+                <div class="mobile-card__placeholder">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="icon icon--md">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </div>
+              </div>
+              <div class="mobile-card__content">
+                <div class="mobile-card__heading">
+                  <h3 class="mobile-card__title">Selecionar galeria</h3>
+                </div>
+                <p class="mobile-card__description">
+                  Escolha uma galeria para salvar suas capturas.
+                </p>
+                <div class="mobile-card__meta">
+                  <span>Sem data</span>
+                  <span>0 fotos</span>
+                </div>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="mobile-card__chevron">
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          }
+        } @else if (mobileCaptureGallery()) {
+          <div class="stack stack--tight">
+            <app-mobile-gallery-card
+              [gallery]="mobileCaptureGallery()!"
+              [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
+              [active]="true"
+              [selectable]="false"
+              [showActiveIndicator]="false"
+              (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
+            />
+          </div>
+        } @else {
+          <div
+            class="mobile-card mobile-card--locked"
+            (pointerdown)="onMobileGallerySelectorPressStart($event)"
+            (pointerup)="onMobileGallerySelectorPressEnd()"
+            (pointerleave)="onMobileGallerySelectorPressCancel()"
+            (pointercancel)="onMobileGallerySelectorPressCancel()">
+            Selecione uma conta com galeria vinculada para capturar fotos.
+          </div>
+        }
+      } @else {
+        <div class="capture-dialog__selection-panel stack stack--tight">
+          <div class="capture-dialog__selection-header">
+            <p class="capture-dialog__selection-title">Galeria selecionada</p>
+            <p class="capture-dialog__selection-hint">Escolha onde salvar a próxima captura.</p>
+          </div>
+
+          @if (capturableGalleries().length === 0) {
+            <div class="capture-dialog__selection-empty">Nenhuma galeria disponível para captura.</div>
+          } @else {
+            <label class="capture-dialog__selection-label" for="desktopCaptureGallery">Galeria</label>
+            <select
+              id="desktopCaptureGallery"
+              class="capture-dialog__selection-control"
+              [value]="desktopCaptureGalleryId() ?? ''"
+              (change)="onDesktopGallerySelect($event); captureComponent?.notifyGalleryChange((($event.target as HTMLSelectElement)?.value ?? ''))">
+              @for (gallery of capturableGalleries(); track gallery.id) {
+                <option [value]="gallery.id">{{ gallery.name }}</option>
+              }
+            </select>
+
+            @if (desktopCaptureGallery()) {
+              <p class="capture-dialog__selection-description">Pré-selecionada: {{ desktopCaptureGallery()!.name }}</p>
+            }
+          }
+
+          @if (canCreateGalleries()) {
+            <button
+              type="button"
+              class="button button--ghost capture-dialog__selection-action"
+              (click)="openGalleryCreationDialog(); captureComponent?.requestGallerySelection()">
+              Nova galeria
+            </button>
+          }
+        </div>
+      }
+    </ng-template>
+
     @if (isMobileLayout()) {
     @switch (mobileView()) {
       @case ('capture') {
         <div class="mobile-shell mobile-shell--capture">
           <div class="mobile-shell__content mobile-shell__content--capture">
             <app-webcam-capture
+              #mobileCapture
               class="app-shell__capture full-area"
               [variant]="'mobile'"
               [captureAllowed]="mobileCaptureAllowed()"
               (prepareCapture)="prepareMobileCapture()"
               (capture)="onCaptureComplete($event)">
-              <ng-container ngProjectAs="[mobileGallerySelection]">
-                @if (canViewMobileGalleryList()) {
-                  @if (galleries().length === 0) {
-                    <button
-                      type="button"
-                      class="mobile-card mobile-card--action"
-                      (click)="openGalleryCreationDialogForMobileCapture()"
-                      data-cursor-pointer>
-                      <div
-                        class="mobile-card__media">
-                        <div class="mobile-card__placeholder">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="icon icon--md">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div class="mobile-card__content">
-                        <div class="mobile-card__heading">
-                          <h3 class="mobile-card__title">Crie sua primeira galeria</h3>
-                        </div>
-                        <p class="mobile-card__description">
-                          Você ainda não tem galerias. Toque para começar.
-                        </p>
-                        <div class="mobile-card__meta">
-                          <span>Sem data</span>
-                          <span>0 fotos</span>
-                        </div>
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        class="mobile-card__chevron">
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  } @else if (mobileCaptureGallery()) {
-                    <div class="stack stack--tight">
-                      <app-mobile-gallery-card
-                        [gallery]="mobileCaptureGallery()!"
-                        [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
-                        [active]="true"
-                        [showActiveIndicator]="false"
-                        (select)="openMobileGalleryPicker()"
-                        (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
-                      />
-                    </div>
-                  } @else {
-                    <button
-                      type="button"
-                      class="mobile-card mobile-card--action"
-                      (click)="openMobileGalleryPicker()"
-                      data-cursor-pointer>
-                      <div
-                        class="mobile-card__media">
-                        <div class="mobile-card__placeholder">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="icon icon--md">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div class="mobile-card__content">
-                        <div class="mobile-card__heading">
-                          <h3 class="mobile-card__title">Selecionar galeria</h3>
-                        </div>
-                        <p class="mobile-card__description">
-                          Escolha uma galeria para salvar suas capturas.
-                        </p>
-                        <div class="mobile-card__meta">
-                          <span>Sem data</span>
-                          <span>0 fotos</span>
-                        </div>
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        class="mobile-card__chevron">
-                        <path
-                          stroke="currentColor"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="1.5"
-                          d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  }
-                } @else if (mobileCaptureGallery()) {
-                  <div class="stack stack--tight">
-                    <app-mobile-gallery-card
-                      [gallery]="mobileCaptureGallery()!"
-                      [coverUrl]="getGalleryCover(mobileCaptureGallery()!)"
-                      [active]="true"
-                      [selectable]="false"
-                      [showActiveIndicator]="false"
-                      (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
-                    />
-                  </div>
-                } @else {
-                  <div
-                    class="mobile-card mobile-card--locked"
-                    (pointerdown)="onMobileGallerySelectorPressStart($event)"
-                    (pointerup)="onMobileGallerySelectorPressEnd()"
-                    (pointerleave)="onMobileGallerySelectorPressCancel()"
-                    (pointercancel)="onMobileGallerySelectorPressCancel()">
-                    Selecione uma conta com galeria vinculada para capturar fotos.
-                  </div>
-                }
+              <ng-container ngProjectAs="[gallerySelection][mobileGallerySelection]">
+                <ng-container *ngTemplateOutlet="captureGallerySelection; context: { captureComponent: mobileCapture }"></ng-container>
               </ng-container>
             </app-webcam-capture>
           </div>
@@ -918,9 +960,16 @@
 @if (isWebcamVisible() && canUseCaptureDialog()) {
   <div class="overlay-panel" (click)="isWebcamVisible.set(false)" data-cursor-pointer>
     <app-webcam-capture
-      [captureAllowed]="canUseCaptureDialog()"
+      #desktopCapture
+      [captureAllowed]="desktopCaptureAllowed()"
+      (prepareCapture)="prepareDesktopCapture()"
+      (galleryChange)="onDesktopGalleryChange($event)"
       (capture)="onCaptureComplete($event)"
-      (close)="isWebcamVisible.set(false)"></app-webcam-capture>
+      (close)="isWebcamVisible.set(false)">
+      <ng-container ngProjectAs="[gallerySelection]">
+        <ng-container *ngTemplateOutlet="captureGallerySelection; context: { captureComponent: desktopCapture }"></ng-container>
+      </ng-container>
+    </app-webcam-capture>
   </div>
 }
 
