@@ -1175,7 +1175,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   // --- Listeners de eventos vinculados para remoção correta ---
   private boundCloseContextMenu: (event: MouseEvent) => void;
   private boundOnFullscreenChange: () => void;
-  private boundOnWheel: (event: WheelEvent) => void;
   private boundOnMouseEnter: () => void;
   private boundOnMouseLeave: () => void;
   private boundOnMouseMove: (event: MouseEvent) => void;
@@ -1185,7 +1184,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor() {
     this.boundCloseContextMenu = this.closeContextMenu.bind(this);
     this.boundOnFullscreenChange = this.onFullscreenChange.bind(this);
-    this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnMouseEnter = this.onMouseEnter.bind(this);
     this.boundOnMouseLeave = this.onMouseLeave.bind(this);
     this.boundOnMouseMove = this.onMouseMove.bind(this);
@@ -1361,7 +1359,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.startAnimationLoop();
     document.addEventListener('click', this.boundCloseContextMenu, true);
     document.addEventListener('fullscreenchange', this.boundOnFullscreenChange);
-    this.elementRef.nativeElement.addEventListener('wheel', this.boundOnWheel, { passive: false });
 
     this.updateTime();
     this.updateDate();
@@ -1399,7 +1396,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     document.removeEventListener('click', this.boundCloseContextMenu, true);
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
-    this.elementRef.nativeElement.removeEventListener('wheel', this.boundOnWheel);
     const hostElement = this.elementRef.nativeElement;
     hostElement.removeEventListener('mouseenter', this.boundOnMouseEnter);
     hostElement.removeEventListener('mouseleave', this.boundOnMouseLeave);
@@ -2445,25 +2441,6 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateResponsiveLayout();
     if (this.expandedItem()) {
       this.closeExpandedItem();
-    }
-  }
-
-  onWheel(event: WheelEvent): void {
-    this.resetInactivityTimer();
-    if (!this.isInteractionEnabled()) {
-      return;
-    }
-
-    if (this.isMobileLayout()) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (event.deltaY < 0) {
-      this.zoomIn();
-    } else {
-      this.zoomOut();
     }
   }
 
