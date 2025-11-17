@@ -18,6 +18,8 @@ export class SupabaseService {
   private readonly anonKey = environment.supabaseAnonKey;
   private readonly bucketName = environment.supabaseBucket;
   private readonly authService = inject(AuthService);
+  private includeOwnerColumn = true;
+  private includeGalleryIdColumn = true;
   private currentUserGalleryId: string | null = null;
 
   getCurrentUserGalleryId(): string | null {
@@ -111,11 +113,17 @@ export class SupabaseService {
 
     try {
       const response = await this.restRequest(
-        'galleries?select=id,gallery_id,owner_id,name,description,thumbnail_url,created_at,gallery_images:gallery_images(image_url,created_at)&order=created_at.desc',
+        `galleries?select=${this.buildGallerySelect()}&order=created_at.desc`,
       );
 
       if (!response.ok) {
-        this.logFailure('Falha ao buscar galerias no Supabase', await response.text());
+        const errorText = await response.clone().text();
+
+        if (this.disableUnsupportedColumns(errorText)) {
+          return this.fetchGalleries();
+        }
+
+        this.logFailure('Falha ao buscar galerias no Supabase', errorText);
         return { success: false, error: await this.buildError(response, 'Não foi possível carregar as galerias.') };
       }
 
@@ -171,12 +179,18 @@ export class SupabaseService {
     try {
       const payload: Record<string, unknown> = {
         id: gallery.id,
-        gallery_id: gallery.galleryId,
-        owner_id: gallery.ownerId,
         name: gallery.name,
         description: gallery.description,
         thumbnail_url: this.sanitizeThumbnailUrl(gallery.thumbnailUrl),
       };
+
+      if (this.includeGalleryIdColumn) {
+        payload.gallery_id = gallery.galleryId;
+      }
+
+      if (this.includeOwnerColumn && gallery.ownerId) {
+        payload.owner_id = gallery.ownerId;
+      }
 
       const parsedDate = this.parseDate(gallery.createdAt);
       if (parsedDate) {
@@ -192,7 +206,13 @@ export class SupabaseService {
       });
 
       if (!response.ok) {
-        this.logFailure('Falha ao salvar galeria no Supabase', await response.text());
+        const errorText = await response.clone().text();
+
+        if (this.disableUnsupportedColumns(errorText)) {
+          return this.upsertGallery(gallery);
+        }
+
+        this.logFailure('Falha ao salvar galeria no Supabase', errorText);
         return { success: false, error: await this.buildError(response, 'Não foi possível salvar a galeria.') };
       }
 
@@ -544,5 +564,38 @@ export class SupabaseService {
       return null;
     }
     return url;
+  }
+
+  private buildGallerySelect(): string {
+    const columns = ['id', 'name', 'description', 'thumbnail_url', 'created_at'];
+
+    if (this.includeGalleryIdColumn) {
+      columns.push('gallery_id');
+    }
+
+    if (this.includeOwnerColumn) {
+      columns.push('owner_id');
+    }
+
+    columns.push('gallery_images:gallery_images(image_url,created_at)');
+
+    return columns.join(',');
+  }
+
+  private disableUnsupportedColumns(errorText: string): boolean {
+    const normalized = errorText.toLowerCase();
+    let updated = false;
+
+    if (this.includeGalleryIdColumn && normalized.includes('gallery_id')) {
+      this.includeGalleryIdColumn = false;
+      updated = true;
+    }
+
+    if (this.includeOwnerColumn && normalized.includes('owner_id')) {
+      this.includeOwnerColumn = false;
+      updated = true;
+    }
+
+    return updated;
   }
 }
