@@ -657,8 +657,8 @@
       (click)="$event.stopPropagation()">
       <div class="login-dialog__header">
         <div class="stack stack--tight">
-          <h2 class="login-dialog__title">Entrar como administrador</h2>
-          <p class="login-dialog__description">Use suas credenciais do Supabase para habilitar as ferramentas de criação.</p>
+          <h2 class="login-dialog__title">Entrar na sua conta</h2>
+          <p class="login-dialog__description">Use seu email e senha para acessar suas galerias.</p>
         </div>
         <button
           type="button"
@@ -710,7 +710,7 @@
             [disabled]="isLoginInProgress()">
             @if (isLoginInProgress()) { Entrando... } @else { Entrar }
           </button>
-          <p class="form-hint">Apenas contas autorizadas podem gerenciar galerias.</p>
+          <p class="form-hint">Acesse para capturar fotos e gerenciar suas galerias.</p>
         </div>
       </form>
     </div>
