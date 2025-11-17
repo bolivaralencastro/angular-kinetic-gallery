@@ -1329,7 +1329,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         const session = this.authService.session();
         const userGalleryId = this.currentUserGalleryId();
         const isMobile = this.isMobileLayout();
-        const isAdmin = this.canCreateGalleries();
+        const isAdmin = this.canManageContent();
         const hasGalleries = this.galleries().length > 0;
 
         if (isLoading || isGalleryLoading) {
