@@ -287,11 +287,11 @@
             <div class="capture-dialog__selection-empty">Nenhuma galeria disponível para captura.</div>
           } @else {
             <label class="capture-dialog__selection-label" for="desktopCaptureGallery">Galeria</label>
-            <select
-              id="desktopCaptureGallery"
-              class="capture-dialog__selection-control"
-              [value]="desktopCaptureGalleryId() ?? ''"
-              (change)="onDesktopGallerySelect($event); captureComponent?.notifyGalleryChange((($event.target as HTMLSelectElement)?.value ?? ''))">
+              <select
+                id="desktopCaptureGallery"
+                class="capture-dialog__selection-control"
+                [value]="desktopCaptureGalleryId() ?? ''"
+                (change)="onDesktopGallerySelect($event, captureComponent)">
               @for (gallery of capturableGalleries(); track gallery.id) {
                 <option [value]="gallery.id">{{ gallery.name }}</option>
               }
