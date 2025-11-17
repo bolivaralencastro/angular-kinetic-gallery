@@ -15,7 +15,7 @@ interface SupabaseAuthResponse {
   readonly user: SupabaseAuthUser;
 }
 
-interface AuthSession {
+export interface AuthSession {
   readonly accessToken: string;
   readonly refreshToken: string;
   readonly expiresAt: number; // Epoch seconds
@@ -27,6 +27,24 @@ interface AuthResult {
   error?: string;
 }
 
+export type AuthChangeEvent = 'INITIAL_SESSION' | 'SIGNED_IN' | 'SIGNED_OUT' | 'TOKEN_REFRESHED';
+
+type AuthChangeCallback = (event: AuthChangeEvent, session: AuthSession | null) => void;
+
+export interface SupabaseAuthSubscription {
+  unsubscribe: () => void;
+}
+
+export interface SupabaseAuthChangePayload {
+  data: { subscription: SupabaseAuthSubscription };
+}
+
+export interface SupabaseClientLike {
+  auth: {
+    onAuthStateChange: (callback: AuthChangeCallback) => SupabaseAuthChangePayload;
+  };
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -36,6 +54,7 @@ export class AuthService {
   private readonly adminEmail = environment.supabaseAdminEmail.trim().toLowerCase();
   private readonly storageKey = 'kinetic-auth-session';
   private readonly initializePromise: Promise<void>;
+  private readonly authStateListeners = new Set<AuthChangeCallback>();
 
   private readonly sessionSignal = signal<AuthSession | null>(null);
   private readonly loadingSignal = signal(true);
@@ -52,6 +71,26 @@ export class AuthService {
 
   constructor() {
     this.initializePromise = this.restoreSession();
+  }
+
+  getSupabaseClient(): SupabaseClientLike {
+    return {
+      auth: {
+        onAuthStateChange: (callback: AuthChangeCallback): SupabaseAuthChangePayload => {
+          callback('INITIAL_SESSION', this.sessionSignal());
+          this.authStateListeners.add(callback);
+          return {
+            data: {
+              subscription: {
+                unsubscribe: () => {
+                  this.authStateListeners.delete(callback);
+                },
+              },
+            },
+          };
+        },
+      },
+    };
   }
 
   async initialize(): Promise<void> {
@@ -135,9 +174,6 @@ export class AuthService {
       return { error: 'A senha deve ter pelo menos 6 caracteres.' };
     }
 
-    // ALTERAÇÃO AQUI: Definimos a URL de redirecionamento explicitamente.
-    const redirectUrl = 'https://bolivaralencastro.github.io/angular-kinetic-gallery/';
-
     try {
       const response = await fetch(`${this.baseUrl}/auth/v1/signup`, {
         method: 'POST',
@@ -145,13 +181,9 @@ export class AuthService {
           apikey: this.anonKey,
           'Content-Type': 'application/json',
         },
-        // ALTERAÇÃO AQUI: Adicionamos a opção 'redirectTo' no corpo da requisição.
         body: JSON.stringify({
           email: trimmedEmail,
           password: trimmedPassword,
-          options: {
-            redirectTo: redirectUrl,
-          },
         }),
       });
 
@@ -209,7 +241,7 @@ export class AuthService {
     const secondsUntilExpiry = stored.expiresAt - now;
 
     if (secondsUntilExpiry > 120) {
-      this.setSession(stored);
+      this.setSession(stored, 'INITIAL_SESSION');
       this.loadingSignal.set(false);
       return;
     }
@@ -222,7 +254,7 @@ export class AuthService {
 
     const refreshed = await this.refreshWithToken(stored.refreshToken);
     if (refreshed) {
-      this.setSession(refreshed);
+      this.setSession(refreshed, 'TOKEN_REFRESHED');
     } else {
       this.clearSession();
     }
@@ -282,7 +314,7 @@ export class AuthService {
       user,
     };
 
-    this.setSession(session);
+    this.setSession(session, 'SIGNED_IN');
     cleanup();
     return true;
   }
@@ -296,20 +328,33 @@ export class AuthService {
       user: response.user,
     };
 
-    this.setSession(session);
+    this.setSession(session, 'SIGNED_IN');
     this.loadingSignal.set(false);
   }
 
-  private setSession(session: AuthSession | null): void {
+  private emitAuthChange(event: AuthChangeEvent, session: AuthSession | null): void {
+    this.authStateListeners.forEach(listener => listener(event, session));
+  }
+
+  private setSession(session: AuthSession | null, event?: AuthChangeEvent): void {
+    const previous = this.sessionSignal();
     this.sessionSignal.set(session);
     this.persistSession(session);
     this.scheduleRefresh(session);
+
+    const inferredEvent: AuthChangeEvent = event
+      ? event
+      : session
+        ? previous
+          ? 'TOKEN_REFRESHED'
+          : 'SIGNED_IN'
+        : 'SIGNED_OUT';
+
+    this.emitAuthChange(inferredEvent, session);
   }
 
   private clearSession(): void {
-    this.sessionSignal.set(null);
-    this.persistSession(null);
-    this.scheduleRefresh(null);
+    this.setSession(null, 'SIGNED_OUT');
   }
 
   handleUnauthorized(): void {
@@ -325,7 +370,7 @@ export class AuthService {
 
     const refreshed = await this.refreshWithToken(session.refreshToken);
     if (refreshed) {
-      this.setSession(refreshed);
+      this.setSession(refreshed, 'TOKEN_REFRESHED');
     } else {
       this.clearSession();
     }
