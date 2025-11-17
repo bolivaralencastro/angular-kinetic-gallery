@@ -1256,6 +1256,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     effect(
       () => {
+        const availableCaptures = this.capturableGalleries();
+        const selectedCaptureId = this.mobileCaptureGalleryId();
+        const activeGalleryId = this.galleryService.selectedGalleryId();
+
+        const isSelectedValid =
+          selectedCaptureId !== null && availableCaptures.some(gallery => gallery.id === selectedCaptureId);
+
+        if (selectedCaptureId && !isSelectedValid) {
+          this.mobileCaptureGalleryId.set(null);
+          return;
+        }
+
+        if (!selectedCaptureId && activeGalleryId) {
+          const activeCapturable = availableCaptures.some(gallery => gallery.id === activeGalleryId);
+          if (activeCapturable) {
+            this.mobileCaptureGalleryId.set(activeGalleryId);
+          }
+        }
+      },
+      { allowSignalWrites: true },
+    );
+
+    effect(
+      () => {
         const availableGalleries = this.capturableGalleries();
         const selectedDesktopCaptureId = this.desktopCaptureGalleryId();
 
