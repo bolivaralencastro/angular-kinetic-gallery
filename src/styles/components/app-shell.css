@@ -68,6 +68,18 @@ body[data-theme='light'] {
   pointer-events: auto;
 }
 
+.app-shell__signup-button {
+  height: 2.75rem;
+  padding-inline: 1.4rem;
+  border-radius: 999px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+body[data-theme='light'] .app-shell__signup-button {
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+}
+
 .app-shell__status-bar--mobile {
   position: fixed;
   inset-inline: auto var(--app-shell-spacing-md);

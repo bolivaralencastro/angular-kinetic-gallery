@@ -478,6 +478,73 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoginInProgress.set(false);
   }
 
+  openSignUpDialog(): void {
+    if (this.isSignUpDialogVisible()) {
+      return;
+    }
+
+    this.signUpError.set(null);
+    this.signUpPassword.set('');
+    this.signUpConfirmPassword.set('');
+
+    if (!this.signUpEmail()) {
+      const email = this.authUserEmail() ?? this.loginEmail();
+      if (email) {
+        this.signUpEmail.set(email);
+      }
+    }
+
+    if (this.isLoginDialogVisible()) {
+      this.isLoginDialogVisible.set(false);
+    }
+
+    this.isSignUpDialogVisible.set(true);
+  }
+
+  closeSignUpDialog(): void {
+    if (this.isSignUpInProgress()) {
+      return;
+    }
+
+    this.isSignUpDialogVisible.set(false);
+  }
+
+  async submitSignUp(): Promise<void> {
+    if (this.isSignUpInProgress()) {
+      return;
+    }
+
+    const email = this.signUpEmail().trim();
+    const password = this.signUpPassword().trim();
+    const confirmPassword = this.signUpConfirmPassword().trim();
+
+    if (!email || !password) {
+      this.signUpError.set('Informe email e senha para continuar.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      this.signUpError.set('As senhas não coincidem.');
+      return;
+    }
+
+    this.isSignUpInProgress.set(true);
+    this.signUpError.set(null);
+
+    const result = await this.authService.signUp(email, password);
+
+    if (result.error) {
+      this.signUpError.set(result.error);
+      this.isSignUpInProgress.set(false);
+      return;
+    }
+
+    this.isSignUpDialogVisible.set(false);
+    this.signUpPassword.set('');
+    this.signUpConfirmPassword.set('');
+    this.isSignUpInProgress.set(false);
+  }
+
   async signOut(): Promise<void> {
     this.closeUserMenu();
     await this.authService.signOut();
@@ -603,6 +670,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoginDialogVisible.set(false);
     this.loginPassword.set('');
     this.loginError.set(null);
+    this.signUpEmail.set('');
+    this.isSignUpDialogVisible.set(false);
+    this.signUpPassword.set('');
+    this.signUpConfirmPassword.set('');
+    this.signUpError.set(null);
     this.hasInitializedView.set(false);
     this.mobileCaptureGalleryId.set(null);
     this.mobileView.set('capture');
@@ -743,6 +815,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   loginPassword = signal('');
   loginError = signal<string | null>(null);
   isLoginInProgress = signal(false);
+  isSignUpDialogVisible = signal(false);
+  signUpEmail = signal('');
+  signUpPassword = signal('');
+  signUpConfirmPassword = signal('');
+  signUpError = signal<string | null>(null);
+  isSignUpInProgress = signal(false);
   isSettingsDialogVisible = signal(false);
   deleteAccountError = signal<string | null>(null);
   isDeleteAccountInProgress = signal(false);

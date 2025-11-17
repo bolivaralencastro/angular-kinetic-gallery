@@ -76,11 +76,30 @@
             {{ photoCounterLabel() }} {{ photoCount() }}
           }
         </div>
+        @if (!isAuthenticated()) {
+          <button
+            type="button"
+            class="button button--ghost app-shell__signup-button"
+            data-cursor-pointer
+            (click)="openSignUpDialog()">
+            Sign up
+          </button>
+        }
         <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
       </div>
     } @else if (mobileView() === 'capture') {
       <div class="app-shell__status-bar app-shell__status-bar--mobile">
-        <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
+        @if (!isAuthenticated()) {
+          <button
+            type="button"
+            class="button button--primary app-shell__signup-button"
+            data-cursor-pointer
+            (click)="openSignUpDialog()">
+            Sign up
+          </button>
+        } @else {
+          <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
+        }
       </div>
     }
 
@@ -674,6 +693,85 @@
             @if (isLoginInProgress()) { Entrando... } @else { Entrar }
           </button>
           <p class="form-hint">Apenas contas autorizadas podem gerenciar galerias.</p>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (isSignUpDialogVisible()) {
+  <div class="login-dialog" (click)="closeSignUpDialog()" data-cursor-pointer>
+    <div
+      class="login-dialog__card"
+      (click)="$event.stopPropagation()">
+      <div class="login-dialog__header">
+        <div class="stack stack--tight">
+          <h2 class="login-dialog__title">Criar conta</h2>
+          <p class="login-dialog__description">Cadastre-se para capturar fotos e gerenciar suas galerias.</p>
+        </div>
+        <button
+          type="button"
+          data-cursor-pointer
+          class="button-reset"
+          [class.opacity-50]="isSignUpInProgress()"
+          [disabled]="isSignUpInProgress()"
+          (click)="closeSignUpDialog()">
+          &times;
+        </button>
+      </div>
+
+      @if (signUpError()) {
+        <div class="alert alert--danger">
+          {{ signUpError() }}
+        </div>
+      }
+
+      <form (submit)="submitSignUp(); $event.preventDefault();" class="stack">
+        <div class="form-field">
+          <label class="form-field__label">Email</label>
+          <input
+            type="email"
+            autocomplete="email"
+            class="form-field__input"
+            [value]="signUpEmail()"
+            (input)="signUpEmail.set($any($event.target).value)"
+            [disabled]="isSignUpInProgress()"
+            required>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label">Senha</label>
+          <input
+            type="password"
+            autocomplete="new-password"
+            class="form-field__input"
+            [value]="signUpPassword()"
+            (input)="signUpPassword.set($any($event.target).value)"
+            [disabled]="isSignUpInProgress()"
+            required>
+        </div>
+
+        <div class="form-field">
+          <label class="form-field__label">Confirmar senha</label>
+          <input
+            type="password"
+            autocomplete="new-password"
+            class="form-field__input"
+            [value]="signUpConfirmPassword()"
+            (input)="signUpConfirmPassword.set($any($event.target).value)"
+            [disabled]="isSignUpInProgress()"
+            required>
+        </div>
+
+        <div class="stack stack--tight">
+          <button
+            type="submit"
+            data-cursor-pointer
+            class="button button--primary button--block"
+            [disabled]="isSignUpInProgress()">
+            @if (isSignUpInProgress()) { Criando conta... } @else { Criar conta }
+          </button>
+          <p class="form-hint">Você terá acesso imediato e poderá criar sua galeria.</p>
         </div>
       </form>
     </div>
