@@ -4,9 +4,23 @@
   [class.is-mobile]="isMobileLayout()"
   [class.is-idle]="isIdle() || isAutoNavigationActive()"
   [class.is-fullscreen]="isFullscreen()"
+  [attr.aria-busy]="isAppLoading()"
   (contextmenu)="onRightClick($event)">
 
   <div class="app-shell__viewport">
+    @if (isAppLoading()) {
+      <div class="app-loading" role="status" aria-live="polite">
+        <div class="app-loading__glow" aria-hidden="true"></div>
+        <div class="app-loading__panel">
+          <div class="app-loading__spinner" aria-hidden="true"></div>
+          <div class="app-loading__text">
+            <p class="app-loading__eyebrow">Carregando experiência</p>
+            <h1 class="app-loading__title">{{ appLoadingMessage() }}</h1>
+            <p class="app-loading__hint">{{ appLoadingHint() }}</p>
+          </div>
+        </div>
+      </div>
+    }
     <ng-template #userMenu>
       @if (isAuthenticated()) {
         <div class="user-menu">
