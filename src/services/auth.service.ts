@@ -185,6 +185,12 @@ export class AuthService {
   }
 
   private async restoreSession(): Promise<void> {
+    const hasAppliedUrlSession = this.applySessionFromUrlFragment();
+    if (hasAppliedUrlSession) {
+      this.loadingSignal.set(false);
+      return;
+    }
+
     const stored = this.loadSessionFromStorage();
 
     if (!stored) {
@@ -215,6 +221,63 @@ export class AuthService {
     }
 
     this.loadingSignal.set(false);
+  }
+
+  private applySessionFromUrlFragment(): boolean {
+    if (!this.isBrowser()) {
+      return false;
+    }
+
+    const fragment = window.location.hash.replace(/^#/, '');
+    if (!fragment) {
+      return false;
+    }
+
+    const params = new URLSearchParams(fragment);
+    const hasSupabaseParams =
+      params.has('access_token') ||
+      params.has('refresh_token') ||
+      params.has('expires_in') ||
+      params.has('token_type');
+
+    if (!hasSupabaseParams) {
+      return false;
+    }
+
+    const cleanup = () => this.cleanUrlFragment();
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    const expiresInRaw = params.get('expires_in');
+    const tokenType = params.get('token_type');
+
+    if (!accessToken || !refreshToken || !expiresInRaw || !tokenType) {
+      cleanup();
+      return false;
+    }
+
+    const expiresIn = Number.parseInt(expiresInRaw, 10);
+    if (!Number.isFinite(expiresIn) || expiresIn <= 0) {
+      cleanup();
+      return false;
+    }
+
+    const user = this.buildUserFromJwt(accessToken);
+    if (!user) {
+      cleanup();
+      return false;
+    }
+
+    const session: AuthSession = {
+      accessToken,
+      refreshToken,
+      expiresAt: Math.floor(Date.now() / 1000) + expiresIn,
+      tokenType,
+      user,
+    };
+
+    this.setSession(session);
+    cleanup();
+    return true;
   }
 
   private applySession(response: SupabaseAuthResponse): void {
@@ -454,6 +517,35 @@ export class AuthService {
     }
   }
 
+  private buildUserFromJwt(token: string): SupabaseAuthUser | null {
+    const claims = this.decodeJwtClaims(token);
+    if (!claims || typeof claims !== 'object') {
+      return null;
+    }
+
+    const subject = this.firstString((claims as { sub?: unknown }).sub);
+    if (!subject) {
+      return null;
+    }
+
+    const email = this.firstString(
+      this.readNested(claims, 'email'),
+      this.readNested(claims, 'user_metadata', 'email'),
+    );
+
+    const user: SupabaseAuthUser = { id: subject };
+    if (email) {
+      user.email = email;
+    }
+
+    const userMetadata = this.readNestedObject(claims, 'user_metadata');
+    if (userMetadata) {
+      (user as Record<string, unknown>).user_metadata = userMetadata;
+    }
+
+    return user;
+  }
+
   private firstString(...candidates: ReadonlyArray<unknown>): string | null {
     const first = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.length > 0);
     return first ?? null;
@@ -473,6 +565,35 @@ export class AuthService {
     }
 
     return typeof current === 'string' && current.length > 0 ? current : null;
+  }
+
+  private readNestedObject(value: unknown, ...path: readonly string[]): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    let current: unknown = value;
+    for (const key of path) {
+      if (!current || typeof current !== 'object' || !(key in current)) {
+        return null;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+
+    return current && typeof current === 'object' ? (current as Record<string, unknown>) : null;
+  }
+
+  private cleanUrlFragment(): void {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    try {
+      const newUrl = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState({}, document.title, newUrl);
+    } catch (error) {
+      console.error('Erro ao limpar parâmetros de autenticação da URL:', error);
+    }
   }
 
   private isAuthResponse(value: unknown): value is SupabaseAuthResponse {
