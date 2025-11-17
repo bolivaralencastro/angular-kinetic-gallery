@@ -105,13 +105,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
       event.preventDefault();
     }
-    const view = this.currentView();
-    const canCreate = this.canCreateGalleries();
-    const canCapture = this.canCaptureInSelectedGallery();
-
     if (
-      (!canCreate && view === 'galleries') ||
-      (!canCreate && !canCapture && view === 'photos') ||
       this.isWebcamVisible() ||
       this.expandedItem() ||
       this.isGalleryEditorVisible() ||
@@ -120,13 +114,41 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (view === 'galleries') {
-      // Create a new gallery when in gallery view
-      this.openGalleryCreationDialog();
-    } else {
-      // Open webcam when in photo view
-      this.openWebcamCapture();
+    const captureGalleryId = this.resolveCaptureTargetGallery();
+    if (!captureGalleryId) {
+      return;
     }
+
+    this.galleryService.selectGallery(captureGalleryId);
+    this.openWebcamCapture();
+  }
+
+  @HostListener('document:keydown.g', ['$event'])
+  handleCreateGalleryShortcut(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    const isTyping = target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      target.closest('input') ||
+      target.closest('textarea')
+    );
+
+    if (isTyping || !this.canCreateGalleries()) {
+      return;
+    }
+
+    if (
+      this.isWebcamVisible() ||
+      this.expandedItem() ||
+      this.isGalleryEditorVisible() ||
+      this.isGalleryCreationDialogVisible()
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    this.openGalleryCreationDialog();
   }
 
   @HostListener('document:keydown.f', ['$event'])
@@ -1712,6 +1734,57 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     } else if (this.canUseCaptureDialog()) {
       this.openWebcamCapture();
     }
+  }
+
+  private resolveCaptureTargetGallery(): string | null {
+    const selectedGalleryId = this.galleryService.selectedGalleryId();
+    if (this.permissionsService.canCaptureInGallery(selectedGalleryId)) {
+      return selectedGalleryId;
+    }
+
+    const userGalleryId = this.currentUserGalleryId();
+    if (userGalleryId && this.permissionsService.canCaptureInGallery(userGalleryId)) {
+      return userGalleryId;
+    }
+
+    const capturableGalleries = this.galleries().filter(gallery =>
+      this.permissionsService.canCaptureInGallery(gallery.id)
+    );
+
+    if (capturableGalleries.length === 0) {
+      return null;
+    }
+
+    if (capturableGalleries.length === 1) {
+      return capturableGalleries[0].id;
+    }
+
+    if (this.canManageContent() && this.currentView() === 'galleries') {
+      return this.promptGallerySelectionForCapture(capturableGalleries);
+    }
+
+    return capturableGalleries[0].id;
+  }
+
+  private promptGallerySelectionForCapture(galleries: Gallery[]): string | null {
+    const galleryOptions = galleries
+      .map((gallery, index) => `${index + 1}. ${gallery.name}`)
+      .join('\n');
+
+    const selection = window.prompt(
+      'Selecione a galeria para capturar (digite o número correspondente):\n' + galleryOptions
+    );
+
+    if (!selection) {
+      return null;
+    }
+
+    const selectedIndex = Number.parseInt(selection, 10) - 1;
+    if (Number.isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= galleries.length) {
+      return null;
+    }
+
+    return galleries[selectedIndex].id;
   }
 
   startCaptureForGallery(galleryId: string): void {
