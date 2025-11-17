@@ -273,6 +273,34 @@
               (open)="openMobileGalleryDetail(mobileCaptureGallery()!.id)"
             />
           </div>
+        } @else if (canAccessUserGalleryActions()) {
+          <button
+            type="button"
+            class="mobile-card mobile-card--action"
+            (click)="openGalleryCreationDialogForMobileCapture()"
+            data-cursor-pointer>
+            <div class="mobile-card__media">
+              <div class="mobile-card__placeholder">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="icon icon--md">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </div>
+            </div>
+            <div class="mobile-card__content">
+              <div class="mobile-card__heading">
+                <h3 class="mobile-card__title">Criar minha galeria</h3>
+              </div>
+              <p class="mobile-card__description">
+                Abra sua primeira galeria para salvar as capturas do app.
+              </p>
+            </div>
+          </button>
         } @else {
           <div
             class="mobile-card mobile-card--locked"
