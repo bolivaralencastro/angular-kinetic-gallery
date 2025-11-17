@@ -88,23 +88,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event?: KeyboardEvent | MouseEvent): void {
     if (event instanceof KeyboardEvent) {
-      // Check if user is typing in an input field, textarea, or contenteditable element
-      const target = event.target as HTMLElement;
-      const isTyping = target && (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable ||
-        target.closest('input') ||
-        target.closest('textarea')
-      );
-
-      if (isTyping) {
-        // Allow space to be typed normally in input fields
+      const target = event.target as HTMLElement | null;
+      if (this.isTypingElement(target) || this.currentView() !== 'photos') {
         return;
       }
 
       event.preventDefault();
     }
+
+    if (this.currentView() !== 'photos') {
+      return;
+    }
+
     if (
       this.isWebcamVisible() ||
       this.expandedItem() ||
@@ -125,16 +120,12 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('document:keydown.g', ['$event'])
   handleCreateGalleryShortcut(event: KeyboardEvent): void {
-    const target = event.target as HTMLElement;
-    const isTyping = target && (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable ||
-      target.closest('input') ||
-      target.closest('textarea')
-    );
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target) || this.currentView() !== 'galleries') {
+      return;
+    }
 
-    if (isTyping || !this.canCreateGalleries()) {
+    if (!this.canCreateGalleries()) {
       return;
     }
 
