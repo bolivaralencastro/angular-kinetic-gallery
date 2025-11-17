@@ -12,7 +12,7 @@ import { SettingsDialogComponent } from './components/settings-dialog/settings-d
 import { Gallery } from './interfaces/gallery.interface';
 import { InteractiveCursor } from './services/interactive-cursor';
 import { ThemeService } from './services/theme.service';
-import { AuthService } from './services/auth.service';
+import { AuthService, SupabaseAuthSubscription, SupabaseClientLike } from './services/auth.service';
 import { SupabaseAuthClientService } from './services/supabase-auth-client.service';
 import { PermissionsService } from './services/permissions.service';
 import { ContextMenuAction, ContextMenuGroup } from './types/context-menu';
@@ -810,6 +810,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   authService = inject(AuthService);
   permissionsService = inject(PermissionsService);
   supabaseAuthClient = inject(SupabaseAuthClientService);
+  private supabaseAuthSubscription: SupabaseAuthSubscription | null = null;
 
   canManageContent = this.permissionsService.canManageContent;
   authUserEmail = computed(() => this.authService.session()?.user?.email ?? null);
@@ -1230,6 +1231,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const supabaseClient: SupabaseClientLike = this.authService.getSupabaseClient();
+    const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      console.log(`Supabase auth event: ${event}`);
+
+      if (event === 'SIGNED_IN' && session) {
+        this.authService.initialize().catch(error => {
+          console.error('Falha ao inicializar sessão após retorno do Supabase:', error);
+        });
+      }
+    });
+
+    this.supabaseAuthSubscription = data.subscription;
     this.startAnimationLoop();
     document.addEventListener('click', this.boundCloseContextMenu, true);
     document.addEventListener('fullscreenchange', this.boundOnFullscreenChange);
@@ -1264,6 +1277,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stopAllGalleryPreviews();
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
+    }
+    if (this.supabaseAuthSubscription) {
+      this.supabaseAuthSubscription.unsubscribe();
+      this.supabaseAuthSubscription = null;
     }
     document.removeEventListener('click', this.boundCloseContextMenu, true);
     document.removeEventListener('fullscreenchange', this.boundOnFullscreenChange);
