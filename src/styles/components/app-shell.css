@@ -68,7 +68,13 @@ body[data-theme='light'] {
   pointer-events: auto;
 }
 
-.app-shell__signup-button {
+.app-shell__auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-shell-spacing-sm);
+}
+
+.app-shell__auth-button {
   height: 2.75rem;
   padding-inline: 1.4rem;
   border-radius: 999px;
@@ -76,7 +82,7 @@ body[data-theme='light'] {
   white-space: nowrap;
 }
 
-body[data-theme='light'] .app-shell__signup-button {
+body[data-theme='light'] .app-shell__auth-button {
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
 }
 

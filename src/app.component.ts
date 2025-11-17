@@ -438,6 +438,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (this.isSignUpDialogVisible()) {
+      this.isSignUpDialogVisible.set(false);
+    }
+
     this.loginError.set(null);
     if (!this.loginEmail()) {
       const email = this.authUserEmail();
@@ -556,6 +560,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
   closeSignUpSuccessDialog(): void {
     this.isSignUpSuccessDialogVisible.set(false);
+  }
+
+  openLoginFromSignUpDialog(): void {
+    if (this.isSignUpInProgress()) {
+      return;
+    }
+
+    const email = this.signUpEmail();
+    if (email) {
+      this.loginEmail.set(email);
+    }
+
+    this.isSignUpDialogVisible.set(false);
+    this.openLoginDialog();
   }
 
   openLoginFromSignUpSuccess(): void {

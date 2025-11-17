@@ -77,26 +77,44 @@
           }
         </div>
         @if (!isAuthenticated()) {
-          <button
-            type="button"
-            class="button button--ghost app-shell__signup-button"
-            data-cursor-pointer
-            (click)="openSignUpDialog()">
-            Sign up
-          </button>
+          <div class="app-shell__auth-actions">
+            <button
+              type="button"
+              class="button button--ghost app-shell__auth-button"
+              data-cursor-pointer
+              (click)="openLoginDialog()">
+              Sign in
+            </button>
+            <button
+              type="button"
+              class="button button--ghost app-shell__auth-button"
+              data-cursor-pointer
+              (click)="openSignUpDialog()">
+              Sign up
+            </button>
+          </div>
         }
         <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
       </div>
     } @else if (mobileView() === 'capture') {
       <div class="app-shell__status-bar app-shell__status-bar--mobile">
         @if (!isAuthenticated()) {
-          <button
-            type="button"
-            class="button button--primary app-shell__signup-button"
-            data-cursor-pointer
-            (click)="openSignUpDialog()">
-            Sign up
-          </button>
+          <div class="app-shell__auth-actions">
+            <button
+              type="button"
+              class="button button--ghost app-shell__auth-button"
+              data-cursor-pointer
+              (click)="openLoginDialog()">
+              Sign in
+            </button>
+            <button
+              type="button"
+              class="button button--primary app-shell__auth-button"
+              data-cursor-pointer
+              (click)="openSignUpDialog()">
+              Sign up
+            </button>
+          </div>
         } @else {
           <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
         }
@@ -773,6 +791,18 @@
           </button>
           <p class="form-hint">Você terá acesso imediato e poderá criar sua galeria.</p>
         </div>
+
+        <p class="form-hint">
+          Já tem uma conta?
+          <button
+            type="button"
+            class="button-reset"
+            data-cursor-pointer
+            [disabled]="isSignUpInProgress()"
+            (click)="openLoginFromSignUpDialog()">
+            Entrar
+          </button>
+        </p>
       </form>
     </div>
   </div>
