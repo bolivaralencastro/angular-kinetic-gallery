@@ -1356,7 +1356,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         if (isAdmin) {
           this.currentView.set('galleries');
           if (isMobile) {
-            this.mobileView.set('galleries');
+            this.mobileView.set('capture');
           }
         } else if (userGalleryId) {
           this.galleryService.selectGallery(userGalleryId);
@@ -1696,7 +1696,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (isMobile) {
       if (!previousState) {
-        this.mobileView.set(this.canViewMobileGalleryList() ? 'galleries' : 'capture');
+        this.mobileView.set('capture');
         this.mobileCommandPanelVisible.set(false);
       }
       this.scheduleMobilePanelReveal(previousState ? 600 : 400);
