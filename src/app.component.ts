@@ -1975,7 +1975,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.captureMode.set('selected');
   }
 
-  onDesktopGallerySelect(event: Event): void {
+  onDesktopGallerySelect(event: Event, captureComponent?: WebcamCaptureComponent): void {
     const target = event.target as HTMLSelectElement | null;
     const selectedId = target?.value;
     if (!selectedId) {
@@ -1983,6 +1983,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.onDesktopGalleryChange(selectedId);
+    captureComponent?.notifyGalleryChange(selectedId);
   }
 
   onDesktopGalleryChange(galleryId: string): void {
