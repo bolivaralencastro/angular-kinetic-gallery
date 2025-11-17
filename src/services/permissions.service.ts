@@ -12,9 +12,21 @@ export class PermissionsService {
   private readonly authService = inject(AuthService);
   private readonly galleryService = inject(GalleryService);
 
-  private readonly hasGalleryForCurrentUser = computed(() =>
-    this.galleryService.hasGalleryForOwner(this.authService.ownerId())
-  );
+  private readonly hasGalleryForCurrentUser = computed(() => {
+    const ownedGalleryId = this.galleryService.currentUserGalleryId();
+    if (ownedGalleryId) {
+      return true;
+    }
+
+    const ownerId = this.authService.ownerId()?.trim();
+    if (!ownerId) {
+      return false;
+    }
+
+    return this.galleryService
+      .galleries()
+      .some(gallery => gallery.ownerId?.trim() === ownerId);
+  });
 
   private readonly selectedGallery = computed(() => {
     const selectedId = this.galleryService.selectedGalleryId();
