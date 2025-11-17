@@ -12,6 +12,10 @@ export class PermissionsService {
   private readonly authService = inject(AuthService);
   private readonly galleryService = inject(GalleryService);
 
+  private readonly hasGalleryForCurrentUser = computed(() =>
+    this.galleryService.hasGalleryForOwner(this.authService.ownerId())
+  );
+
   private readonly selectedGallery = computed(() => {
     const selectedId = this.galleryService.selectedGalleryId();
     if (!selectedId) {
@@ -22,7 +26,7 @@ export class PermissionsService {
 
   readonly canManageContent = computed(() => this.authService.canManageContent());
   readonly canCreateOwnGallery = computed(
-    () => this.authService.isAuthenticated() && !this.canManageContent()
+    () => this.authService.isAuthenticated() && !this.canManageContent() && !this.hasGalleryForCurrentUser()
   );
   readonly canCreateGalleries = computed(
     () => this.canManageContent() || this.canCreateOwnGallery()
