@@ -93,13 +93,6 @@
         (mouseleave)="resumeCanvasNavigation()"
         (focusin)="pauseCanvasNavigation()"
         (focusout)="resumeCanvasNavigation($event)">
-        <div class="counter">
-          @if (currentView() === 'galleries') {
-            {{ galleryCounterLabel() }} {{ galleryCount() }}
-          } @else {
-            {{ photoCounterLabel() }} {{ photoCount() }}
-          }
-        </div>
         @if (!isAuthenticated()) {
           <div class="app-shell__auth-actions">
             <button
@@ -776,7 +769,7 @@
   }
 </div>
 
-<!-- Contador de galerias/fotos no canto superior direito -->
+<!-- Contador de galerias/fotos no canto superior esquerdo -->
 <div class="counter">
   @if (currentView() === 'galleries') {
     {{ galleryCounterLabel() }} {{ galleryCount() }}
