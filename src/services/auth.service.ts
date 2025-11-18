@@ -1,18 +1,11 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { createClient, SupabaseClient, Session, User, AuthError } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
 
 interface SupabaseAuthUser {
   readonly id: string;
   readonly email?: string | null;
   readonly [key: string]: unknown;
-}
-
-interface SupabaseAuthResponse {
-  readonly access_token: string;
-  readonly token_type: string;
-  readonly expires_in: number;
-  readonly refresh_token: string;
-  readonly user: SupabaseAuthUser;
 }
 
 export interface AuthSession {
@@ -49,8 +42,7 @@ export interface SupabaseClientLike {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly baseUrl = environment.supabaseUrl.replace(/\/+$/, '');
-  private readonly anonKey = environment.supabaseAnonKey;
+  private readonly supabase: SupabaseClient;
   private readonly adminEmail = environment.supabaseAdminEmail.trim().toLowerCase();
   private readonly storageKey = 'kinetic-auth-session';
   private readonly initializePromise: Promise<void>;
@@ -70,6 +62,13 @@ export class AuthService {
   readonly isAdmin = computed(() => this.matchesAdminEmail(this.sessionSignal()?.user?.email));
 
   constructor() {
+    this.supabase = createClient(environment.supabaseUrl, environment.supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
     this.initializePromise = this.restoreSession();
   }
 
@@ -91,6 +90,10 @@ export class AuthService {
         },
       },
     };
+  }
+
+  getRealSupabaseClient(): SupabaseClient {
+    return this.supabase;
   }
 
   async initialize(): Promise<void> {
@@ -135,26 +138,20 @@ export class AuthService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          apikey: this.anonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
+      const { data, error } = await this.supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: trimmedPassword,
       });
 
-      if (!response.ok) {
-        const errorText = await this.extractError(response);
-        return { error: errorText ?? 'Não foi possível realizar o login.' };
+      if (error) {
+        return { error: this.translateAuthError(error) };
       }
 
-      const data = await response.json();
-      if (!this.isAuthResponse(data)) {
-        return { error: 'Resposta inválida do servidor de autenticação.' };
+      if (!data.session) {
+        return { error: 'Sessão inválida recebida do servidor.' };
       }
 
-      this.applySession(data);
+      this.applySupabaseSession(data.session);
       return {};
     } catch (error) {
       console.error('Erro inesperado durante login no Supabase:', error);
@@ -175,27 +172,31 @@ export class AuthService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/auth/v1/signup`, {
-        method: 'POST',
-        headers: {
-          apikey: this.anonKey,
-          'Content-Type': 'application/json',
+      const redirectUrl = this.isBrowser() ? window.location.origin : undefined;
+      
+      const { data, error } = await this.supabase.auth.signUp({
+        email: trimmedEmail,
+        password: trimmedPassword,
+        options: {
+          emailRedirectTo: redirectUrl,
         },
-        body: JSON.stringify({
-          email: trimmedEmail,
-          password: trimmedPassword,
-        }),
       });
 
-      if (!response.ok) {
-        const errorText = await this.extractError(response);
-        return { error: errorText ?? 'Não foi possível criar a conta.' };
+      if (error) {
+        return { error: this.translateAuthError(error) };
       }
-      
-      // A resposta de um signup bem-sucedido que requer confirmação não retorna uma sessão completa.
-      // Portanto, a mensagem de sucesso é o retorno correto aqui.
+
+      // Se a confirmação de email está habilitada, o usuário precisa verificar o email
+      if (data.user && !data.session) {
+        return { error: 'Cadastro criado! Verifique seu email para confirmar o acesso.' };
+      }
+
+      // Se auto-confirmação está habilitada, a sessão já é retornada
+      if (data.session) {
+        this.applySupabaseSession(data.session);
+      }
+
       return { error: 'Cadastro criado! Verifique seu email para confirmar o acesso.' };
-      
     } catch (error) {
       console.error('Erro inesperado durante cadastro no Supabase:', error);
       return { error: 'Ocorreu um erro inesperado ao tentar criar a conta.' };
@@ -203,21 +204,10 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
-    const session = this.sessionSignal();
-
-    if (session) {
-      try {
-        await fetch(`${this.baseUrl}/auth/v1/logout`, {
-          method: 'POST',
-          headers: {
-            apikey: this.anonKey,
-            Authorization: `${session.tokenType} ${session.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (error) {
-        console.error('Erro inesperado ao encerrar sessão no Supabase:', error);
-      }
+    try {
+      await this.supabase.auth.signOut();
+    } catch (error) {
+      console.error('Erro inesperado ao encerrar sessão no Supabase:', error);
     }
 
     this.clearSession();
@@ -319,17 +309,50 @@ export class AuthService {
     return true;
   }
 
-  private applySession(response: SupabaseAuthResponse): void {
-    const session: AuthSession = {
-      accessToken: response.access_token,
-      refreshToken: response.refresh_token,
-      expiresAt: Math.floor(Date.now() / 1000) + response.expires_in,
-      tokenType: response.token_type,
-      user: response.user,
+  private convertSupabaseSession(session: Session): AuthSession {
+    return {
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+      expiresAt: session.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
+      tokenType: session.token_type ?? 'bearer',
+      user: this.convertSupabaseUser(session.user),
     };
+  }
 
-    this.setSession(session, 'SIGNED_IN');
+  private convertSupabaseUser(user: User): SupabaseAuthUser {
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      ...user.user_metadata,
+    };
+  }
+
+  private applySupabaseSession(session: Session): void {
+    const authSession = this.convertSupabaseSession(session);
+    this.setSession(authSession, 'SIGNED_IN');
     this.loadingSignal.set(false);
+  }
+
+  private translateAuthError(error: AuthError): string {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('invalid login credentials')) {
+      return 'Email ou senha inválidos.';
+    }
+
+    if (message.includes('email not confirmed')) {
+      return 'Email ainda não confirmado. Verifique sua caixa de entrada.';
+    }
+
+    if (message.includes('user already registered')) {
+      return 'Este email já está cadastrado.';
+    }
+
+    if (message.includes('invalid email')) {
+      return 'Email inválido.';
+    }
+
+    return error.message || 'Erro desconhecido durante a autenticação.';
   }
 
   private emitAuthChange(event: AuthChangeEvent, session: AuthSession | null): void {
@@ -378,32 +401,20 @@ export class AuthService {
 
   private async refreshWithToken(refreshToken: string): Promise<AuthSession | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: {
-          apikey: this.anonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+      const { data, error } = await this.supabase.auth.refreshSession({
+        refresh_token: refreshToken,
       });
 
-      if (!response.ok) {
-        const errorText = await this.extractError(response);
-        console.warn('Falha ao atualizar sessão do Supabase:', errorText);
-        if (response.status === 401) {
-          this.handleUnauthorized();
-        }
+      if (error) {
+        console.warn('Falha ao atualizar sessão do Supabase:', error.message);
         return null;
       }
 
-      const data = (await response.json()) as SupabaseAuthResponse;
-      return {
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        expiresAt: Math.floor(Date.now() / 1000) + data.expires_in,
-        tokenType: data.token_type,
-        user: data.user,
-      };
+      if (!data.session) {
+        return null;
+      }
+
+      return this.convertSupabaseSession(data.session);
     } catch (error) {
       console.error('Erro inesperado ao atualizar sessão do Supabase:', error);
       return null;
@@ -645,23 +656,6 @@ export class AuthService {
     }
   }
 
-  private isAuthResponse(value: unknown): value is SupabaseAuthResponse {
-    if (!value || typeof value !== 'object') {
-      return false;
-    }
-
-    const candidate = value as Partial<SupabaseAuthResponse>;
-    return (
-      typeof candidate.access_token === 'string' &&
-      typeof candidate.refresh_token === 'string' &&
-      typeof candidate.expires_in === 'number' &&
-      typeof candidate.token_type === 'string' &&
-      !!candidate.user &&
-      typeof candidate.user === 'object' &&
-      typeof (candidate.user as { id?: unknown }).id === 'string'
-    );
-  }
-
   private matchesAdminEmail(email: string | null | undefined): boolean {
     if (!this.adminEmail) {
       return false;
@@ -672,21 +666,5 @@ export class AuthService {
     }
 
     return email.trim().toLowerCase() === this.adminEmail;
-  }
-
-  private async extractError(response: Response): Promise<string | null> {
-    try {
-      const contentType = response.headers.get('content-type');
-      if (contentType?.includes('application/json')) {
-        const body = await response.json();
-        const message = (body as { error?: string; message?: string }).message ?? (body as { error?: string }).error;
-        return typeof message === 'string' && message.length > 0 ? message : null;
-      }
-      const text = await response.text();
-      return text || null;
-    } catch (error) {
-      console.error('Erro ao interpretar resposta de erro do Supabase:', error);
-      return null;
-    }
   }
 }

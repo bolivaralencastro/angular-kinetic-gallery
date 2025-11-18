@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../environments/environment';
 import { Gallery } from '../interfaces/gallery.interface';
 import type { SupabaseGalleryImageRecord, SupabaseGalleryRecord } from '../types/supabase';
@@ -18,9 +19,14 @@ export class SupabaseService {
   private readonly anonKey = environment.supabaseAnonKey;
   private readonly bucketName = environment.supabaseBucket;
   private readonly authService = inject(AuthService);
+  private readonly supabase: SupabaseClient;
   private includeOwnerColumn = true;
   private includeGalleryIdColumn = true;
   private currentUserGalleryId: string | null = null;
+
+  constructor() {
+    this.supabase = this.authService.getRealSupabaseClient();
+  }
 
   getCurrentUserGalleryId(): string | null {
     return this.currentUserGalleryId;
