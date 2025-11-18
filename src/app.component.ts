@@ -923,7 +923,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   canDeleteSelectedGallery = this.permissionsService.canDeleteSelectedGallery;
   canViewMobileGalleryList = this.permissionsService.canViewMobileGalleryList;
   canUseCaptureDialog = this.permissionsService.canUseCaptureDialog;
-  canAccessUserGalleryActions = this.permissionsService.canCreateOwnGallery;
+  canAccessUserGalleryActions = computed(() => this.isAuthenticated() && !this.canManageContent());
   hasUserGallery = computed(() => !!this.currentUserGalleryId());
   userGalleryActionLabel = computed(() =>
     this.hasUserGallery() ? 'Ir para minha galeria' : 'Criar minha galeria'
