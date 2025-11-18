@@ -140,35 +140,18 @@
         <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
       </div>
     } @else if (mobileView() === 'capture') {
-      <div
-        class="app-shell__status-bar app-shell__status-bar--mobile"
-        (mouseenter)="pauseCanvasNavigation()"
-        (mouseleave)="resumeCanvasNavigation()"
-        (focusin)="pauseCanvasNavigation()"
-        (focusout)="resumeCanvasNavigation($event)">
-        @if (!isAuthenticated()) {
-          <div class="app-shell__auth-actions">
-            <button
-              type="button"
-              class="button button--ghost app-shell__auth-button"
-              data-cursor-pointer
-              (click)="openLoginDialog()">
-              Entrar
-            </button>
-            <button
-              type="button"
-              class="button button--primary app-shell__auth-button"
-              data-cursor-pointer
-              (click)="openSignUpDialog()">
-              Criar conta
-            </button>
-          </div>
-        } @else {
+      @if (isAuthenticated()) {
+        <div
+          class="app-shell__status-bar app-shell__status-bar--mobile"
+          (mouseenter)="pauseCanvasNavigation()"
+          (mouseleave)="resumeCanvasNavigation()"
+          (focusin)="pauseCanvasNavigation()"
+          (focusout)="resumeCanvasNavigation($event)">
           <div class="app-shell__auth-actions">
             <ng-container [ngTemplateOutlet]="userMenu"></ng-container>
           </div>
-        }
-      </div>
+        </div>
+      }
     }
 
     <ng-template #captureGallerySelection let-captureComponent="captureComponent">
@@ -345,7 +328,7 @@
                   <h3 class="mobile-card__title">Crie sua conta</h3>
                 </div>
                 <p class="mobile-card__description">
-                  Cadastre-se para habilitar as galerias e salvar suas capturas.
+                  Cadastre-se para fotografar.
                 </p>
               </div>
               <svg
