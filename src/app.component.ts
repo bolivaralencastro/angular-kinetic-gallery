@@ -767,7 +767,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const userGalleryId = this.currentUserGalleryId();
+    const userGalleryId = this.resolvedUserGalleryId();
     if (userGalleryId) {
       this.selectGallery(userGalleryId);
       return;
@@ -886,6 +886,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   isAppLoading = computed(() => this.authService.isLoading() || this.galleryService.isLoading());
   currentUserGalleryId = computed(() => this.galleryService.currentUserGalleryId());
+  resolvedUserGalleryId = computed(() => {
+    const userGalleryId = this.currentUserGalleryId();
+    if (userGalleryId) {
+      return userGalleryId;
+    }
+
+    const ownerId = this.authService.ownerId()?.trim();
+    if (!ownerId) {
+      return null;
+    }
+
+    const ownedGallery = this.galleries().find(gallery => gallery.ownerId?.trim() === ownerId);
+    return ownedGallery?.id ?? null;
+  });
   canUploadToGallery = this.permissionsService.canUploadToSelectedGallery;
   canDeletePhoto = this.permissionsService.canDeletePhotoFromSelectedGallery;
   userRoleLabel = computed(() => {
@@ -924,7 +938,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   canViewMobileGalleryList = this.permissionsService.canViewMobileGalleryList;
   canUseCaptureDialog = this.permissionsService.canUseCaptureDialog;
   canAccessUserGalleryActions = computed(() => this.isAuthenticated() && !this.canManageContent());
-  hasUserGallery = computed(() => !!this.currentUserGalleryId());
+  hasUserGallery = computed(() => !!this.resolvedUserGalleryId());
   userGalleryActionLabel = computed(() =>
     this.hasUserGallery() ? 'Ir para minha galeria' : 'Criar minha galeria'
   );
@@ -1327,7 +1341,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
         const isLoading = this.authService.isLoading();
         const isGalleryLoading = this.galleryService.isLoading();
         const session = this.authService.session();
-        const userGalleryId = this.currentUserGalleryId();
+        const userGalleryId = this.resolvedUserGalleryId();
         const isMobile = this.isMobileLayout();
         const isAdmin = this.canManageContent();
         const hasGalleries = this.galleries().length > 0;
@@ -1851,7 +1865,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       return selectedGalleryId;
     }
 
-    const userGalleryId = this.currentUserGalleryId();
+    const userGalleryId = this.resolvedUserGalleryId();
     if (userGalleryId && this.permissionsService.canCaptureInGallery(userGalleryId)) {
       return userGalleryId;
     }
@@ -1926,7 +1940,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openMobileGalleryDetail(galleryId: string): void {
-    if (!this.canViewMobileGalleryList() && galleryId !== this.currentUserGalleryId()) {
+    if (!this.canViewMobileGalleryList() && galleryId !== this.resolvedUserGalleryId()) {
       return;
     }
     this.selectGallery(galleryId);
