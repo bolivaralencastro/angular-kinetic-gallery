@@ -474,6 +474,10 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoginDialogVisible.set(false);
   }
 
+  toggleLoginPasswordVisibility(): void {
+    this.loginPasswordVisible.set(!this.loginPasswordVisible());
+  }
+
   async submitLogin(): Promise<void> {
     if (this.isLoginInProgress()) {
       return;
@@ -528,6 +532,14 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.isSignUpDialogVisible.set(false);
+  }
+
+  toggleSignUpPasswordVisibility(): void {
+    this.signUpPasswordVisible.set(!this.signUpPasswordVisible());
+  }
+
+  toggleSignUpConfirmPasswordVisibility(): void {
+    this.signUpConfirmPasswordVisible.set(!this.signUpConfirmPasswordVisible());
   }
 
   async submitSignUp(): Promise<void> {
@@ -946,12 +958,15 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoginDialogVisible = signal(false);
   loginEmail = signal('');
   loginPassword = signal('');
+  loginPasswordVisible = signal(false);
   loginError = signal<string | null>(null);
   isLoginInProgress = signal(false);
   isSignUpDialogVisible = signal(false);
   signUpEmail = signal('');
   signUpPassword = signal('');
+  signUpPasswordVisible = signal(false);
   signUpConfirmPassword = signal('');
+  signUpConfirmPasswordVisible = signal(false);
   signUpError = signal<string | null>(null);
   isSignUpInProgress = signal(false);
   isSignUpSuccessDialogVisible = signal(false);

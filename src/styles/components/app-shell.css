@@ -1049,9 +1049,44 @@ body[data-theme='light'] .photo-mosaic__border {
   font-size: 0.9rem;
 }
 
+.form-field__input--with-button {
+  padding-right: 3rem;
+}
+
 .form-field__input:focus-visible {
   outline: 2px solid var(--dialog-focus-ring);
   outline-offset: 2px;
+}
+
+.form-field__input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.form-field__toggle-button {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--dialog-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.form-field__toggle-button:hover {
+  color: var(--dialog-text);
+  background-color: var(--dialog-input-border);
+}
+
+.form-field__toggle-button:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 .form-hint {
