@@ -776,6 +776,15 @@
   }
 </div>
 
+<!-- Contador de galerias/fotos no canto superior direito -->
+<div class="counter">
+  @if (currentView() === 'galleries') {
+    {{ galleryCounterLabel() }} {{ galleryCount() }}
+  } @else {
+    {{ photoCounterLabel() }} {{ photoCount() }}
+  }
+</div>
+
 @if (autoNavigationOverlayVisible()) {
   <div class="auto-navigation-overlay">
     <div
