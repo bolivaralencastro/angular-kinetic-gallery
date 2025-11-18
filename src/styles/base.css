@@ -121,8 +121,8 @@ body,
     top: 0;
     z-index: 100000;
     pointer-events: none;
-    width: 35px;
-    height: 35px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background-color: var(--cursor-accent);
     mix-blend-mode: difference;
@@ -220,14 +220,14 @@ body,
   [data-theme] .custom-cursor.edge-bottom-right,
   [data-theme] .custom-cursor.edge-bottom-left {
     background-color: transparent;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   [data-theme] .custom-cursor.pointer-hover {
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
   }
 
   body[data-theme].custom-cursor-hidden .custom-cursor {

@@ -798,7 +798,7 @@ body[data-theme='light'] .photo-mosaic__border {
 
 .counter {
   top: var(--app-shell-spacing-lg);
-  right: var(--app-shell-spacing-lg);
+  left: var(--app-shell-spacing-lg);
 }
 
 .app-shell__status-bar .counter {
