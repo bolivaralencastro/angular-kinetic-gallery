@@ -126,11 +126,102 @@ body,
     border-radius: 50%;
     background-color: var(--cursor-accent);
     mix-blend-mode: difference;
-    transition: width 0.4s, height 0.4s, border-radius 0.4s, opacity 0.3s;
+    transition: width 0.3s, height 0.3s, border-radius 0.3s, opacity 0.3s, transform 0.1s;
     transition-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
     opacity: 1;
     will-change: transform, width, height;
     transform: translate(-50%, -50%);
+  }
+
+  [data-theme] .custom-cursor::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    opacity: 0;
+    transition: opacity 0.3s, border-width 0.3s;
+  }
+
+  /* Seta para cima */
+  [data-theme] .custom-cursor.edge-top::before {
+    opacity: 1;
+    border-width: 0 8px 12px 8px;
+    border-color: transparent transparent var(--cursor-accent) transparent;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  /* Seta para direita */
+  [data-theme] .custom-cursor.edge-right::before {
+    opacity: 1;
+    border-width: 8px 0 8px 12px;
+    border-color: transparent transparent transparent var(--cursor-accent);
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  /* Seta para baixo */
+  [data-theme] .custom-cursor.edge-bottom::before {
+    opacity: 1;
+    border-width: 12px 8px 0 8px;
+    border-color: var(--cursor-accent) transparent transparent transparent;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  /* Seta para esquerda */
+  [data-theme] .custom-cursor.edge-left::before {
+    opacity: 1;
+    border-width: 8px 12px 8px 0;
+    border-color: transparent var(--cursor-accent) transparent transparent;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  /* Seta diagonal superior direita */
+  [data-theme] .custom-cursor.edge-top-right::before {
+    opacity: 1;
+    border-width: 0 8px 12px 8px;
+    border-color: transparent transparent var(--cursor-accent) transparent;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  /* Seta diagonal superior esquerda */
+  [data-theme] .custom-cursor.edge-top-left::before {
+    opacity: 1;
+    border-width: 0 8px 12px 8px;
+    border-color: transparent transparent var(--cursor-accent) transparent;
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  /* Seta diagonal inferior direita */
+  [data-theme] .custom-cursor.edge-bottom-right::before {
+    opacity: 1;
+    border-width: 0 8px 12px 8px;
+    border-color: transparent transparent var(--cursor-accent) transparent;
+    transform: translate(-50%, -50%) rotate(135deg);
+  }
+
+  /* Seta diagonal inferior esquerda */
+  [data-theme] .custom-cursor.edge-bottom-left::before {
+    opacity: 1;
+    border-width: 0 8px 12px 8px;
+    border-color: transparent transparent var(--cursor-accent) transparent;
+    transform: translate(-50%, -50%) rotate(-135deg);
+  }
+
+  /* Esconder o círculo quando estiver nas bordas */
+  [data-theme] .custom-cursor.edge-top,
+  [data-theme] .custom-cursor.edge-right,
+  [data-theme] .custom-cursor.edge-bottom,
+  [data-theme] .custom-cursor.edge-left,
+  [data-theme] .custom-cursor.edge-top-right,
+  [data-theme] .custom-cursor.edge-top-left,
+  [data-theme] .custom-cursor.edge-bottom-right,
+  [data-theme] .custom-cursor.edge-bottom-left {
+    background-color: transparent;
+    width: 40px;
+    height: 40px;
   }
 
   [data-theme] .custom-cursor.pointer-hover {

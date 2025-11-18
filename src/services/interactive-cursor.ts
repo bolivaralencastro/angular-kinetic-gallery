@@ -1,35 +1,25 @@
 const CURSOR_POINTER_SELECTOR = '[data-cursor-pointer]';
+const EDGE_THRESHOLD = 100; // pixels da borda para ativar setas
 
 interface CursorPoint {
   x: number;
   y: number;
 }
 
-interface CursorVec2 extends CursorPoint {
-  lerp(target: CursorPoint, amount: number): void;
-}
-
-const createVec2 = (x: number, y: number): CursorVec2 => ({
-  x,
-  y,
-  lerp(target: CursorPoint, amount: number): void {
-    this.x += (target.x - this.x) * amount;
-    this.y += (target.y - this.y) * amount;
-  },
-});
+type EdgeDirection = 'none' | 'top' | 'right' | 'bottom' | 'left' | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 export class InteractiveCursor {
   private readonly cursorElement: HTMLElement;
   private readonly position = {
-    target: createVec2(window.innerWidth / 2, window.innerHeight / 2),
-    current: createVec2(window.innerWidth / 2, window.innerHeight / 2),
-    lerpAmount: 0.15,
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
   };
-  private animationFrameId: number | null = null;
-  private readonly updateCallback = (): void => this.update();
+  private currentEdge: EdgeDirection = 'none';
   private readonly pointerMoveHandler = (event: PointerEvent): void => {
-    this.position.target.x = event.clientX;
-    this.position.target.y = event.clientY;
+    this.position.x = event.clientX;
+    this.position.y = event.clientY;
+    this.updateCursorPosition();
+    this.updateEdgeDetection();
   };
   private readonly pointerEnterHandler = (event: Event): void => {
     const eventTarget = event.target;
@@ -66,8 +56,7 @@ export class InteractiveCursor {
   }
 
   private init(): void {
-    this.cursorElement.style.transform = 'translate(-50%, -50%)';
-    this.animationFrameId = window.requestAnimationFrame(this.updateCallback);
+    this.updateCursorPosition();
     document.addEventListener('pointermove', this.pointerMoveHandler);
     document.addEventListener('pointerenter', this.pointerEnterHandler, true);
     document.addEventListener('pointerleave', this.pointerLeaveHandler, true);
@@ -77,16 +66,72 @@ export class InteractiveCursor {
     document.removeEventListener('pointermove', this.pointerMoveHandler);
     document.removeEventListener('pointerenter', this.pointerEnterHandler, true);
     document.removeEventListener('pointerleave', this.pointerLeaveHandler, true);
-    if (this.animationFrameId !== null) {
-      window.cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
+  }
+
+  private updateCursorPosition(): void {
+    const { x, y } = this.position;
+    this.cursorElement.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+  }
+
+  private updateEdgeDetection(): void {
+    const { x, y } = this.position;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const isNearTop = y < EDGE_THRESHOLD;
+    const isNearBottom = y > height - EDGE_THRESHOLD;
+    const isNearLeft = x < EDGE_THRESHOLD;
+    const isNearRight = x > width - EDGE_THRESHOLD;
+
+    let newEdge: EdgeDirection = 'none';
+
+    // Detectar cantos (diagonais) primeiro
+    if (isNearTop && isNearLeft) {
+      newEdge = 'top-left';
+    } else if (isNearTop && isNearRight) {
+      newEdge = 'top-right';
+    } else if (isNearBottom && isNearLeft) {
+      newEdge = 'bottom-left';
+    } else if (isNearBottom && isNearRight) {
+      newEdge = 'bottom-right';
+    }
+    // Detectar bordas
+    else if (isNearTop) {
+      newEdge = 'top';
+    } else if (isNearBottom) {
+      newEdge = 'bottom';
+    } else if (isNearLeft) {
+      newEdge = 'left';
+    } else if (isNearRight) {
+      newEdge = 'right';
+    }
+
+    if (newEdge !== this.currentEdge) {
+      this.currentEdge = newEdge;
+      this.applyEdgeCursor(newEdge);
     }
   }
 
-  private update(): void {
-    this.position.current.lerp(this.position.target, this.position.lerpAmount);
-    const { x, y } = this.position.current;
-    this.cursorElement.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-    this.animationFrameId = window.requestAnimationFrame(this.updateCallback);
+  private applyEdgeCursor(edge: EdgeDirection): void {
+    // Remover todas as classes de borda anteriores
+    this.cursorElement.classList.remove(
+      'edge-top',
+      'edge-right',
+      'edge-bottom',
+      'edge-left',
+      'edge-top-right',
+      'edge-top-left',
+      'edge-bottom-right',
+      'edge-bottom-left'
+    );
+
+    // Adicionar classe correspondente
+    if (edge !== 'none') {
+      this.cursorElement.classList.add(`edge-${edge}`);
+    }
+  }
+
+  isInEdgeZone(): boolean {
+    return this.currentEdge !== 'none';
   }
 }

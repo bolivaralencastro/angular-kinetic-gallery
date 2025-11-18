@@ -2563,6 +2563,11 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
 
 
   expandItem(item: PhotoItem, element: HTMLElement): void {
+    // Não permitir expansão se o cursor estiver na zona de borda
+    if (this.isInEdgeZone()) {
+      return;
+    }
+    
     const rect = element.getBoundingClientRect();
     this.expandedItem.set({
       id: item.id,
@@ -2763,11 +2768,20 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectGallery(id: string): void {
+    // Não permitir seleção se o cursor estiver na zona de borda
+    if (this.isInEdgeZone()) {
+      return;
+    }
+    
     this.deactivateAutoNavigation(true);
     this.stopAllGalleryPreviews();
     this.galleryService.selectGallery(id);
     this.currentView.set('photos');
     this.handleMobileNavigationTransition();
+  }
+
+  private isInEdgeZone(): boolean {
+    return this.interactiveCursor?.isInEdgeZone() ?? false;
   }
 
   async deleteGallery(id: string): Promise<void> {
