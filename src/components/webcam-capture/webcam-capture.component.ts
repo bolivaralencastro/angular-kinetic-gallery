@@ -337,14 +337,32 @@ import { convertToWebp } from '../../utils/convert-to-webp';
 export class WebcamCaptureComponent implements AfterViewInit, OnDestroy {
   @HostListener('document:keydown.space', ['$event'])
   handleSpacebar(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target)) {
+      return;
+    }
     event.preventDefault();
     this.captureImage();
   }
 
   @HostListener('document:keydown.r', ['$event'])
   handleTimerShortcut(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingElement(target)) {
+      return;
+    }
     event.preventDefault();
     this.toggleTimer();
+  }
+
+  private isTypingElement(target: HTMLElement | null): boolean {
+    return !!target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      !!target.closest('input') ||
+      !!target.closest('textarea')
+    );
   }
 
   variant = input<'dialog' | 'mobile'>('dialog');
