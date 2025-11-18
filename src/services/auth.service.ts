@@ -172,7 +172,9 @@ export class AuthService {
     }
 
     try {
-      const redirectUrl = this.isBrowser() ? window.location.origin : undefined;
+      const redirectUrl = this.isBrowser() 
+        ? `${window.location.origin}${window.location.pathname}` 
+        : undefined;
       
       const { data, error } = await this.supabase.auth.signUp({
         email: trimmedEmail,
