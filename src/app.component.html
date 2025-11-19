@@ -11,13 +11,24 @@
     @if (isAppLoading()) {
       <div class="app-loading" role="status" aria-live="polite">
         <div class="app-loading__content">
-          <div class="kinetic-loader" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
+          <div class="loader-stack" aria-hidden="true">
+            @for (card of loadingStackCards(); track card.id) {
+              <div
+                class="loader-stack__card"
+                [style.background-image]="'url("' + card.imageUrl + '")'">
+                <div class="loader-stack__scrim"></div>
+                <div class="loader-stack__info">
+                  <span class="loader-stack__label">Galeria</span>
+                  <h3 class="loader-stack__title">{{ card.title }}</h3>
+                  <p class="loader-stack__subtitle">{{ card.subtitle }}</p>
+                </div>
+              </div>
+            }
           </div>
-          <p class="app-loading__message">{{ appLoadingMessage() }}</p>
+          <div class="app-loading__text">
+            <p class="app-loading__message">{{ appLoadingMessage() }}</p>
+            <p class="app-loading__hint">{{ appLoadingHint() }}</p>
+          </div>
         </div>
       </div>
     }
