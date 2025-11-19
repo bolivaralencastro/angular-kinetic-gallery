@@ -10,7 +10,15 @@
   <div class="app-shell__viewport">
     @if (isAppLoading()) {
       <div class="app-loading" role="status" aria-live="polite">
-        <div class="kinetic-loader" aria-hidden="true"></div>
+        <div class="app-loading__content">
+          <div class="kinetic-loader" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p class="app-loading__message">{{ appLoadingMessage() }}</p>
+        </div>
       </div>
     }
     <ng-template #userMenu>
