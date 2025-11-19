@@ -2690,11 +2690,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     event.stopPropagation();
 
     const groups: ContextMenuGroup[] = [this.createGeneralGroup(false)];
+    const photoActions: ContextMenuAction[] = [];
 
-    if (this.canUseCaptureDialog()) {
-      const photoActions: ContextMenuAction[] = this.canCaptureInSelectedGallery()
-        ? ['capturePhoto', 'deletePhoto']
-        : ['capturePhoto'];
+    if (this.canCaptureInSelectedGallery()) {
+      photoActions.push('capturePhoto');
+    }
+
+    if (this.canDeletePhoto()) {
+      photoActions.push('deletePhoto');
+    }
+
+    if (photoActions.length > 0) {
       groups.push({ label: 'Fotos', actions: photoActions });
     }
 
