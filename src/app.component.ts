@@ -47,6 +47,13 @@ interface GalleryCardItem extends BaseItem {
 
 type VisibleItem = PhotoItem | GalleryCardItem;
 
+interface LoadingPreviewCard {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+}
+
 const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
 type ArrowKey = (typeof ARROW_KEYS)[number];
 
@@ -54,6 +61,29 @@ const FALLBACK_GALLERY_THUMBNAIL =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><rect width='300' height='200' fill='%23111111'/></svg>";
 
 const HOP_EASING = 'cubic-bezier(0.9, 0, 0.1, 1)';
+
+const FALLBACK_LOADING_PREVIEWS: readonly LoadingPreviewCard[] = [
+  {
+    id: 'fallback-kinetic',
+    title: 'Kinetic Gallery',
+    subtitle: 'Curadoria dinâmica em destaque',
+    imageUrl: 'assets/kinetic-gallery.webp',
+  },
+  {
+    id: 'fallback-abstract',
+    title: 'Coleção Prisma',
+    subtitle: 'Texturas e tons que inspiram novas capturas',
+    imageUrl:
+      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23ff7a18'/><stop offset='50%' stop-color='%23af002d'/><stop offset='100%' stop-color='%232190ff'/></linearGradient></defs><rect width='400' height='500' fill='url(%23g)'/><circle cx='320' cy='140' r='110' fill='rgba(255,255,255,0.14)'/><rect x='60' y='90' width='120' height='220' rx='28' fill='rgba(0,0,0,0.14)' transform='rotate(-8 60 90)'/><rect x='190' y='250' width='180' height='140' rx='22' fill='rgba(255,255,255,0.16)' transform='rotate(6 190 250)'/></svg>",
+  },
+  {
+    id: 'fallback-monochrome',
+    title: 'Luz & Sombra',
+    subtitle: 'Galeria minimalista para estudos de contraste',
+    imageUrl:
+      "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'><defs><linearGradient id='mono' x1='0%' y1='0%' x2='0%' y2='100%'><stop offset='0%' stop-color='%2326262b'/><stop offset='100%' stop-color='%23090b10'/></linearGradient></defs><rect width='400' height='500' fill='url(%23mono)'/><path d='M-40 160 Q120 60 320 220 T480 420' stroke='rgba(255,255,255,0.14)' stroke-width='48' fill='none'/><circle cx='120' cy='360' r='80' fill='rgba(255,255,255,0.08)'/><rect x='220' y='80' width='120' height='160' rx='26' fill='rgba(0,0,0,0.32)'/></svg>",
+  },
+];
 
 function isArrowKey(key: string): key is ArrowKey {
   return (ARROW_KEYS as readonly string[]).includes(key);
@@ -1111,6 +1141,36 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     return latest;
   });
   galleries = computed(() => this.galleryService.galleries());
+  loadingStackCards = computed<LoadingPreviewCard[]>(() => {
+    const cards: LoadingPreviewCard[] = [];
+
+    for (const gallery of this.galleries()) {
+      const coverUrl = this.getGalleryCover(gallery);
+      if (!coverUrl) {
+        continue;
+      }
+
+      cards.push({
+        id: `gallery-${gallery.id}`,
+        title: gallery.name,
+        subtitle: gallery.description ?? 'Galeria ativa',
+        imageUrl: coverUrl,
+      });
+
+      if (cards.length === 3) {
+        return cards;
+      }
+    }
+
+    for (const fallback of FALLBACK_LOADING_PREVIEWS) {
+      cards.push(fallback);
+      if (cards.length === 3) {
+        break;
+      }
+    }
+
+    return cards;
+  });
   activeGallery = computed(() => {
     const selectedId = this.galleryService.selectedGalleryId();
     if (!selectedId) {
